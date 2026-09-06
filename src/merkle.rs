@@ -4,12 +4,14 @@ pub type Hash = [u8; 32];
 
 pub fn hash_leaf(data:&[u8]) -> Hash{
     let mut hasher = Sha256::new();
+    hasher.update([0x00]);
     hasher.update(data);
     hasher.finalize().into()
 }
 
 pub fn hash_pair(left: &Hash, right: &Hash) -> Hash {
     let mut hasher = Sha256::new();
+    hasher.update([0x01]);
     hasher.update(left);
     hasher.update(right);
     hasher.finalize().into()
@@ -54,6 +56,10 @@ impl MerkleTree {
         self.layers.last().unwrap()[0]
     }
 
+    pub fn depth(&self) -> usize {
+        self.layers.len() - 1
+    }
+
     /// `index` 番目の葉から root までの包含証明を作る。
     ///
     /// # Arguments
@@ -80,6 +86,7 @@ impl MerkleTree {
         }
         result
     }
+}
     /// 木を再構築せずに、leaf・index・proof・root だけで検証する
     ///
     /// # Arguments
@@ -88,21 +95,24 @@ impl MerkleTree {
     /// * `root` -merkle treeのroot
     /// # Returns
     /// 含まれるかどうか bool。
-     pub fn verify(leaf: Hash, proof: Vec<(Hash, bool)>, root: Hash) -> bool {
-        let mut leaf = leaf;
-        for p in proof{
-            let brother_leaf = p.0;
-            let is_right = p.1;
-            if !is_right{
-                leaf = hash_pair(&leaf,&brother_leaf);
-            }else{
-                leaf = hash_pair(&brother_leaf,&leaf);
-            }
+pub fn verify_proof(leaf: Hash, proof: Vec<(Hash, bool)>, depth: usize, root: Hash) -> bool {
+    if proof.len() != depth{
+        return false;
+    } 
+    let mut leaf = leaf;
+    for p in proof{
+        let brother_leaf = p.0;
+        let is_right = p.1;
+        if !is_right{
+            leaf = hash_pair(&leaf,&brother_leaf);
+        }else{
+            leaf = hash_pair(&brother_leaf,&leaf);
         }
-        leaf == root
     }
-
+    leaf == root
 }
+
+
 
 #[cfg(test)]
 mod tests {
@@ -139,9 +149,10 @@ mod tests {
         }
         let tree = MerkleTree::from_leaves(leaves.clone());
         for i in 0..7{
-            assert!(MerkleTree::verify(leaves[i], tree.proof(i),tree.root()))
+            assert!(verify_proof(leaves[i], tree.proof(i),tree.depth(),tree.root()))
         }
-        assert!(!MerkleTree::verify(hash_leaf(b"out"),tree.proof(0),tree.root()));
+        assert!(!verify_proof(hash_leaf(b"out"),tree.proof(0),tree.depth(), tree.root()));
+        assert!(!verify_proof(hash_leaf(b"out"),tree.proof(1),1, tree.root()));
     }
 
 }
