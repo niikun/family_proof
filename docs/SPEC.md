@@ -52,11 +52,14 @@ ZK 方式では **検証側は root（公開情報）だけを知っていれば
 - circom で Merkle 包含証明の回路を実装
 - Rust（`ark-circom` 等）で witness 生成・proof 生成・proof 検証を実装
 - 家族オンボーディング（secret 生成 → Merkle Tree 構築 → root 出力）を Rust CLI または簡易 UI で実装
+- オンボーディング時に World ID（IDKit）で人間性証明を要求し、詐欺師が偽メンバーを Merkle Tree に
+  登録できないようにする
 - RLN（Rate-Limiting Nullifier）を回路に組み込み、challenge 紐付け・リプレイ防止に加え、
   同一 secret の epoch あたり使用回数が limit を超えたら secret を復元・失効できるようにする
 - なりすまし確認フローを Web デモ（2 画面：証明する側 / 検証する側）でシミュレーション
 - 最小限の Solidity コントラクトで root 登録・proof 検証・RLN の nullifier/シェア記録と
-  復元・失効を on-chain 実装
+  復元・失効を on-chain 実装。World Chain（Sepolia）にデプロイ
+- 家族を ENS 名（`<family>.family.eth` 相当）で識別し、Merkle root を text record に格納
 
 ### 3.2 やらないこと（将来課題として明示）
 
@@ -75,6 +78,8 @@ ZK 方式では **検証側は root（公開情報）だけを知っていれば
 | 声を変換し、証明成功時のみ地声に戻す | 通話経路の乗っ取り・専用アプリ通話が前提になり実装コストが高い。デモ範囲を超える |
 | 単純な日替わり合言葉（TOTP） | 検証側も秘密相当の情報を持つ必要があり、ZK の必然性を説明できなくなる |
 | 着信時に検証側端末が自動で単語を表示 | 上記と同じ理由で、検証側が秘密を持つ前提になってしまう |
+| 1inch / Uniswap Foundation のスポンサー統合 | スワップ・AMM の要素が本プロジェクトに無く、こじつけ統合になる（審査で減点対象） |
+| Sui へのデプロイ | `sui::groth16` によるネイティブ Groth16 検証は魅力だが、on-chain 部分の Move 書き直しがソロ開発ではスコープリスク。EVM に集中する |
 
 ## 4. アーキテクチャ
 
@@ -106,7 +111,10 @@ ZK 方式では **検証側は root（公開情報）だけを知っていれば
 | 回路（circuit） | circom | Merkle 包含証明のサンプルが豊富。触った経験がある |
 | proof 生成・検証 | Rust + `ark-circom`（`arkworks` ベース） | Rust で学習を継続しつつ、circom の資産を活かせる |
 | ハッシュ関数 | Poseidon（回路内）／将来 on-chain 連携では keccak256 も検討 | 回路内演算に適したハッシュ |
+| on-chain ネットワーク | World Chain（Sepolia テストネット） | World ID の nullifier モデルが本設計の RLN と同じ原始関数。スポンサー賞の必然性がある |
 | on-chain | Solidity（`snarkjs` で生成した Groth16 Verifier + 自作 Registry） | Ethereum ハッカソンのため on-chain 要素を用意 |
+| Sybil 対策（オンボーディング） | World ID（IDKit で人間性証明 → 家族登録時のゲート） | 詐欺師が偽メンバーを Merkle Tree に登録するのを防ぐ。RLN と同系統の技術で一貫性がある |
+| 家族識別子 | ENS（`<family>.family.eth` 相当。Merkle root を text record に格納） | hex root より高齢者に覚えやすく、自作レジストリの代替／併用になる |
 | デモ UI | 未確定（最小限の Web UI、Rust の CLI でも可） | 一人開発・Rust 中心のため実装コストが低いものを選ぶ |
 
 ## 6. 回路仕様
@@ -243,7 +251,6 @@ Rust 4 か月目であることを踏まえ、ZK 特有の概念（制約・witn
 ## 10. 未確定事項（今後決めること）
 
 - デモ UI を Web にするか Rust ネイティブ（`egui` 等）にするか
-- on-chain のネットワーク（テストネット選定）
 - ピッチでモバイル UX 案（音声変換／SMS）をどこまで詳しく見せるか
 - RLN の epoch のソース：クライアント時刻か、on-chain の `block.timestamp` か（検証側と証明側で
   epoch がズレると誤って失効/受理される可能性があるため、丸め幅と許容ズレも要検討）
