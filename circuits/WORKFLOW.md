@@ -70,7 +70,7 @@ snarkjs zkey export verificationkey main_final.zkey verification_key.json
 
 ---
 
-## 3. 入力（main_js/input.json）
+## 3. 入力（input.json）
 
 `nLevels = 4` なので配列は長さ4。数値は **10進の文字列**。
 
@@ -92,7 +92,7 @@ snarkjs zkey export verificationkey main_final.zkey verification_key.json
 ## 4. witness 計算
 
 ```bash
-node main_js/generate_witness.js main_js/main.wasm main_js/input.json witness.wtns
+node main_js/generate_witness.js main_js/main.wasm input.json witness.wtns
 ```
 
 `witness.wtns` に全 signal の値が入る。中身確認は

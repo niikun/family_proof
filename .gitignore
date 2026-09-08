@@ -2,7 +2,6 @@
 circom/
 circuits/node_modules/
 circuits/main_js/
-!circuits/main_js/input.json
 circuits/main.r1cs
 circuits/main.sym
 circuits/pot12_0000.ptau

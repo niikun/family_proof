@@ -8,7 +8,7 @@
 //   - nLevels = 4  → 葉は 2^4 = 16 枚
 //   - pathIndices[k] = 0: 自分が左 / 1: 自分が右
 //
-// 出力: circuits/main_js/input.json  ＋ 標準出力に root
+// 出力: circuits/input.json  ＋ 標準出力に root
 
 const fs = require("fs");
 const path = require("path");
@@ -76,7 +76,7 @@ async function main() {
     siblings,
   };
 
-  const outPath = path.join(__dirname, "..", "main_js", "input.json");
+  const outPath = path.join(__dirname, "..", "input.json");
   fs.writeFileSync(outPath, JSON.stringify(input, null, 2) + "\n");
 
   console.log("wrote", outPath);
