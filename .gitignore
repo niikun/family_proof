@@ -1,2 +1,4 @@
 /target
 circom/
+circuits/
+circuits/node_modules/
