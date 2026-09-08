@@ -19,7 +19,13 @@ const WIDTH = 1 << LEVELS; // 16
 
 // --- TODO 1: メンバー集合 ---------------------------------------------------
 // 実際の family メンバーを表す値。ここでは数値の羅列をダミーで置いている。
-const MEMBERS = ["101", "102", "103", "104", "105"];
+const MEMBERS = [
+  {secret: "101", salt: "9001"},
+  {secret: "102", salt: "9002"},
+  {secret: "103", salt: "9003"},
+  {secret: "104", salt: "9004"},
+  {secret: "105", salt: "9005"}
+];
 
 // --- TODO 2: 証明したい葉のインデックス ------------------------------------
 const TARGET_INDEX = 2;
@@ -37,7 +43,7 @@ async function main() {
   // --- TODO 4: 葉の作り方 --------------------------------------------------
   // 生値をそのまま葉にするか、コミットメント poseidon([secret, ...]) にするか。
   // ここでは「生値を 1 引数で Poseidon した値」を葉としている。
-  const leafOf = (m) => F.toObject(poseidon([BigInt(m)]));
+  const leafOf = (m) => F.toObject(poseidon([0n,BigInt(m.secret),BigInt(m.salt)]));
 
   if (MEMBERS.length > WIDTH) throw new Error(`メンバーが ${WIDTH} を超えている`);
   if (TARGET_INDEX >= MEMBERS.length) throw new Error("TARGET_INDEX が範囲外");
