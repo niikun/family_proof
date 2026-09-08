@@ -4,7 +4,7 @@
 //   node scripts/build_input.js
 //
 // 回路 main.circom の前提:
-//   - ノードのハッシュは Poseidon(2)
+//   - ノードのハッシュは Poseidon([0, secret, salt])(3入力先頭０はドメインタグ)
 //   - nLevels = 4  → 葉は 2^4 = 16 枚
 //   - pathIndices[k] = 0: 自分が左 / 1: 自分が右
 //
@@ -41,7 +41,7 @@ async function main() {
   const H2 = (a, b) => F.toObject(poseidon([a, b])); // BigInt を返す
 
   // --- TODO 4: 葉の作り方 --------------------------------------------------
-  // 生値をそのまま葉にするか、コミットメント poseidon([secret, ...]) にするか。
+  // コミットメント poseidon([0,secret, salt]) 。
   // ここでは「生値を 1 引数で Poseidon した値」を葉としている。
   const leafOf = (m) => F.toObject(poseidon([0n,BigInt(m.secret),BigInt(m.salt)]));
 
