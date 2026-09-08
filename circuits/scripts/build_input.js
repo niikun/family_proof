@@ -4,7 +4,8 @@
 //   node scripts/build_input.js
 //
 // 回路 main.circom の前提:
-//   - ノードのハッシュは Poseidon([0, secret, salt])(3入力先頭０はドメインタグ)
+//   - 葉のハッシュは Poseidon([0, secret, salt])（3入力、先頭 0 はドメインタグ）
+//   - 節（内部ノード）のハッシュは Poseidon([L, R])（2入力）
 //   - nLevels = 4  → 葉は 2^4 = 16 枚
 //   - pathIndices[k] = 0: 自分が左 / 1: 自分が右
 //
@@ -41,8 +42,9 @@ async function main() {
   const H2 = (a, b) => F.toObject(poseidon([a, b])); // BigInt を返す
 
   // --- TODO 4: 葉の作り方 --------------------------------------------------
-  // コミットメント poseidon([0,secret, salt]) 。
-  // ここでは「生値を 1 引数で Poseidon した値」を葉としている。
+  // 葉 = Semaphore 型コミットメント Poseidon([0, secret, salt])。
+  // 先頭 0 はドメインタグ（葉と節でハッシュのレンジを分離）。
+  // salt はメンバーごとの 2 つ目の乱数で、secret と一緒に端末内に保存し外部送信しない。
   const leafOf = (m) => F.toObject(poseidon([0n,BigInt(m.secret),BigInt(m.salt)]));
 
   if (MEMBERS.length > WIDTH) throw new Error(`メンバーが ${WIDTH} を超えている`);
