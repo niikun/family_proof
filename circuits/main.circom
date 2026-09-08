@@ -39,4 +39,4 @@ template MerkleTreeInclusionProof(nLevels) {
     root <== hashes[nLevels];
 }
 
-component main {public [root]} = MerkleTreeInclusionProof(4);
+component main = MerkleTreeInclusionProof(4);
