@@ -2,6 +2,8 @@ use sha2::{Digest, Sha256};
 
 pub type Hash = [u8; 32];
 
+const EMPTY_HASH: Hash = [0u8; 32];
+
 pub fn hash_leaf(data:&[u8]) -> Hash{
     let mut hasher = Sha256::new();
     hasher.update([0x00]);
@@ -32,13 +34,13 @@ impl MerkleTree {
             results.push(leaves);
             return MerkleTree{layers:results};
         } else if leaves_len % 2 != 0 {
-            leaves.push(leaves[leaves_len - 1]);
+            leaves.push(EMPTY_HASH);
             leaves_len += 1;
         } 
         results.push(leaves.clone());
         while leaves_len > 1 {
             if leaves_len % 2 != 0{
-                leaves.push(leaves[leaves_len - 1]);
+                leaves.push(EMPTY_HASH);
                 leaves_len += 1;
             }
             let mut result = Vec::new();
@@ -74,7 +76,7 @@ impl MerkleTree {
         for i in 0..self.layers.len()-1{
             let mut layer = self.layers[i].clone();
             if layer.len() % 2 == 1{
-                layer.push(*layer.last().unwrap());
+                layer.push(EMPTY_HASH);
             }
             let is_right = index % 2 == 1;
             if index % 2 == 1{
@@ -125,7 +127,9 @@ mod tests {
         let a = hash_leaf(b"abc");
         let b = hash_pair(&a,&a);
         let c = hash_pair(&b,&b);
-        let d = hash_pair(&c, &c);
+        let e = hash_pair(&b, &EMPTY_HASH);
+        let d = hash_pair(&c,&e);
+        // let d = hash_pair(&c, &c);
         println!("{:?}",tree1);
         assert_eq!(tree1.layers.last().unwrap()[0],d);
     }
@@ -136,7 +140,8 @@ mod tests {
         let a = hash_leaf(b"abc");
         let b = hash_pair(&a,&a);
         let c = hash_pair(&b,&b);
-        let d = hash_pair(&c, &c);
+        let e = hash_pair(&b, &EMPTY_HASH);
+        let d = hash_pair(&c,&e);
         println!("{:?}",tree1);
         assert_eq!(tree1.root(),d);
     }
