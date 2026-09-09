@@ -4,19 +4,19 @@
 
 ## いまどこ
 
-ロードマップ（[SPEC.md](SPEC.md) §7）で **Step 0・Step 1 完了、Step 2 の circom 側まで完了**。全体 ≈ 25%。
+ロードマップ（[SPEC.md](SPEC.md) §7）で **Step 0・1・2 完了、Step 3 着手（witness 生成まで動作）**。全体 ≈ 30%。
 
 | Step | 状態 |
 |---|---|
-| 0 Rust Merkle 骨格（ZKなし） | ✅ `cargo test` 3/3 |
+| 0 Rust Merkle 骨格（ZKなし） | ✅ `cargo test` |
 | 1 circom サンプル写経・compile→prove→verify | ✅ WSL でも全パイプライン疎通 |
-| 2 MVP 回路を自ユースケースへ | 🟡 circom 側 done / Rust 側パディング整合が残 |
-| 3 `ark-circom` で Rust から proof 生成・検証 | ⬜ 未着手（次） |
+| 2 MVP 回路を自ユースケースへ | ✅ circom 側 done / Rust パディングを `EMPTY_HASH` 固定に（commit `9c52de4`） |
+| 3 `ark-circom` で Rust から proof 生成・検証 | 🟡 着手。`src/proof.rs` `build_witness()` が r1cs+wasm を読んで witness 計算 → public inputs 取得、`test_build_witness` 緑。proof 生成・検証はこれから |
 | 4 RLN（§6.2） | ⬜ |
 | 5 デモ UI | ⬜ |
 | 6 on-chain（+ World ID ゲート） | ⬜ |
 
-**スコープ方針（2026-09-08 決定）**: RLN と World 連携（World ID オンボーディングゲート ＋ World Chain Sepolia デプロイ）を**両方チャレンジ**。厳しければ Step 3 着手前後で descope を再判断。
+**スコープ方針（2026-09-08 決定）**: RLN と World 連携（World ID オンボーディングゲート ＋ World Chain Sepolia デプロイ）を**両方チャレンジ**。厳しければ Step 3 完了前後で descope を再判断。
 
 ## 確定済みの設計判断（蒸し返さない）
 
@@ -29,37 +29,34 @@
 
 ## ⚠️ 切り替え前に必ずやること
 
-未コミットの変更が2つある。**コミット＆push してから**別PCで pull すること。
+未コミット（コミット `ff0535c` の先）。**コミット＆push してから**別PCで pull すること。
 
 ```
-circuits/input.json             (M)
-circuits/scripts/build_input.js  (M)  ← MEMBERS を {secret,salt}[] に、leafOf に domタグ
+Cargo.toml / Cargo.lock  (M)  ← ark-circom, color-eyre を追加
+src/main.rs              (M)  ← mod proof; を追加
+src/proof.rs             (??) ← 新規。build_witness()
 ```
 
-まず下の TODO 1・2 を終えてからまとめてコミットするのが綺麗。急ぐなら現状のままコミットして push でも可。
+`origin/main` より 1 コミット先行しているので、コミット後 `git push` を忘れずに。
 
 ## 残タスク（TODO）
 
-### Step 2 クローズ
+### Step 3（いまここ・次の本丸）
 
-- [ ] **1. Rust パディング固定化** — [src/merkle.rs](../src/merkle.rs) `from_leaves` の「最後の葉を複製」2か所（`~L35` 初期化、`~L41` ループ内）を固定空値に。
-  - 先頭に `const EMPTY_LEAF: Hash = [0u8; 32];`
-  - `leaves.push(leaves[leaves_len - 1])` → `leaves.push(EMPTY_LEAF)`（2か所）
-  - `cargo test` を通す。既存テストが複製前提の期待値なら更新が要るかも。
-- [ ] **2. 古いコメント修正** — [circuits/scripts/build_input.js](../circuits/scripts/build_input.js) `~L37-39` の「生値を1引数で Poseidon した値を葉としている」を実装（`Poseidon([0, secret, salt])`）に合わせる。ヘッダ `~L6-7` に「葉は Poseidon(3入力)」を一言。
-- [ ] **3. コミット** — `circuits/input.json` / `build_input.js` / `src/merkle.rs`。
-
-### Step 3（次の本丸）
-
-- [ ] `ark-circom` を `Cargo.toml` に追加。circom がコンパイルした `circuits/main.r1cs` と `circuits/main_js/main.wasm` を Rust から読む。
-- [ ] Rust で witness 生成 → Groth16 proof 生成 → 検証、を関数化。
+- [x] `ark-circom` / `color-eyre` を `Cargo.toml` に追加。
+- [x] `src/proof.rs` `build_witness()` — `circuits/main.r1cs` と `circuits/main_js/main.wasm` を読み、`circuits/input.json` を入力に witness 計算 → `get_public_inputs()`。`test_build_witness` で root の期待値一致を確認。
+  - ※ テストの `#[cfg(test)]`（`tests` ではない）と、`cargo test` の cwd がクレートルート＝相対パス `circuits/...` が実在すること前提。
+- [ ] **次**: `build_witness()` を伸ばして Groth16 proof 生成・検証まで。関数を `setup() -> pk` / `prove(pk) -> (proof, public_inputs)` / `verify(vk, public_inputs, proof) -> bool` に分ける。
+  - arkworks 側で鍵生成する場合: `Groth16::<Bn254>::generate_random_parameters_with_reduction(circom.clone(), &mut rng)` → `create_random_proof_with_reduction(circom, &pk, &mut rng)` → `process_vk` + `verify_with_processed_vk`。
+  - API 名は ark-groth16 0.6 で変わっている可能性あり。docs.rs で `Groth16` trait を要確認。
+  - 既存の trusted setup（`circuits/main_final.zkey`）を使うなら `ark_circom::read_zkey` に寄せる判断（デモは arkworks 生成で可）。
 - [ ] Rust CLI から「オンボーディング（`(secret,salt)` 生成 → Merkle Tree → root）」→「proof 生成」→「検証」を一連で実行できる状態に。
 - [ ] `src/merkle.rs` の `hash_leaf`/`hash_pair` は現状 **SHA-256**。回路と一致させるため Poseidon に差し替える（arkworks 系の Poseidon、パラメータを circomlib と合わせる必要あり — ここは要調査）。
-- [ ] `from_leaves` を固定深さ版（`from_leaves(leaves, levels)`、`1<<levels` まで `EMPTY_LEAF` 埋め）に。回路の `nLevels=4` と合わせる。
+- [ ] `from_leaves` を固定深さ版（`from_leaves(leaves, levels)`、`1<<levels` まで `EMPTY_HASH` 埋め）に。回路の `nLevels=4` と合わせる。→ この変更時に merkle padding の N/N+1 衝突を再点検（memory `merkle-padding-forgery-deferred`）。
 
 ### 既知の小物
 
-- [ ] `src/main.rs:9` `for i in 0..FAMILY_MEMBERS` の `i` 未使用 warning。
+- [ ] `src/main.rs` `for i in 0..FAMILY_MEMBERS` の `i` 未使用 warning（`_i` か `for _ in`）。
 - [ ] Step 6 に World ID 統合のサブタスクを明記（SPEC §7 に無い）: オンボーディング UI に IDKit、Registry のメンバー登録で World ID nullifier をオンチェーン検証してから leaf 追加。
 
 ## 別PCでの再開手順

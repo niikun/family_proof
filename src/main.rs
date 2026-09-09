@@ -1,5 +1,6 @@
 use rand::RngExt;
 mod merkle;
+mod proof;
 
 const FAMILY_MEMBERS:u8 = 7;
 
