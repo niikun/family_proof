@@ -1080,6 +1080,7 @@ dependencies = [
  "ark-ff",
  "ark-groth16",
  "ark-serialize",
+ "ark-snark",
  "ark-std",
  "color-eyre",
  "rand 0.10.2",
