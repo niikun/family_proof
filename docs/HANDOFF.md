@@ -27,17 +27,14 @@
 
 詳細は memory（Claude 側）にも記録済み。
 
-## ⚠️ 切り替え前に必ずやること
+## 切り替え時のルール
 
-未コミット（コミット `ff0535c` の先）。**コミット＆push してから**別PCで pull すること。
+現在は全部コミット済み・`origin/main` と同期（`d34270f`）、作業ツリー clean。
+別PCでは `git pull` すればそのまま続きから入れる。
 
-```
-Cargo.toml / Cargo.lock  (M)  ← ark-circom, color-eyre を追加
-src/main.rs              (M)  ← mod proof; を追加
-src/proof.rs             (??) ← 新規。build_witness()
-```
-
-`origin/main` より 1 コミット先行しているので、コミット後 `git push` を忘れずに。
+中断して別PCに移るときは毎回: `git status` で未コミットが無いか確認 → あれば
+`git add` / `git commit` / `git push` してから離れる。zkey/vkey を作り直したら
+それも忘れず commit（[WORKFLOW.md](../circuits/WORKFLOW.md) 参照）。
 
 ## 残タスク（TODO）
 
@@ -52,11 +49,12 @@ src/proof.rs             (??) ← 新規。build_witness()
   - 既存の trusted setup（`circuits/main_final.zkey`）を使うなら `ark_circom::read_zkey` に寄せる判断（デモは arkworks 生成で可）。
 - [ ] Rust CLI から「オンボーディング（`(secret,salt)` 生成 → Merkle Tree → root）」→「proof 生成」→「検証」を一連で実行できる状態に。
 - [ ] `src/merkle.rs` の `hash_leaf`/`hash_pair` は現状 **SHA-256**。回路と一致させるため Poseidon に差し替える（arkworks 系の Poseidon、パラメータを circomlib と合わせる必要あり — ここは要調査）。
-- [ ] `from_leaves` を固定深さ版（`from_leaves(leaves, levels)`、`1<<levels` まで `EMPTY_HASH` 埋め）に。回路の `nLevels=4` と合わせる。→ この変更時に merkle padding の N/N+1 衝突を再点検（memory `merkle-padding-forgery-deferred`）。
+- [ ] `from_leaves` を固定深さ版（`from_leaves(leaves, levels)`、`1<<levels` まで `EMPTY_HASH` 埋め）に。回路の `nLevels=4` と合わせる。→ この変更時に「固定深さ＋固定パディングで N/N+1 衝突が消えること」「`EMPTY_HASH` が実 leaf と衝突しないこと」を再点検。
 
 ### 既知の小物
 
 - [ ] `src/main.rs` `for i in 0..FAMILY_MEMBERS` の `i` 未使用 warning（`_i` か `for _ in`）。
+- [ ] `src/proof.rs:1` `use ark_bn254::{Bn254, Fr}` の `Bn254` 未使用 warning（proof/verify を書くとき使うなら残す）。
 - [ ] Step 6 に World ID 統合のサブタスクを明記（SPEC §7 に無い）: オンボーディング UI に IDKit、Registry のメンバー登録で World ID nullifier をオンチェーン検証してから leaf 追加。
 
 ## 別PCでの再開手順
@@ -70,6 +68,13 @@ node scripts/build_input.js                              # circuits/input.json �
 node main_js/generate_witness.js main_js/main.wasm input.json witness.wtns
 snarkjs groth16 prove main_final.zkey witness.wtns proof.json public.json
 snarkjs groth16 verify verification_key.json public.json proof.json   # → OK! で環境OK
+```
+
+Rust 側:
+
+```bash
+cd ..            # クレートルート（cargo test の cwd が相対パス circuits/... の前提）
+cargo test       # 初回は ark-circom のビルドで ~30秒。proof::test::test_build_witness が緑なら Step 3 の土台OK
 ```
 
 ### git 管理の方針（2026-09-08 整理済み）
