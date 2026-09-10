@@ -1,22 +1,22 @@
-use sha2::{Digest, Sha256};
+use ark_bn254::Fr;
+use ark_ff::AdditiveGroup;
+use pso_poseidon::{Poseidon, PoseidonHasher};
 
-pub type Hash = [u8; 32];
+pub type Hash = Fr;
 
-const EMPTY_HASH: Hash = [0u8; 32];
+const EMPTY_HASH: Fr = Fr::ZERO;
 
-pub fn hash_leaf(data:&[u8]) -> Hash{
-    let mut hasher = Sha256::new();
-    hasher.update([0x00]);
-    hasher.update(data);
-    hasher.finalize().into()
+pub fn hash_leaf(secret: Fr, salt: Fr) -> Hash{
+    let mut poseidon = Poseidon::<Fr>::new_circom(3).expect("Error");
+    let prefix = Fr::ZERO;
+    let hash = poseidon.hash(&[prefix, secret, salt]).unwrap();
+    hash
 }
 
 pub fn hash_pair(left: &Hash, right: &Hash) -> Hash {
-    let mut hasher = Sha256::new();
-    hasher.update([0x01]);
-    hasher.update(left);
-    hasher.update(right);
-    hasher.finalize().into()
+    let mut poseidon = Poseidon::<Fr>::new_circom(2).expect("Error");
+    let hash = poseidon.hash(&[*left, *right]).unwrap();
+    hash
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -25,24 +25,19 @@ pub struct MerkleTree {
 }
 
 impl MerkleTree {
-    pub fn from_leaves(leaves:Vec<Hash>) -> Self {
+    pub fn from_leaves(leaves:Vec<Hash>, levels: usize) -> Self {
         assert!(!leaves.is_empty(),"leaves must not be empty");
+        assert!(leaves.len() <= 1 << levels, "leaves length must be less than or equal to 2^levels");
         let mut leaves = leaves;
         let mut leaves_len = leaves.len();
         let mut results = Vec::new();
-        if leaves_len == 1{
-            results.push(leaves);
-            return MerkleTree{layers:results};
-        } else if leaves_len % 2 != 0 {
+        let rest = (1 << levels) - leaves_len;
+        for _ in 0..rest{
             leaves.push(EMPTY_HASH);
-            leaves_len += 1;
-        } 
+            leaves_len = leaves.len();
+        }
         results.push(leaves.clone());
         while leaves_len > 1 {
-            if leaves_len % 2 != 0{
-                leaves.push(EMPTY_HASH);
-                leaves_len += 1;
-            }
             let mut result = Vec::new();
             for i in 0..leaves_len/2{
                 result.push(hash_pair(&leaves[i * 2], &leaves[i * 2 + 1]));

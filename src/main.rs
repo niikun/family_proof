@@ -3,6 +3,7 @@ use ark_std::rand::{rngs::StdRng, SeedableRng};
 mod merkle;
 mod proof;
 
+
 const FAMILY_MEMBERS:u8 = 7;
 
 fn main() ->color_eyre::Result<()>{
@@ -11,8 +12,9 @@ fn main() ->color_eyre::Result<()>{
 
     let mut leaves = Vec::new();
     for _ in 0..FAMILY_MEMBERS {
-        let secret:[u8;32] = rng.random();
-        leaves.push(merkle::hash_leaf(&secret));
+        let secret = rng.random();
+        let salt = rng.random();
+        leaves.push(merkle::hash_leaf(&secret, &salt));
     }
     let tree = merkle::MerkleTree::from_leaves(leaves.to_vec());
     let depth = tree.depth();
