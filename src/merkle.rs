@@ -112,7 +112,9 @@ pub fn verify_proof(leaf: Hash, proof: Vec<(Hash, bool)>, depth: usize, root: Ha
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use std::{mem, str::FromStr};
+
+use super::*;
 
     #[test]
     fn test_from_leaves(){
@@ -153,5 +155,54 @@ mod tests {
         assert!(!verify_proof(hash_leaf(Fr::from(120u64),Fr::from(9u64)),tree.proof(0),tree.depth(), tree.root()));
         assert!(!verify_proof(hash_leaf(Fr::from(100u64),Fr::from(10u64)),tree.proof(1),1, tree.root()));
     }
+    #[test]
+    fn test_verify_circom_root(){
+        let members_row = vec![
+            (Fr::from_str("101").unwrap(), Fr::from_str("9001").unwrap()),
+            (Fr::from_str("102").unwrap(), Fr::from_str("9002").unwrap()),
+            (Fr::from_str("103").unwrap(), Fr::from_str("9003").unwrap()),
+            (Fr::from_str("104").unwrap(), Fr::from_str("9004").unwrap()),
+            (Fr::from_str("105").unwrap(), Fr::from_str("9005").unwrap())
+            ];
+        let members = members_row.iter()
+            .map(|(secret, salt)| hash_leaf(*secret, *salt))
+            .collect::<Vec<Hash>>();    
+        let tree = MerkleTree::from_leaves(members,4);
+        let root = tree.root();
+        let circom_root = Fr::from_str("17396252260025783793058854431926620863655419045074533465745990270806947938816").unwrap();
 
+        assert_eq!(root, circom_root);
+    }
+
+
+    #[test]
+    fn test_verify_circom_proof(){
+        let members_row = vec![
+            (Fr::from_str("101").unwrap(), Fr::from_str("9001").unwrap()),
+            (Fr::from_str("102").unwrap(), Fr::from_str("9002").unwrap()),
+            (Fr::from_str("103").unwrap(), Fr::from_str("9003").unwrap()),
+            (Fr::from_str("104").unwrap(), Fr::from_str("9004").unwrap()),
+            (Fr::from_str("105").unwrap(), Fr::from_str("9005").unwrap())
+            ];
+        let members = members_row.iter()
+            .map(|(secret, salt)| hash_leaf(*secret, *salt))
+            .collect::<Vec<Hash>>();
+        let tree = MerkleTree::from_leaves(members,4);
+ 
+        let pathIndices =  [false, true, false, false];
+        let siblings = vec![
+            "9659870212506288761207542833352405900702434646258502428628049820350215833673",
+            "19506839161229292239108927058367003701366519444600114356109755673703281089538",
+            "4202875617278364029173866272632759058104347646227559772487493810671826569956",
+            "11286972368698509976183087595462810875513684078608517520839298933882497716792"
+        ];
+
+        let proof = siblings.iter()
+            .map(|s| Fr::from_str(s).unwrap())
+            .zip(pathIndices.iter().cloned())
+            .collect::<Vec<(Hash,bool)>>();
+        let leaf = hash_leaf(Fr::from_str("103").unwrap(), Fr::from_str("9003").unwrap());
+
+        assert!(verify_proof(leaf, proof, tree.depth(), tree.root()));
+    }
 }
