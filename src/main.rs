@@ -1,8 +1,9 @@
 use rand::RngExt;
+use ark_bn254::Fr;
 use ark_std::rand::{rngs::StdRng, SeedableRng};
+use ark_ff::PrimeField;
 mod merkle;
 mod proof;
-
 
 const FAMILY_MEMBERS:u8 = 7;
 
@@ -12,14 +13,16 @@ fn main() ->color_eyre::Result<()>{
 
     let mut leaves = Vec::new();
     for _ in 0..FAMILY_MEMBERS {
-        let secret = rng.random();
-        let salt = rng.random();
-        leaves.push(merkle::hash_leaf(&secret, &salt));
+        let secret_bytes:[u8;32] = rng.random();
+        let salt_bytes:[u8;32] = rng.random();
+        let secret = Fr::from_le_bytes_mod_order(&secret_bytes);
+        let salt = Fr::from_le_bytes_mod_order(&salt_bytes);
+        leaves.push(merkle::hash_leaf(secret, salt));
     }
-    let tree = merkle::MerkleTree::from_leaves(leaves.to_vec());
+    let tree = merkle::MerkleTree::from_leaves(leaves.clone(),4);
     let depth = tree.depth();
     let root = tree.root();
-    let not_member = merkle::hash_leaf(b"abc");
+    let not_member = merkle::hash_leaf(Fr::from(999u64), Fr::from(999u64));
         
     for i in 0..leaves.len(){
         let proof = tree.proof(i);
@@ -34,8 +37,8 @@ fn main() ->color_eyre::Result<()>{
     let (pk, pvk) = proof::setup(circuit.clone(), &mut std_rng)?;
     let (pf, pubs) = proof::prove(&pk, circuit, &mut std_rng)?;
     let ok = proof::verify(&pvk, &pubs, &pf)?;
-    println!("root   = {}", pubs[0]);   
     println!("verify = {}", ok);
+    
 
     Ok(())
 }
