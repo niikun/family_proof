@@ -1,8 +1,8 @@
 # HANDOFF — 別PCへの引き継ぎ
 
-最終更新: 2026-09-10 / ブランチ: `main` / remote: `git@github.com:niikun/family_proof.git` / 同期: `a8d5abc`（`origin/main` と一致・作業ツリー clean）
+最終更新: 2026-09-10 / ブランチ: `main` / remote: `git@github.com:niikun/family_proof.git` / 同期: このコミットを push して `origin/main` と一致させる
 
-> ⚠️ **現在ビルド赤**（コミット済みだが未完了の途中状態）。`src/merkle.rs` の Poseidon 差し替え・固定深さ化（下記 [x] 3項目）は済んだが、`src/main.rs` の呼び出しと `merkle.rs` のテストが旧 SHA-256 API のまま → `cargo build` が 13 エラー。次にやるのは「merkle テスト書き換え」＋「main.rs の配線」。
+> ⚠️ **まだビルド赤（あと1歩）**。`src/merkle.rs` は Poseidon 化・固定深さ化・テスト3本書き換えまで完了し**コンパイル可**。残るエラーは `src/main.rs` の3行のみ（旧 API 呼び出し）。次にやるのは「main.rs の配線」だけ。
 
 ## いまどこ
 
@@ -13,7 +13,7 @@
 | 0 Rust Merkle 骨格（ZKなし） | ✅ `cargo test` |
 | 1 circom サンプル写経・compile→prove→verify | ✅ WSL でも全パイプライン疎通 |
 | 2 MVP 回路を自ユースケースへ | ✅ circom 側 done / Rust パディングを `EMPTY_HASH` 固定に（commit `9c52de4`） |
-| 3 `ark-circom` で Rust から proof 生成・検証 | 🟢 8割（`a8d5abc`）。proof.rs の setup/prove/verify 緑。merkle.rs は Poseidon 化・固定深さ化まで済（`pso-poseidon`）。**残: merkle テスト書き換え＋main.rs 配線（今ビルド赤）** |
+| 3 `ark-circom` で Rust から proof 生成・検証 | 🟢 9割。proof.rs の setup/prove/verify 緑。merkle.rs は Poseidon 化・固定深さ化・テスト3本書き換え済でコンパイル可。**残: `src/main.rs` の3行を新 API へ（ビルド赤の最後）** |
 | 4 RLN（§6.2） | ⬜ |
 | 5 デモ UI | ⬜ |
 | 6 on-chain（+ World ID ゲート） | ⬜ |
@@ -31,7 +31,7 @@
 
 ## 切り替え時のルール
 
-現在は全部コミット済み・`origin/main` と同期（`a8d5abc`）、作業ツリー clean（ただし上記のとおりビルドは赤）。
+直前のコミットで `src/merkle.rs`（テスト書き換え＋`n_leaves`）と本ファイルを更新。push すれば `origin/main` と一致。ビルドは赤のまま（main.rs の3行）。
 別PCでは `git pull` すればそのまま続きから入れる。
 
 中断して別PCに移るときは毎回: `git status` で未コミットが無いか確認 → あれば
@@ -56,11 +56,18 @@
 - [x] `src/merkle.rs` の `hash_leaf`/`hash_pair` を SHA-256 → `pso-poseidon` に差し替え（`a8d5abc`）。`type Hash = Fr`（案A）、`EMPTY_HASH = Fr::ZERO`（`use ark_ff::AdditiveGroup`）、`hash_leaf(secret: Fr, salt: Fr) -> Hash` = `new_circom(3).hash(&[Fr::ZERO, secret, salt])`、`hash_pair` = `new_circom(2)`。
 - [x] `from_leaves` を固定深さ版 `from_leaves(leaves: Vec<Hash>, levels: usize)` に（`a8d5abc`）。`(1 << levels)` 枚まで `EMPTY_HASH` 埋め、畳み込みちょうど `levels` 回、`layers[0]` は葉。`proof()` / `verify_proof` は `Fr` 化で自動対応。
   - padding-forgery 再点検済み: 固定深さ4＋固定 `Fr::ZERO` 埋めなら木の形は葉数によらず 16→8→4→2→1 で一定 → N/N+1 別 root。`Fr::ZERO` が `Poseidon([0,s,salt])` 出力と衝突する確率は無視可。→ 条件クリア。[[merkle-padding-forgery-deferred]]
-- [ ] **次1**: `src/merkle.rs` のテスト3本を書き換え（今は旧 API でコンパイル不可）。
-  - A: `MEMBERS`（`(101,9001)`…）→ `hash_leaf(Fr::from(s), Fr::from(salt))` → `from_leaves(leaves, 4)` → `root() == Fr::from_str("17396252…816")`（`use core::str::FromStr`）
-  - B: `circuits/input.json`（`TARGET_INDEX=2`）と `tree.proof(2)` を突き合わせ。`pathIndices [0,1,0,0]` → 各 `.1` が `[false,true,false,false]`、`siblings` 4個 → 各 `.0` が一致、`layers[0][2]` が `input.json` の `leaf` と一致。← proof() 順序の決定的検証
-  - C: `Fr` 葉で `verify_proof` roundtrip ＋ 非メンバーで `false`
-- [ ] **次2**: `src/main.rs` — `[u8;32]` 乱数 → `Fr::from_le_bytes_mod_order`（確定判断#2）で secret/salt、`hash_leaf(secret, salt)` → `from_leaves(leaves, 4)`。旧 `hash_leaf(b"abc")` / `from_leaves(leaves)` の呼び出しを全部直す。CLI の root を回路入力に接続。
+- [x] **次1**: `src/merkle.rs` のテスト3本を新 API で書き換え済（コンパイル可）。`MerkleTree` に `n_leaves` フィールド追加、`proof()` は `assert!(index < self.n_leaves)` でパディング枠 index を弾く（`Fr::ZERO` センサネル走査は不採用）。
+  - `test_from_leaves` / `test_root`: 同一葉16枚 `hash_leaf(Fr::from(1), Fr::from(2))` → `from_leaves(_, 4)` → 手計算 a→b→c→d→e と `layers.last()[0]` / `root()` の一致
+  - `test_proof_verify`: 葉7枚 `hash_leaf(Fr::from(i), Fr::from(1))` → 全 index で `verify_proof` roundtrip ＋ 非メンバー / depth 不一致で `false`
+  - ⚠️ これらは**自己整合テスト**。**回路 root との突き合わせは未実施** → 次にやると Rust ⇔ circom の一致を保証できて価値大:
+    - A: `MEMBERS` → `from_leaves(leaves, 4)` → `root() == 17396252…816`（`examples/test_poseidon.rs` と同じ既知ベクタ）
+    - B: `circuits/input.json`（`TARGET_INDEX=2`）の `pathIndices [0,1,0,0]` / `siblings` と `tree.proof(2)` の突き合わせ（`.1` が `[false,true,false,false]`、`.0` が siblings、`layers[0][2]` が `input.json` の `leaf`）← `proof()` 順序の決定的検証
+- [ ] **次2（ビルド赤の最後）**: `src/main.rs` の3行を新 API へ。
+  - `L17`: `let s:[u8;32]=rng.random(); Fr::from_le_bytes_mod_order(&s)`（`use ark_ff::PrimeField`、確定判断#2）で secret/salt → `hash_leaf(secret, salt)` の値渡し
+  - `L19`: `from_leaves(leaves.to_vec())` → `from_leaves(leaves, 4)`
+  - `L22`: `hash_leaf(b"abc")` → `Fr` 2引数のダミーに
+  - 直後: `cargo test` が proof 2 + merkle 3 = 5本緑、`cargo run` で root と `verify=true`
+- [ ] CLI の Merkle root（`src/merkle.rs` 由来）を回路入力（`build_circuit` / `circuits/input.json`）に接続。今は別物（CLI の木は乱数メンバー、回路は `input.json` 固定）。
 
 ### 既知の小物
 
@@ -86,10 +93,9 @@ Rust 側:
 
 ```bash
 cd ..            # クレートルート（cargo test の cwd が相対パス circuits/... の前提）
-cargo test       # ※ a8d5abc 時点ではビルド赤（main.rs / merkle テストが旧 API）。
-                 #   TODO「次1・次2」を片付けると緑（proof 2 + merkle 3 想定）
-cargo run --example test_poseidon   # Poseidon ゲートは単体で緑（回路 root を再現）
-cargo run        # 上記 TODO 完了後: メンバー生成→Merkle→setup→prove→verify、root と verify=true
+cargo test       # ※ まだビルド赤（main.rs の3行が旧 API）。「次2」を片付けると緑（proof 2 + merkle 3）
+cargo run --example test_poseidon   # Poseidon ゲートは単体で緑（回路 root 17396…816 を再現）
+cargo run        # 「次2」完了後: メンバー生成→Merkle→setup→prove→verify、root と verify=true
 ```
 
 ### git 管理の方針（2026-09-08 整理済み）

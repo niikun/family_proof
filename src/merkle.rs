@@ -22,20 +22,22 @@ pub fn hash_pair(left: &Hash, right: &Hash) -> Hash {
 #[derive(Debug, Clone, PartialEq)]
 pub struct MerkleTree {
     pub layers: Vec<Vec<Hash>>,
+    n_leaves: usize,
 }
 
 impl MerkleTree {
     pub fn from_leaves(leaves:Vec<Hash>, levels: usize) -> Self {
         assert!(!leaves.is_empty(),"leaves must not be empty");
-        assert!(leaves.len() <= 1 << levels, "leaves length must be less than or equal to 2^levels");
+        assert!(leaves.len() <= (1 << levels), "leaves length must be less than or equal to 2^levels");
         let mut leaves = leaves;
+        let n_leaves = leaves.len();
         let mut leaves_len = leaves.len();
         let mut results = Vec::new();
         let rest = (1 << levels) - leaves_len;
         for _ in 0..rest{
             leaves.push(EMPTY_HASH);
-            leaves_len = leaves.len();
         }
+        leaves_len = leaves.len();
         results.push(leaves.clone());
         while leaves_len > 1 {
             let mut result = Vec::new();
@@ -46,7 +48,7 @@ impl MerkleTree {
             leaves = result;
             leaves_len = leaves.len();
         }   
-    return MerkleTree{layers:results};
+    return MerkleTree{layers:results, n_leaves:n_leaves};
     }
 
     pub fn root(&self) -> Hash {
@@ -65,14 +67,11 @@ impl MerkleTree {
     /// # Returns
     /// 葉に近い層から順に `(相方のハッシュ, 自分が右の子か)` を並べた `Vec`。
      pub fn proof(&self, index: usize) -> Vec<(Hash, bool)> {
-        assert!(index < self.layers[0].len());
+        assert!(index < self.n_leaves);
         let mut result = Vec::new();
         let mut index = index;
         for i in 0..self.layers.len()-1{
-            let mut layer = self.layers[i].clone();
-            if layer.len() % 2 == 1{
-                layer.push(EMPTY_HASH);
-            }
+            let layer = &self.layers[i];
             let is_right = index % 2 == 1;
             if index % 2 == 1{
                 result.push((layer[index - 1],is_right))
@@ -117,42 +116,42 @@ mod tests {
 
     #[test]
     fn test_from_leaves(){
-        let leaves = vec![hash_leaf(b"abc");6];
-        let tree1 = MerkleTree::from_leaves(leaves);
-        let a = hash_leaf(b"abc");
+        let leaves = vec![hash_leaf(Fr::from(1u64), Fr::from(2u64));16];
+        let tree1 = MerkleTree::from_leaves(leaves,4);
+        let a = hash_leaf(Fr::from(1u64),Fr::from(2u64));
         let b = hash_pair(&a,&a);
         let c = hash_pair(&b,&b);
-        let e = hash_pair(&b, &EMPTY_HASH);
-        let d = hash_pair(&c,&e);
-        // let d = hash_pair(&c, &c);
+        let d = hash_pair(&c,&c);
+        let e = hash_pair(&d,&d);
+
         println!("{:?}",tree1);
-        assert_eq!(tree1.layers.last().unwrap()[0],d);
+        assert_eq!(tree1.layers.last().unwrap()[0],e);
     }
     #[test]
     fn test_root(){
-        let leaves = vec![hash_leaf(b"abc");6];
-        let tree1 = MerkleTree::from_leaves(leaves);
-        let a = hash_leaf(b"abc");
+        let leaves = vec![hash_leaf(Fr::from(1u64), Fr::from(2u64));16];
+        let tree1 = MerkleTree::from_leaves(leaves, 4);
+        let a = hash_leaf(Fr::from(1u64),Fr::from(2u64));
         let b = hash_pair(&a,&a);
         let c = hash_pair(&b,&b);
-        let e = hash_pair(&b, &EMPTY_HASH);
-        let d = hash_pair(&c,&e);
+        let d = hash_pair(&c,&c);
+        let e = hash_pair(&d,&d);
         println!("{:?}",tree1);
-        assert_eq!(tree1.root(),d);
+        assert_eq!(tree1.root(),e);
     }
 
     #[test]
     fn test_proof_verify(){
         let mut leaves = Vec::new();
         for i in 0..7 {
-            leaves.push(hash_leaf(format!("{}",i).as_bytes()));
+            leaves.push(hash_leaf(Fr::from(i as u64),Fr::from(1u64)));
         }
-        let tree = MerkleTree::from_leaves(leaves.clone());
+        let tree = MerkleTree::from_leaves(leaves.clone(),4);
         for i in 0..7{
             assert!(verify_proof(leaves[i], tree.proof(i),tree.depth(),tree.root()))
         }
-        assert!(!verify_proof(hash_leaf(b"out"),tree.proof(0),tree.depth(), tree.root()));
-        assert!(!verify_proof(hash_leaf(b"out"),tree.proof(1),1, tree.root()));
+        assert!(!verify_proof(hash_leaf(Fr::from(120u64),Fr::from(9u64)),tree.proof(0),tree.depth(), tree.root()));
+        assert!(!verify_proof(hash_leaf(Fr::from(100u64),Fr::from(10u64)),tree.proof(1),1, tree.root()));
     }
 
 }
