@@ -1,17 +1,17 @@
 # HANDOFF — 別PCへの引き継ぎ
 
-最終更新: 2026-09-09 / ブランチ: `main` / remote: `git@github.com:niikun/family_proof.git`
+最終更新: 2026-09-10 / ブランチ: `main` / remote: `git@github.com:niikun/family_proof.git` / 同期: `0d063dd`（`origin/main` と一致・作業ツリー clean）
 
 ## いまどこ
 
-ロードマップ（[SPEC.md](SPEC.md) §7）で **Step 0・1・2 完了、Step 3 着手（witness 生成まで動作）**。全体 ≈ 30%。
+ロードマップ（[SPEC.md](SPEC.md) §7）で **Step 0・1・2 完了、Step 3 ほぼ完了（Rust から Groth16 setup/prove/verify + CLI 疎通まで動作）**。全体 ≈ 40%。
 
 | Step | 状態 |
 |---|---|
 | 0 Rust Merkle 骨格（ZKなし） | ✅ `cargo test` |
 | 1 circom サンプル写経・compile→prove→verify | ✅ WSL でも全パイプライン疎通 |
 | 2 MVP 回路を自ユースケースへ | ✅ circom 側 done / Rust パディングを `EMPTY_HASH` 固定に（commit `9c52de4`） |
-| 3 `ark-circom` で Rust から proof 生成・検証 | 🟡 着手。`src/proof.rs` `build_witness()` が r1cs+wasm を読んで witness 計算 → public inputs 取得、`test_build_witness` 緑。proof 生成・検証はこれから |
+| 3 `ark-circom` で Rust から proof 生成・検証 | 🟢 ほぼ完了（`0d063dd`）。`src/proof.rs` に `build_circuit()` / `setup()` / `prove()` / `verify()` 実装、`test_prove_verify` 緑（正proof通過・root改竄で失敗）。`src/main.rs` で setup→prove→verify を一連実行。残: merkle.rs の Poseidon 化・固定深さ化（下記 TODO） |
 | 4 RLN（§6.2） | ⬜ |
 | 5 デモ UI | ⬜ |
 | 6 on-chain（+ World ID ゲート） | ⬜ |
@@ -29,7 +29,7 @@
 
 ## 切り替え時のルール
 
-現在は全部コミット済み・`origin/main` と同期（`d34270f`）、作業ツリー clean。
+現在は全部コミット済み・`origin/main` と同期（`0d063dd`）、作業ツリー clean。
 別PCでは `git pull` すればそのまま続きから入れる。
 
 中断して別PCに移るときは毎回: `git status` で未コミットが無いか確認 → あれば
@@ -41,20 +41,25 @@
 ### Step 3（いまここ・次の本丸）
 
 - [x] `ark-circom` / `color-eyre` を `Cargo.toml` に追加。
-- [x] `src/proof.rs` `build_witness()` — `circuits/main.r1cs` と `circuits/main_js/main.wasm` を読み、`circuits/input.json` を入力に witness 計算 → `get_public_inputs()`。`test_build_witness` で root の期待値一致を確認。
+- [x] `src/proof.rs` `build_circuit()` — `circuits/main.r1cs` と `circuits/main_js/main.wasm` を読み、`circuits/input.json` を入力に witness 計算 → `get_public_inputs()`。`test_build_circuit` で root の期待値一致を確認。
   - ※ テストの `#[cfg(test)]`（`tests` ではない）と、`cargo test` の cwd がクレートルート＝相対パス `circuits/...` が実在すること前提。
-- [ ] **次**: `build_witness()` を伸ばして Groth16 proof 生成・検証まで。関数を `setup() -> pk` / `prove(pk) -> (proof, public_inputs)` / `verify(vk, public_inputs, proof) -> bool` に分ける。
-  - arkworks 側で鍵生成する場合: `Groth16::<Bn254>::generate_random_parameters_with_reduction(circom.clone(), &mut rng)` → `create_random_proof_with_reduction(circom, &pk, &mut rng)` → `process_vk` + `verify_with_processed_vk`。
-  - API 名は ark-groth16 0.6 で変わっている可能性あり。docs.rs で `Groth16` trait を要確認。
-  - 既存の trusted setup（`circuits/main_final.zkey`）を使うなら `ark_circom::read_zkey` に寄せる判断（デモは arkworks 生成で可）。
-- [ ] Rust CLI から「オンボーディング（`(secret,salt)` 生成 → Merkle Tree → root）」→「proof 生成」→「検証」を一連で実行できる状態に。
-- [ ] `src/merkle.rs` の `hash_leaf`/`hash_pair` は現状 **SHA-256**。回路と一致させるため Poseidon に差し替える（arkworks 系の Poseidon、パラメータを circomlib と合わせる必要あり — ここは要調査）。
+- [x] **Groth16 proof 生成・検証**（`0d063dd`）。`setup(circuit, rng) -> (ProvingKey, PreparedVerifyingKey)` / `prove(pk, circuit, rng) -> (Proof, Vec<Fr>)` / `verify(pvk, public_inputs, proof) -> bool` に分割。
+  - 実装は arkworks 0.6 系: `Groth16::<Bn254>::circuit_specific_setup` → `process_vk` → `Groth16::prove` → `verify_with_processed_vk`。
+  - `test_prove_verify` 緑（正 proof 通過 / `pubs[0]`（root）を +1 すると検証失敗）。
+  - デモは arkworks 生成鍵で確定。既存 `circuits/main_final.zkey` の `read_zkey` 取り込みは不採用（必要なら Step 6 で再検討）。
+- [x] Rust CLI（`src/main.rs`）で「メンバー生成 → Merkle Tree → root」→ `build_circuit` → `setup` → `prove` → `verify` を一連実行し root と検証結果を出力。
+  - ※ 現状 CLI の Merkle 部分は `src/merkle.rs`（SHA-256）で、回路が使う root（`circuits/input.json` 由来の Poseidon root）とは別物。Poseidon 化（下記）で統合する。
+- [x] **Poseidon クレート選定＋ゲート**。`pso-poseidon` 0.4（arkworks 0.6 対応・light-poseidon の fork・`Poseidon::<Fr>::new_circom(n)`）を採用。`light-poseidon` 本体は arkworks 0.5 固定でプロジェクト全体の巻き戻しが要るため不採用。`examples/test_poseidon.rs` で `build_input.js` の `MEMBERS` から 16枚・4レベルの木を組み、root が `proof.rs::test_build_circuit` の期待値（`17396252…816`）＋ `input.json` の `leaf` 値に一致することを確認済み（`cargo run --example test_poseidon`）。circom 既知ベクタ `poseidon([1])` / `poseidon([1,2])` とも一致。
+  - 対応: leaf = `new_circom(3).hash(&[Fr::ZERO, secret, salt])`（先頭 0 はドメインタグ、circom の `Poseidon([0,secret,salt])` と同一 state）。節 = `new_circom(2).hash(&[L, R])`。`hash(&mut self)` は毎回 `state.clear()` するのでインスタンス使い回し可。
+- [ ] `src/merkle.rs` の `hash_leaf`/`hash_pair` を SHA-256 → `pso-poseidon` に差し替え。`type Hash = Fr`（案A、確定）。`EMPTY_HASH` は `Fr::ZERO`（`use ark_ff::AdditiveGroup`）。`hash_leaf` シグネチャは `(&[u8])` → `(secret: Fr, salt: Fr) -> Fr`。テストは `examples/test_poseidon.rs` のクロスチェックを取り込む形に。
 - [ ] `from_leaves` を固定深さ版（`from_leaves(leaves, levels)`、`1<<levels` まで `EMPTY_HASH` 埋め）に。回路の `nLevels=4` と合わせる。→ この変更時に「固定深さ＋固定パディングで N/N+1 衝突が消えること」「`EMPTY_HASH` が実 leaf と衝突しないこと」を再点検。
+- [ ] `src/main.rs`: `[u8;32]` 乱数 → `Fr::from_le_bytes_mod_order`（確定判断#2）で secret/salt を作り、`hash_leaf(secret, salt)` へ。CLI の root を回路入力に接続。
 
 ### 既知の小物
 
-- [ ] `src/main.rs` `for i in 0..FAMILY_MEMBERS` の `i` 未使用 warning（`_i` か `for _ in`）。
-- [ ] `src/proof.rs:1` `use ark_bn254::{Bn254, Fr}` の `Bn254` 未使用 warning（proof/verify を書くとき使うなら残す）。
+- [x] `src/main.rs` の `i` 未使用 warning → `for _ in` で解消。
+- [x] `src/proof.rs:1` `Bn254` 未使用 warning → proof/verify で使用中のため解消。
+- [x] `src/proof.rs` 末尾の `build_witness()` コメントアウト残骸を削除。
 - [ ] Step 6 に World ID 統合のサブタスクを明記（SPEC §7 に無い）: オンボーディング UI に IDKit、Registry のメンバー登録で World ID nullifier をオンチェーン検証してから leaf 追加。
 
 ## 別PCでの再開手順
@@ -74,7 +79,8 @@ Rust 側:
 
 ```bash
 cd ..            # クレートルート（cargo test の cwd が相対パス circuits/... の前提）
-cargo test       # 初回は ark-circom のビルドで ~30秒。proof::test::test_build_witness が緑なら Step 3 の土台OK
+cargo test       # 初回は ark-circom のビルドで ~30秒。5 tests 緑（merkle 3 + proof::test::test_build_circuit / test_prove_verify）なら Step 3 の土台OK
+cargo run        # メンバー生成→Merkle→setup→prove→verify を実行、root と verify=true を出力
 ```
 
 ### git 管理の方針（2026-09-08 整理済み）

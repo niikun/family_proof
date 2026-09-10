@@ -36,10 +36,6 @@ pub fn verify(pvk: &PreparedVerifyingKey<Bn254>, public_inputs: &[Fr], proof: &P
     Ok(Groth16::<Bn254>::verify_with_processed_vk(pvk, public_inputs, proof)?)
 }
 
-// pub fn build_witness() -> color_eyre::Result<Vec<Fr>> {
-    
-// }
-
 #[cfg(test)]
 mod test{
     use super::*;
