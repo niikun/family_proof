@@ -1,3 +1,4 @@
+use ark_circom::{CircomBuilder, CircomConfig,CircomCircuit};
 use rand::RngExt;
 use ark_bn254::Fr;
 use ark_std::rand::{rngs::StdRng, SeedableRng};
@@ -23,22 +24,28 @@ fn main() ->color_eyre::Result<()>{
     let depth = tree.depth();
     let root = tree.root();
     let not_member = merkle::hash_leaf(Fr::from(999u64), Fr::from(999u64));
-        
+    let mut std_rng = StdRng::seed_from_u64(42);
+    let setup_circuit = proof::build_setup_circuit()?;
+    let (pk, pvk) = proof::setup(setup_circuit, &mut std_rng)?;
     for i in 0..leaves.len(){
         let proof = tree.proof(i);
+        let mut siblings:Vec<Fr> = Vec::new();
+        let mut path_indices:Vec<bool> = Vec::new();
+        proof.iter().for_each(|(s,p)| {
+            siblings.push(*s);
+            path_indices.push(*p);
+        });
+        let circuit = proof::build_circuit_with_inputs(leaves[i], &path_indices, &siblings)?;
+        let (pf, pubs) = proof::prove(&pk, circuit, &mut std_rng)?;
+        assert_eq!(pubs[0], root);
+        let ok = proof::verify(&pvk, &pubs, &pf)?;
+        println!("verify = {}", ok);
+        
         let verify =merkle::verify_proof(leaves[i], proof.clone(), depth, root);
         assert!(verify);
         let verify2 = merkle::verify_proof(not_member, proof, depth, root);
         assert!(!verify2);
     }
-    
-    let mut std_rng = StdRng::seed_from_u64(42);
-    let circuit = proof::build_circuit()?;
-    let (pk, pvk) = proof::setup(circuit.clone(), &mut std_rng)?;
-    let (pf, pubs) = proof::prove(&pk, circuit, &mut std_rng)?;
-    let ok = proof::verify(&pvk, &pubs, &pf)?;
-    println!("verify = {}", ok);
-    
-
     Ok(())
 }
+

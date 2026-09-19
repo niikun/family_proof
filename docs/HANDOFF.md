@@ -1,21 +1,21 @@
 # HANDOFF — 別PCへの引き継ぎ
 
-最終更新: 2026-09-11 / ブランチ: `main` / remote: `git@github.com:niikun/family_proof.git` / 同期: **`src/main.rs` が未コミット（`M`）**。`git add src/main.rs && git commit && git push` で `origin/main` と一致させる
+最終更新: 2026-09-19 / ブランチ: `main` / remote: `git@github.com:niikun/family_proof.git` / 同期: **未コミットあり（`Cargo.toml` `Cargo.lock` `src/main.rs` `src/merkle.rs` `src/proof.rs`）**。`git add -A && git commit && git push` で `origin/main` と一致させる
 
-> ✅ **ビルド緑**。`src/main.rs` の3行を新 API へ移行済（`[u8;32]` → `Fr::from_le_bytes_mod_order` → 値渡し / `from_leaves(leaves, 4)` / ダミー非メンバーを `Fr` 2引数に）。`cargo test` = 5本緑（proof 2 + merkle 3）、`cargo run` で `root = 17396…816` / `verify = true`。
-> 次は「Rust ⇔ circom 一致テスト2本（残タスク 次1）」→「CLI の Merkle root を回路入力へ接続（残タスク 次2）」。
+> ✅ **Step 3 完了**。「次2」完了: CLI で組んだ乱数メンバーの木の `leaf`/`proof()` を `CircomBuilder::push_input` で直接回路に投入し、`assert_eq!(pubs[0], root)` で回路の public root が CLI の `tree.root()` と一致することを実証。Groth16 の `setup` も 7 回 → **1回**（`build_setup_circuit` / witness なしの `CircomCircuit`）に整理。`cargo test` 7本緑、`cargo run` で7メンバー全員 `verify = true`。
+> **5連休（2026-09-19〜）でラストスパート。次は Step 4 = RLN の回路実装（§6.2）から。**
 
 ## いまどこ
 
-ロードマップ（[SPEC.md](SPEC.md) §7）で **Step 0・1・2 完了、Step 3 ほぼ完了（Rust から Groth16 setup/prove/verify + CLI 一連実行が動作、ビルド緑）**。全体 ≈ 42%。
+ロードマップ（[SPEC.md](SPEC.md) §7）で **Step 0〜3 完了**。全体 ≈ 50%。
 
 | Step | 状態 |
 |---|---|
 | 0 Rust Merkle 骨格（ZKなし） | ✅ `cargo test` |
 | 1 circom サンプル写経・compile→prove→verify | ✅ WSL でも全パイプライン疎通 |
 | 2 MVP 回路を自ユースケースへ | ✅ circom 側 done / Rust パディングを `EMPTY_HASH` 固定に（commit `9c52de4`） |
-| 3 `ark-circom` で Rust から proof 生成・検証 | 🟢 95%。proof.rs setup/prove/verify 緑、merkle.rs Poseidon 化・固定深さ化・main.rs 新 API 移行済で**ビルド緑・test 5本緑**。**残: (a) Rust⇔circom 一致テスト2本＝残タスク 次1 (b) CLI root を回路入力へ接続＝残タスク 次2** |
-| 4 RLN（§6.2） | ⬜ |
+| 3 `ark-circom` で Rust から proof 生成・検証 | ✅ **完了**（2026-09-19）。CLI の Merkle root が回路の public root と一致することまで実証済み。詳細は下記「次2」 |
+| 4 RLN（§6.2） | ⬜ **いまここ** |
 | 5 デモ UI | ⬜ |
 | 6 on-chain（+ World ID ゲート） | ⬜ |
 
@@ -32,7 +32,7 @@
 
 ## 切り替え時のルール
 
-`src/main.rs` が未コミット（新 API 移行、ビルド緑）。本ファイルと一緒に commit / push すれば `origin/main` と一致。
+`src/merkle.rs` が未コミット（一致テスト2本追加、ビルド緑・warning 0）。本ファイルと一緒に commit / push すれば `origin/main` と一致。
 別PCでは `git pull` すればそのまま続きから入れる。
 
 中断して別PCに移るときは毎回: `git status` で未コミットが無いか確認 → あれば
@@ -64,10 +64,10 @@
 - [x] **済（未コミット）**: `src/main.rs` の3行を新 API へ。`let se:[u8;32]=rng.random(); Fr::from_le_bytes_mod_order(&se)`（`use ark_ff::PrimeField`、確定判断#2）で secret/salt → `hash_leaf(secret, salt)` 値渡し / `from_leaves(leaves.clone(), 4)` / 非メンバーは `hash_leaf(Fr::from(999u64), Fr::from(999u64))`。`cargo test` 5本緑、`cargo run` で `root=17396…816` / `verify=true`。
   - ⚠️ `cargo run` が出す `root` は `build_circuit()` が読む**固定 `circuits/input.json` 由来**であって、直前に組んだ乱数メンバーの木の root ではない（値が既知ベクタと同じなのは input.json がその5メンバー固定だから）。両者は未接続 → 「次2」で解消。
   - 小物 warning: `src/proof.rs:5` `SeedableRng` / `:6` `std::str::FromStr` が非テストビルドで未使用。`#[cfg(test)] mod test` 内へ `use` を移すと消える。
-- [ ] **次1**: Rust ⇔ circom 一致テストを [merkle.rs](../src/merkle.rs) の `#[cfg(test)]` に2本追加（`examples/test_poseidon.rs` / `circuits/input.json` と同じ5メンバー `("101","9001")…("105","9005")`、`from_leaves(_, 4)` で 16 枚まで `EMPTY_HASH` 埋め）。テストモジュールに 5 leaf を作るヘルパー1本（`Fr::from_str`、`use core::str::FromStr`）。
-  - **A（root 一致）**: `from_leaves(members, 4)` → `root() == Fr::from_str("17396252260025783793058854431926620863655419045074533465745990270806947938816")`。`test_poseidon.rs` は独自ループ実装なので `from_leaves` 経由での突き合わせは別価値。
-  - **B（proof 順序）**: `tree.proof(2)` を分解 — `layers[0][2] == input.json.leaf`（`8748591…412`）／ `.1` 列 `== [false,true,false,false]`（= `pathIndices ["0","1","0","0"]`）／ `.0` 列 `== input.json.siblings[k]` 4本。→ `proof()` の並び順（葉に近い層から・sibling の左右）が circom 規約と一致することの決定的検証。回路に食わせる proof を Rust で組める前提が固まる。
-  - 確認: `cargo test` 7本緑（proof 2 + merkle 5）。
+- [x] **済（未コミット）**: Rust ⇔ circom 一致テストを [merkle.rs](../src/merkle.rs) の `#[cfg(test)]` に2本追加。`examples/test_poseidon.rs` / `circuits/input.json` と同じ5メンバー `("101","9001")…("105","9005")`、`from_leaves(_, 4)` で 16 枚まで `EMPTY_HASH` 埋め。
+  - **`test_verify_circom_root`（A: root 一致）**: `from_leaves(members, 4).root() == Fr::from_str("17396252260025783793058854431926620863655419045074533465745990270806947938816")`。`test_poseidon.rs` は独自ループ実装なので `from_leaves` 経由での突き合わせは別価値。
+  - **`test_verify_circom_proof`（B: proof 順序）**: `input.json`（`TARGET_INDEX=2`）の `pathIndices`/`siblings` から手組みした `proof: Vec<(Hash,bool)>` で `verify_proof` が通ることに加え、**`assert_eq!(tree.proof(2), proof)`** で `MerkleTree::proof()` の実出力そのものが circom 規約と一致することも直接検証（最初のドラフトはここが抜けていて指摘・修正済み）。
+  - `cargo test` 7本緑（proof 2 + merkle 5）、warning 0（`mem` 未使用 import と `pathIndices` snake_case も解消）。
 - [ ] **次2**: CLI の Merkle root（[main.rs](../src/main.rs) の乱数メンバーの木）を回路入力（`build_circuit` / `circuits/input.json`）に接続。今は別物。Rust でメンバー生成 → その leaf/root/proof で `input.json` を書く（or `CircomBuilder` へ直接投入）→ その root に対して prove、が Step 3 の本当の完了。
 
 ### 既知の小物
@@ -95,7 +95,7 @@ Rust 側:
 
 ```bash
 cd ..            # クレートルート（cargo test の cwd が相対パス circuits/... の前提）
-cargo test       # ビルド緑・5本パス（proof 2 + merkle 3）。「次1」追加で 7本
+cargo test       # ビルド緑・7本パス（proof 2 + merkle 5）、warning 0
 cargo run --example test_poseidon   # Poseidon ゲートは単体で緑（回路 root 17396…816 を再現）
 cargo run        # メンバー生成→Merkle→setup→prove→verify、root（input.json 由来）と verify=true
 ```

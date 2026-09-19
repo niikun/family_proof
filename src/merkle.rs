@@ -66,7 +66,7 @@ impl MerkleTree {
     ///
     /// # Returns
     /// 葉に近い層から順に `(相方のハッシュ, 自分が右の子か)` を並べた `Vec`。
-     pub fn proof(&self, index: usize) -> Vec<(Hash, bool)> {
+    pub fn proof(&self, index: usize) -> Vec<(Hash, bool)> {
         assert!(index < self.n_leaves);
         let mut result = Vec::new();
         let mut index = index;
@@ -112,7 +112,7 @@ pub fn verify_proof(leaf: Hash, proof: Vec<(Hash, bool)>, depth: usize, root: Ha
 
 #[cfg(test)]
 mod tests {
-    use std::{mem, str::FromStr};
+    use std::str::FromStr;
 
 use super::*;
 
@@ -189,7 +189,7 @@ use super::*;
             .collect::<Vec<Hash>>();
         let tree = MerkleTree::from_leaves(members,4);
  
-        let pathIndices =  [false, true, false, false];
+        let path_indices =  [false, true, false, false];
         let siblings = vec![
             "9659870212506288761207542833352405900702434646258502428628049820350215833673",
             "19506839161229292239108927058367003701366519444600114356109755673703281089538",
@@ -199,10 +199,12 @@ use super::*;
 
         let proof = siblings.iter()
             .map(|s| Fr::from_str(s).unwrap())
-            .zip(pathIndices.iter().cloned())
+            .zip(path_indices.iter().cloned())
             .collect::<Vec<(Hash,bool)>>();
         let leaf = hash_leaf(Fr::from_str("103").unwrap(), Fr::from_str("9003").unwrap());
 
-        assert!(verify_proof(leaf, proof, tree.depth(), tree.root()));
+        assert!(verify_proof(leaf, proof.clone(), tree.depth(), tree.root()));
+        assert_eq!(tree.proof(2), proof);
+
     }
 }

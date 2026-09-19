@@ -1,9 +1,11 @@
+
 use ark_bn254::{Bn254, Fr};
 use ark_circom::{CircomCircuit, CircomConfig, CircomBuilder};
 use ark_groth16::{Groth16, Proof, ProvingKey, PreparedVerifyingKey};
 use ark_snark::SNARK;
-use ark_std::rand::{rngs::StdRng, SeedableRng};
-use std::str::FromStr ;
+use ark_std::rand::rngs::StdRng;
+use ark_ff::PrimeField;
+
 
 pub fn build_circuit() -> color_eyre::Result<CircomCircuit<Fr>>{
     let cfg = CircomConfig::<Fr>::new(
@@ -15,6 +17,23 @@ pub fn build_circuit() -> color_eyre::Result<CircomCircuit<Fr>>{
     Ok(builder.build()?)
 }
 
+pub fn build_circuit_with_inputs(
+    leaf: Fr,
+    path_indices: &[bool],
+    siblings: &[Fr],
+) -> color_eyre::Result<CircomCircuit<Fr>>{
+   let cfg = CircomConfig::<Fr>::new(
+        "circuits/main_js/main.wasm",
+        "circuits/main.r1cs",
+    )?;
+    let mut builder = CircomBuilder::new(cfg);
+    builder.push_input("leaf", leaf.into_bigint());
+    for i in 0..4 {
+        builder.push_input("pathIndices",path_indices[i] as u64);
+        builder.push_input("siblings", siblings[i].into_bigint());
+    }
+    Ok(builder.build()?)
+}
 
 pub fn setup(circuit: CircomCircuit<Fr>, rng: &mut StdRng)
     -> color_eyre::Result<(ProvingKey<Bn254>, PreparedVerifyingKey<Bn254>)>{
@@ -22,6 +41,16 @@ pub fn setup(circuit: CircomCircuit<Fr>, rng: &mut StdRng)
     let prepared_verifying_key = Groth16::<Bn254>::process_vk(&vk)?;
     color_eyre::Result::Ok((pk, prepared_verifying_key))
     }
+
+
+pub fn build_setup_circuit() -> color_eyre::Result<CircomCircuit<Fr>>{
+    let cfg = CircomConfig::<Fr>::new(
+        "circuits/main_js/main.wasm",
+        "circuits/main.r1cs",
+    )?;
+    let builder = CircomBuilder::new(cfg);
+    Ok(builder.setup())
+}
 
 pub fn prove(pk: &ProvingKey<Bn254>, circuit: CircomCircuit<Fr>, rng: &mut StdRng)
     -> color_eyre::Result<(Proof<Bn254>, Vec<Fr>)> {
@@ -39,6 +68,7 @@ pub fn verify(pvk: &PreparedVerifyingKey<Bn254>, public_inputs: &[Fr], proof: &P
 #[cfg(test)]
 mod test{
     use super::*;
+    use ark_std::rand::SeedableRng;
 
     #[test]
     fn test_build_circuit(){
