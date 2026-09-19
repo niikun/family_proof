@@ -30,8 +30,7 @@ fn main() ->color_eyre::Result<()>{
     let root = tree.root();
     let not_member = merkle::hash_leaf(Fr::from(999u64), Fr::from(999u64));
     let mut std_rng = StdRng::seed_from_u64(42);
-    let setup_circuit = proof::build_setup_circuit()?;
-    let (pk, pvk) = proof::setup(setup_circuit, &mut std_rng)?;
+    let (pk, pvk) = proof::setup()?;
     for i in 0..leaves.len(){
         let proof = tree.proof(i);
         let mut siblings:Vec<Fr> = Vec::new();

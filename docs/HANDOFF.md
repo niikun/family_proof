@@ -1,13 +1,22 @@
 # HANDOFF — 別PCへの引き継ぎ
 
-最終更新: 2026-09-19（Step 4 完了） / ブランチ: `main` / remote: `git@github.com:niikun/family_proof.git` / 同期: **未コミットあり（`Cargo.toml` `Cargo.lock` `circuits/input.json` `circuits/main.circom` `circuits/scripts/build_input.js` `docs/SPEC.md` `src/main.rs` `src/merkle.rs` `src/proof.rs`）**。`git add -A && git commit && git push` で `origin/main` と一致させる
+最終更新: 2026-09-19（Step 6 着手・Foundry環境構築） / ブランチ: `main` / remote: `git@github.com:niikun/family_proof.git` / 同期: **未コミットあり**（`Cargo.toml` `Cargo.lock` `circuits/*`（input.json/main.circom/build_input.js/新zkey一式/verifier.sol）`docs/SPEC.md` `src/*` `contracts/`（新規、Foundryプロジェクト）。`git add -A && git commit && git push` で `origin/main` と一致させる
 
-> ✅ **Step 4（RLN）完了**。`main.circom` に `epoch`/`challenge`/`a1`/`x`/`y`/`nullifier` を制約として実装、Rust 側は `secret`/`salt`/`epoch`/`challenge` を回路に渡す配線＋2点からの secret 復元（`proof::recover_secret`）まで実装・テスト済み。`cargo test` 8本緑。
-> **5連休（2026-09-19〜）でラストスパート、まだ Day1。次は Step 6（on-chain）— Day3終了ゲートに向けて先に進める。**
+> ✅ **Step 4（RLN）完了・Step 6 大きく進行**。`FamilyRegistry.sol` 実装＋ユニットテスト7本＋本物の証明データでの統合テスト（`forge test` 8本緑）に加え、**Rust側の鍵ミスマッチも解消**（`proof::setup()` が実際の `main_final.zkey` を読み込む形に、`prove()` は `CircomReduction` 指定に修正）。**これで Rust CLI が作る証明はそのまま on-chain の Verifier で検証できる状態になった**（`cargo test` 8本緑・`cargo run` 7人全員 `verify=true`）。残るは testnet デプロイと calldata 変換。
+> **⚠️ 重要: ETHGlobal Tokyo 2026 の日程・提出ルールが確定済み（下記参照）。この5連休の位置づけが変わったので必読。**
+
+## ⚠️ ETHGlobal Tokyo 2026 日程・提出ルール（2026-09-19 確認）
+
+- **イベント本体は 9/25〜27**。提出締切 **9/27 9:00 JST**、遅延提出不可。審査は7分（デモ4分＋Q&A3分）、基準は technicality / originality / practicality / UX / "WOW factor"
+- **Continuity Track での提出が必須**。"Classic From Scratch" はイベント開始後（9/25〜）に書いたコードのみが対象で、Step 0〜4（9/6〜9/19に実装済み）は対象外になってしまう → Continuity Track を選び、「イベント前からの既存部分」と「イベント中に新規に作った部分」を明確に書き分けて提出する
+- **AIツール利用ポリシー**: AI支援は許可されるが、人間の実質的な貢献を示しつつ明記が必要。[[no-writing-code]]（Claude はコーチのみ、コードは全部ユーザーが書く）の運用がそのままこの要件を満たす — README/提出文に明記すること
+- デモ動画（2〜4分、720p以上）は任意だが推奨。倍速・電話撮影・テキストのみ+音楽・AIナレーションは禁止
+
+**改訂後の進め方（2026-09-19時点の推奨）**: 今日から9/24（イベント前日）までを「Continuity Track の“既存部分”」の仕上げに使い、**Step 6 のコア（Verifier.sol / Registry / テストネットデプロイ）をここで完成させる**。**イベント本番（9/25〜27）は「期間中に新規に作った部分」として World ID 連携・Step 5 デモUI・統合・デモ動画・Continuity提出文の執筆に充てる。** これで「動くもの」と「イベント中に作った説得力のあるストーリー」の両方を確保する。
 
 ## いまどこ
 
-ロードマップ（[SPEC.md](SPEC.md) §7）で **Step 0〜4 完了**。全体 ≈ 73%。
+ロードマップ（[SPEC.md](SPEC.md) §7）で **Step 0〜4 完了、Step 6 進行中**。全体 ≈ 76%（ウェイト: 0=5/1=5/2=7/3=13/4=25/5=15/6=30、Step6は現在≈70%進捗）。
 
 | Step | 状態 |
 |---|---|
@@ -16,10 +25,20 @@
 | 2 MVP 回路を自ユースケースへ | ✅ circom 側 done / Rust パディングを `EMPTY_HASH` 固定に（commit `9c52de4`） |
 | 3 `ark-circom` で Rust から proof 生成・検証 | ✅ **完了**。CLI の Merkle root が回路の public root と一致することまで実証済み |
 | 4 RLN（§6.2） | ✅ **完了**（2026-09-19）。回路実装・Rust配線・2点復元テストまで完走。詳細は下記「Step 4」節 |
-| 5 デモ UI | ⬜ |
-| 6 on-chain（+ World ID ゲート） | ⬜ **次はここ** |
+| 5 デモ UI | ⬜ **イベント本番（9/25〜27）に着手する方針** |
+| 6 on-chain（+ World ID ゲート） | 🟡 **進行中（≈70%）**。Verifier/Registry/ユニットテスト/本物データでの統合テスト/Rust鍵統一まで済み。**残: testnetデプロイ・calldata変換**。詳細は下記「Step 6」節 |
 
-**スコープ方針（2026-09-19 更新）**: 5連休が実質ラストチャンスのため、Must = Step 4 RLN → Step 6 on-chain（Verifier.sol + Registry + testnet デプロイ）→ Step 5 最小デモ（CLI可）。Should = World ID（IDKit）。Cut候補 = ENS 名解決・levels=20拡張。Day3終了時点（on-chain まで動く状態）をゲートにし、遅れていたら World ID を切ってコア強化に回す。（2026-09-08 時点の「両方チャレンジ」から更新）
+**スコープ方針（2026-09-19 更新・再更新）**: Must = Step 4 RLN（済） → **Step 6 コア**（Verifier.sol + Registry + testnet デプロイ、9/19〜9/24中に完成させる） → イベント本番で Step 5 最小デモ + World ID 連携。Cut候補 = ENS 名解決・levels=20拡張。World ID は「Should」ではなく**イベント本番の目玉（下記 World ID 音声対策）**に格上げ — Step 6 コア完了後に着手する。
+
+## 🆕 第2の差別化ポイント: World ID live-challenge による AI音声クローン対策（2026-09-19 採用、"Option A"）
+
+RLN（盗んだ secret の使い回し検知）と**脅威モデルを分離**。RLN が防げない攻撃 — 攻撃者が secret を知らずとも AI で声をクローンしてなりすます攻撃 — をこちらで防ぐ。「家族の合言葉」という定番の詐欺対策を、暗号的に堅牢な形にする、というピッチ。
+
+- **絶対に守る設計制約**: RLN の `challenge`/`epoch` を、この生の合言葉に**流用しない**。流用すると、正規メンバーが同一 epoch 内に別々の合言葉で2回正規の通話をしただけで RLN の自己暴露が発動し、secret が漏れてしまう。**完全に分離**すること — 合言葉は World ID の `signal` フィールド（`signal = hash(code)`）にのみ紐付ける。circom 側の変更は不要
+- **検証は on-chain ではなく off-chain**。通話中にブロック確定を待つのは非現実的。フロー: 親が合言葉を読み上げる → 子の端末が (a) `signal=hash(code)` の World ID proof と (b) いつもの RLN proof（別物）を作成 → 親の端末が両方を off-chain 検証し、FamilyProof 側の結果は on-chain Registry の状態（現在の root・失効状況）と突き合わせる。Registry が唯一の正本、通話中の検証はそれに対する高速な off-chain チェック
+- World ID には実機 Orb 不要の Simulator/staging モードがある → デモは親子2役のブラウザ mini-app で十分（電話回線は不要）
+- スコープリスク: これまで Rust + circom + Solidity だけだったスタックに JS/Web フロントエンド（IDKit widget）が新たに加わる。**Step 6 コア完了後に着手**すること
+- 競合調査（2026-09-19時点）: ZK × World ID をオレオレ詐欺対策に組み合わせた既存プロジェクトは見つからず、独自性は高そう
 
 ## 確定済みの設計判断（蒸し返さない）
 
@@ -93,6 +112,37 @@ SPEC §6.2 の式（`a1 = Poseidon(secret,epoch)` / `x = Poseidon(challenge)` / 
 - [x] **SPEC.md に epoch 鮮度チェックの注記を追加**（§6.2）。回路は「今が何時か」を知らないので `epoch` は prover 自己申告の public input に過ぎない。検証側（Step 6 の Registry）で `epoch == floor(block.timestamp/3600)` 相当のチェックが必須。無いと (a) 古い証明のリプレイ (b) `epoch` を変え続けることで rate limit 自体を回避、が成立してしまう。**Step 6 の実装要件としてここに明記**。
 - [x] **SPEC.md §8 に量子耐性の既知の限界を追加**。Poseidon は Grover で二次的減衰のみ（実用上ほぼ影響なし）、Groth16/BN254 は Shor で理論上破られる（証明の正しさの根拠がここに依存）。量子耐性のある証明系への移行はスコープ外と明記。
 
+### Step 6（on-chain、進行中 — 2026-09-19着手）
+
+- [x] **Foundry 導入**。`curl -L https://foundry.paradigm.xyz | bash` → `foundryup` で `forge`/`cast`/`anvil` v1.8.3 インストール。**PATH は `~/.bashrc` に `export PATH="$PATH:$HOME/.foundry/bin"` を追記する必要あり**（まだ追記してなければ別PCでも同様に必要）。
+- [x] **[contracts/](../contracts) に Foundry プロジェクト新規作成**（`forge init contracts --no-git`、サンプルの `Counter.*` は削除済み）。
+- [x] **zkey/vkey/verifier.sol を RLN回路向けに作り直し**。旧鍵（9/8時点、RLN追加前）は無効なので `circuits/` で再実行:
+  ```
+  snarkjs groth16 setup main.r1cs pot12_final.ptau main_0000.zkey
+  snarkjs zkey contribute main_0000.zkey main_final.zkey --name="1st" -v
+  snarkjs zkey export verificationkey main_final.zkey verification_key.json
+  snarkjs zkey export solidityverifier main_final.zkey verifier.sol
+  ```
+  - `nPublic: 5`（root, y, nullifier, epoch, challenge）で想定通り。
+  - ⚠️ **制約数 4033 / pot12 上限 4096 でギリギリ**。今後回路を増やすなら `pot13` への引き上げが先に必要。
+  - `verifier.sol` → [contracts/src/Groth16Verifier.sol](../contracts/src/Groth16Verifier.sol) にコピー。`function verifyProof(uint[2] _pA, uint[2][2] _pB, uint[2] _pC, uint[5] _pubSignals) public view returns (bool)`。
+- [x] **`IGroth16Verifier.sol`**（interface）を追加。`FamilyRegistry` は具象型 `Groth16Verifier` ではなくこの interface 型で verifier を保持 — テストで Mock に差し替え可能にするため。
+- [x] **`FamilyRegistry.sol`** 実装（[contracts/src/FamilyRegistry.sol](../contracts/src/FamilyRegistry.sol)）。
+  - `familyRoot`（owner のみ `updateRoot()` で更新）
+  - `verifyMembership(pA,pB,pC,pubSignals)`: ① `pubSignals[0]==familyRoot` ② `pubSignals[3]==block.timestamp/1 hours`（epoch鮮度、SPEC §6.2 追記済みの穴の対策） ③ `verifier.verifyProof(...)` の3点を `require` → `seenNullifiers[nullifier]` を見て: 未登録なら記録、同一challengeなら `revert`（リプレイ拒否）、別challengeなら `PotentialLeak` イベント発行（`revert` はしない — その場の確認自体は成立させる。secret復元は on-chain ではやらない設計。下記参照）
+  - **secret 復元は on-chain ではやらない**: Poseidon を Solidity に実装するコストが高いため。on-chain は衝突検知とイベント発行まで、実際の復元計算（`x=Poseidon(challenge)`、`recover_secret`）は Rust 側（`proof.rs` に実装済み）に任せる off-chain 通知スクリプトの仕事にする
+  - **失効（revocation）は「leaf除外」ではなく「secret公開+イベント」までが on-chain の限界**: `secret` が復元できても `salt` は分からないので leaf を特定できない（確定判断#1の設計上の帰結）。実運用は「family admin がイベントを見て該当メンバーの secret/salt を再発行し、木を組み直して `updateRoot()`」という運用でカバーする
+- [x] **`contracts/test/FamilyRegistry.t.sol`** — Mock Verifier（常に `true`）を使ったユニットテスト7本、全緑（`forge test -vv`）: 初回証明成功 / 同一challengeリプレイでrevert / 別challengeで`PotentialLeak`発行 / root不一致でrevert / epoch不一致でrevert / **`updateRoot`をowner が呼べば成功＋`RootUpdated`発行 / owner以外が呼ぶとrevert**。
+  - ハマりどころ: Foundry のテスト環境は `block.timestamp` がデフォルト `1`（＝`epoch=0`）。「古いepoch」として `0` を使うと現在の epoch とたまたま一致してテストが誤通過する。`block.timestamp/1 hours + 大きい定数` のような動的な値を使うこと。
+  - `vm.prank(address)` で次の1呼び出しだけ `msg.sender` を差し替えて owner以外からの呼び出しを再現。
+- [x] **統合テスト（本物の証明データ、Mock でなく実 `Groth16Verifier` 使用）**。`contracts/test/FamilyRegistryIntegration.t.sol`。`circuits/` で `snarkjs groth16 prove main_final.zkey witness.wtns proof.json public.json` → `snarkjs zkey export soliditycalldata public.json proof.json` で本物の `(pA,pB,pC,pubSignals)` を取得しテストにハードコード。`vm.warp(472223 * 1 hours)` で証明に埋め込まれた epoch と一致させ、`familyRoot` は `pubSignals[0]`（本物のroot）で初期化。**本物のペアリング検証を通過**（circom回路→snarkjs鍵→Solidity Verifier→Registryが実際に繋がっていることの最終証明）。`forge test` 全体で8本緑（unit 7 + integration 1）。
+- [x] **Rust側の鍵ミスマッチ解消**。`proof::setup()` を `circuit_specific_setup` から `ark_circom::read_zkey()` で `circuits/main_final.zkey` を読み込む形に置き換え（引数なし `setup() -> (ProvingKey, PreparedVerifyingKey)` に変更、`build_setup_circuit()` は不要になり削除）。
+  - **ハマりどころ（重要）**: これだけだと `test_prove_verify` が `verify` で失敗する。原因は `prove()` が `Groth16::<Bn254>::prove(...)`（arkworksデフォルトのQAP変換）のままだったこと。**snarkjs/circom生成の鍵を使うときは `Groth16::<Bn254, ark_circom::CircomReduction>::prove(...)` と reduction 型を明示する必要がある**（ark-circom 自身のテスト `zkey.rs::verify_proof_with_zkey_with_r1cs` で確認した正しい書き方）。`verify()`/`setup()` 側は `CircomReduction` 不要（検証側の計算は reduction に依存しない）。
+  - `cargo test` 8本緑、`cargo run` で7メンバー全員 `verify=true`（**この鍵は on-chain の `Groth16Verifier.sol` と同一**なので、これで作った証明はそのまま on-chain でも検証できる状態）。
+- [ ] Rust側で証明を作った後、G1/G2の点をSolidity calldata形式（`uint256[2]`/`uint256[2][2]`）に変換する処理（今回は snarkjs の `soliditycalldata` で代用したが、本番のRust CLIデモにはこの変換が要る）。
+- [ ] World Chain Sepolia へのデプロイ（`forge script`）。root 登録の実運用フロー。
+- [ ] **通知インフラ（設計済み・未着手）**: `SecretRevealed`/`PotentialLeak` イベントを監視して該当メンバーにメール通知。Rust の `alloy`（EVMログ取得・デコード）+ `reqwest`（Resend の REST API）+ `tokio` で `src/bin/notifier.rs` として実装する方針（Node.js ではなく Rust で統一）。デプロイ済みコントラクトが無いと作れないので Step 6 コア完了後に着手。
+
 ### 既知の小物
 
 - [x] `src/main.rs` の `i` 未使用 warning → `for _ in` で解消。
@@ -124,9 +174,18 @@ cargo run --example test_poseidon   # Poseidon ゲートは単体で緑（回路
 cargo run        # メンバー生成→Merkle→setup(1回)→7人分 prove→verify（secret/salt/epoch/challenge込み）。各人 assert_eq!(pubs[0], root) で CLI root と回路 root の一致を実証
 ```
 
-### git 管理の方針（2026-09-08 整理済み）
+Solidity 側（Foundry、初回は各PCで PATH 設定が要る）:
 
-- **追跡する**: `main.circom` / `scripts/` / `WORKFLOW.md` / `package.json` / `package-lock.json` / `circuits/input.json` / 共有鍵 `main_final.zkey` `verification_key.json` `pot12_final.ptau`
+```bash
+export PATH="$PATH:$HOME/.foundry/bin"   # ~/.bashrc に追記推奨。無ければ curl -L https://foundry.paradigm.xyz | bash && foundryup
+cd contracts
+forge build      # Groth16Verifier.sol / FamilyRegistry.sol / IGroth16Verifier.sol
+forge test -vv   # ユニットテスト5本緑（Mock Verifier使用）
+```
+
+### git 管理の方針（2026-09-08 整理済み・2026-09-19 追記）
+
+- **追跡する**: `main.circom` / `scripts/` / `WORKFLOW.md` / `package.json` / `package-lock.json` / `circuits/input.json` / 共有鍵 `main_final.zkey` `verification_key.json` `pot12_final.ptau` / **`circuits/verifier.sol`（新規追加）** / **`contracts/`（Foundryプロジェクト一式。`contracts/lib/forge-std` は `forge init` が clone する外部依存、サブモジュールとして扱うか通常ファイルとして追跡するかは commit 時に要確認）**
 - **gitignore（各PCで再生成）**: `node_modules/` / `main_js/` / `main.r1cs` / `main.sym` / 中間 ptau / `main_0000.zkey` / `witness.*` / `proof.json` / `public.json`
 - 回路を変えたら zkey/vkey は作り直して**両方コミット**（[WORKFLOW.md](../circuits/WORKFLOW.md) の「0→2」）。1つの鍵を両PCで共有するのが原則。
 

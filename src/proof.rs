@@ -1,11 +1,12 @@
 
 use ark_bn254::{Bn254, Fr};
-use ark_circom::{CircomCircuit, CircomConfig, CircomBuilder};
+use ark_circom::{CircomCircuit, CircomConfig, CircomBuilder, read_zkey};
 use ark_groth16::{Groth16, Proof, ProvingKey, PreparedVerifyingKey};
 use ark_snark::SNARK;
 use ark_std::rand::rngs::StdRng;
 use ark_ff::{PrimeField, Field};
-use std::str::FromStr;
+
+use std::fs::File;
 
 pub fn build_circuit() -> color_eyre::Result<CircomCircuit<Fr>>{
     let cfg = CircomConfig::<Fr>::new(
@@ -41,28 +42,18 @@ pub fn build_circuit_with_inputs(
     Ok(builder.build()?)
 }
 
-pub fn setup(circuit: CircomCircuit<Fr>, rng: &mut StdRng)
-    -> color_eyre::Result<(ProvingKey<Bn254>, PreparedVerifyingKey<Bn254>)>{
-    let (pk, vk) = Groth16::<Bn254>::circuit_specific_setup(circuit, rng)?;
-    let prepared_verifying_key = Groth16::<Bn254>::process_vk(&vk)?;
-    color_eyre::Result::Ok((pk, prepared_verifying_key))
-    }
-
-
-pub fn build_setup_circuit() -> color_eyre::Result<CircomCircuit<Fr>>{
-    let cfg = CircomConfig::<Fr>::new(
-        "circuits/main_js/main.wasm",
-        "circuits/main.r1cs",
-    )?;
-    let builder = CircomBuilder::new(cfg);
-    Ok(builder.setup())
+pub fn setup() -> color_eyre::Result<(ProvingKey<Bn254>, PreparedVerifyingKey<Bn254>)> {
+    let mut file = File::open("circuits/main_final.zkey")?;
+    let (pk, _matrices) = read_zkey(&mut file)?;
+    let pvk = Groth16::<Bn254>::process_vk(&pk.vk)?;
+    Ok((pk, pvk))
 }
 
 pub fn prove(pk: &ProvingKey<Bn254>, circuit: CircomCircuit<Fr>, rng: &mut StdRng)
     -> color_eyre::Result<(Proof<Bn254>, Vec<Fr>)> {
     // circuit は prove で消費されるので、public inputs を先に取る
     let public_inputs = circuit.get_public_inputs().unwrap();
-    let proof = Groth16::<Bn254>::prove(pk, circuit, rng)?;
+    let proof = Groth16::<Bn254, ark_circom::CircomReduction>::prove(pk, circuit, rng)?;
     Ok((proof, public_inputs))
 }
 
@@ -80,6 +71,7 @@ pub fn recover_secret(x1: Fr, y1: Fr, x2: Fr, y2: Fr) -> Fr {
 mod test{
     use super::*;
     use ark_std::rand::SeedableRng;
+    use std::str::FromStr;
 
     #[test]
     fn test_build_circuit(){
@@ -94,7 +86,7 @@ mod test{
     fn test_prove_verify() {
         let mut rng = StdRng::seed_from_u64(0);
         let c = build_circuit().unwrap();
-        let (pk, pvk) = setup(c.clone(), &mut rng).unwrap();
+        let (pk, pvk) = setup().unwrap();
         let (proof, pubs) = prove(&pk, c, &mut rng).unwrap();
 
         // 1. 正しい proof は通る

@@ -1,5 +1,5 @@
 use ark_bn254::Fr;
-use ark_ff::{AdditiveGroup, PrimeField};
+use ark_ff::AdditiveGroup;
 use pso_poseidon::{Poseidon, PoseidonHasher};
 
 pub type Hash = Fr;
