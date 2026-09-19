@@ -11,3 +11,4 @@ circuits/witness.wtns
 circuits/witness.json
 circuits/proof.json
 circuits/public.json
+.env
