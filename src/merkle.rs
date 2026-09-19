@@ -1,10 +1,15 @@
 use ark_bn254::Fr;
-use ark_ff::AdditiveGroup;
+use ark_ff::{AdditiveGroup, PrimeField};
 use pso_poseidon::{Poseidon, PoseidonHasher};
 
 pub type Hash = Fr;
 
 const EMPTY_HASH: Fr = Fr::ZERO;
+
+pub fn hash_single(x: Fr) -> Fr {
+    let mut poseidon = Poseidon::<Fr>::new_circom(1).expect("Error");
+    poseidon.hash(&[x]).unwrap()
+}
 
 pub fn hash_leaf(secret: Fr, salt: Fr) -> Hash{
     let mut poseidon = Poseidon::<Fr>::new_circom(3).expect("Error");

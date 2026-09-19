@@ -4,8 +4,8 @@ use ark_circom::{CircomCircuit, CircomConfig, CircomBuilder};
 use ark_groth16::{Groth16, Proof, ProvingKey, PreparedVerifyingKey};
 use ark_snark::SNARK;
 use ark_std::rand::rngs::StdRng;
-use ark_ff::PrimeField;
-
+use ark_ff::{PrimeField, Field};
+use std::str::FromStr;
 
 pub fn build_circuit() -> color_eyre::Result<CircomCircuit<Fr>>{
     let cfg = CircomConfig::<Fr>::new(
@@ -18,7 +18,10 @@ pub fn build_circuit() -> color_eyre::Result<CircomCircuit<Fr>>{
 }
 
 pub fn build_circuit_with_inputs(
-    leaf: Fr,
+    secret: Fr,
+    salt:Fr,
+    epoch:Fr,
+    challenge:Fr,
     path_indices: &[bool],
     siblings: &[Fr],
 ) -> color_eyre::Result<CircomCircuit<Fr>>{
@@ -27,7 +30,10 @@ pub fn build_circuit_with_inputs(
         "circuits/main.r1cs",
     )?;
     let mut builder = CircomBuilder::new(cfg);
-    builder.push_input("leaf", leaf.into_bigint());
+    builder.push_input("secret", secret.into_bigint());
+    builder.push_input("salt", salt.into_bigint());
+    builder.push_input("epoch", epoch.into_bigint());
+    builder.push_input("challenge", challenge.into_bigint());
     for i in 0..4 {
         builder.push_input("pathIndices",path_indices[i] as u64);
         builder.push_input("siblings", siblings[i].into_bigint());
@@ -65,6 +71,11 @@ pub fn verify(pvk: &PreparedVerifyingKey<Bn254>, public_inputs: &[Fr], proof: &P
     Ok(Groth16::<Bn254>::verify_with_processed_vk(pvk, public_inputs, proof)?)
 }
 
+pub fn recover_secret(x1: Fr, y1: Fr, x2: Fr, y2: Fr) -> Fr {
+    let a1 = (y2 - y1) * (x2 - x1).inverse().unwrap();
+    y1 - a1 * x1
+}
+
 #[cfg(test)]
 mod test{
     use super::*;
@@ -93,5 +104,36 @@ mod test{
         let mut bad = pubs.clone();
         bad[0] += Fr::from(1u64);
         assert!(!verify(&pvk, &bad, &proof).unwrap());
+    }
+
+    #[test]
+    fn test_rln_secret_recovery() {
+        // 小さい木を1個作って、1人分の secret/salt と proof を用意
+        let secret = Fr::from_str("103").unwrap();
+        let salt = Fr::from_str("9003").unwrap();
+        let leaf = crate::merkle::hash_leaf(secret, salt);
+        let tree = crate::merkle::MerkleTree::from_leaves(vec![leaf; 5], 4);
+        let p = tree.proof(0);
+        let siblings: Vec<Fr> = p.iter().map(|x| x.0).collect();
+        let path_indices: Vec<bool> = p.iter().map(|x| x.1).collect();
+
+        let epoch = Fr::from(1u64);
+        let challenge1 = Fr::from(111u64);
+        let challenge2 = Fr::from(222u64);
+
+        let c1 = build_circuit_with_inputs(secret, salt, epoch, challenge1, &path_indices, &siblings).unwrap();
+        let pubs1 = c1.get_public_inputs().unwrap(); // [root, y, nullifier, epoch, challenge]
+
+        let c2 = build_circuit_with_inputs(secret, salt, epoch, challenge2, &path_indices, &siblings).unwrap();
+        let pubs2 = c2.get_public_inputs().unwrap();
+
+        // 同一人物・同一epochなら nullifier は一致するはず
+        assert_eq!(pubs1[2], pubs2[2]);
+
+        let x1 = crate::merkle::hash_single(challenge1);
+        let x2 = crate::merkle::hash_single(challenge2);
+
+        let recovered = recover_secret(x1, pubs1[1], x2, pubs2[1]);
+        assert_eq!(recovered, secret);
     }
 }

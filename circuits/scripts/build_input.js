@@ -78,11 +78,17 @@ async function main() {
     idx >>= 1;
   }
 
+  const EPOCH = "472223";      // 本来は floor(unixtime/3600)
+  const CHALLENGE = "777";     // 本来は検証側が出す値
+
   const input = {
-    leaf: levels[0][TARGET_INDEX].toString(),
+    secret: MEMBERS[TARGET_INDEX].secret,
+    salt: MEMBERS[TARGET_INDEX].salt,
+    epoch: EPOCH,
+    challenge: CHALLENGE,
     pathIndices,
     siblings,
-  };
+};
 
   const outPath = path.join(__dirname, "..", "input.json");
   fs.writeFileSync(outPath, JSON.stringify(input, null, 2) + "\n");

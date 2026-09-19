@@ -4,17 +4,44 @@ include "node_modules/circomlib/circuits/poseidon.circom";
 include "node_modules/circomlib/circuits/mux1.circom";
 
 template MerkleTreeInclusionProof(nLevels) {
-    signal input leaf;
+    signal input epoch;
+    signal input challenge;
+    signal input secret;
+    signal input salt;
+
     signal input pathIndices[nLevels];
     signal input siblings[nLevels];
 
     signal output root;
+    signal output y;
+    signal output nullifier;
 
     component poseidons[nLevels];
     component mux[nLevels];
-
     signal hashes[nLevels + 1];
-    hashes[0] <== leaf;
+
+    component poseidon_init = Poseidon(3);
+    poseidon_init.inputs[0] <== 0;
+    poseidon_init.inputs[1] <== secret;
+    poseidon_init.inputs[2] <== salt;
+    hashes[0] <== poseidon_init.out;
+
+    component poseidon_a1 = Poseidon(2);
+    poseidon_a1.inputs[0] <== secret;
+    poseidon_a1.inputs[1] <== epoch;
+    signal a1;
+    a1 <== poseidon_a1.out;
+
+    component poseidon_x = Poseidon(1);
+    poseidon_x.inputs[0] <== challenge;
+    signal x;
+    x <== poseidon_x.out;
+
+    y <== secret + a1 * x;
+
+    component poseidon_null = Poseidon(1);
+    poseidon_null.inputs[0] <== a1;
+    nullifier <== poseidon_null.out;
 
     for (var i = 0; i < nLevels; i++) {
         pathIndices[i] * (1 - pathIndices[i]) === 0;
@@ -39,4 +66,4 @@ template MerkleTreeInclusionProof(nLevels) {
     root <== hashes[nLevels];
 }
 
-component main = MerkleTreeInclusionProof(4);
+component main {public [epoch, challenge]}= MerkleTreeInclusionProof(4);

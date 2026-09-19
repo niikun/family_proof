@@ -1,8 +1,8 @@
-use ark_circom::{CircomBuilder, CircomConfig,CircomCircuit};
 use rand::RngExt;
 use ark_bn254::Fr;
 use ark_std::rand::{rngs::StdRng, SeedableRng};
 use ark_ff::PrimeField;
+use std::time::{SystemTime, UNIX_EPOCH};
 mod merkle;
 mod proof;
 
@@ -11,14 +11,19 @@ const FAMILY_MEMBERS:u8 = 7;
 fn main() ->color_eyre::Result<()>{
     color_eyre::install()?;
     let mut rng = rand::rng();
+    let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
+    let epoch = Fr::from(now / 3600);
+    let challenge = Fr::from(777u64);
 
     let mut leaves = Vec::new();
+    let mut members:Vec<(Fr, Fr)> = Vec::new();
     for _ in 0..FAMILY_MEMBERS {
         let secret_bytes:[u8;32] = rng.random();
         let salt_bytes:[u8;32] = rng.random();
         let secret = Fr::from_le_bytes_mod_order(&secret_bytes);
         let salt = Fr::from_le_bytes_mod_order(&salt_bytes);
         leaves.push(merkle::hash_leaf(secret, salt));
+        members.push((secret, salt));
     }
     let tree = merkle::MerkleTree::from_leaves(leaves.clone(),4);
     let depth = tree.depth();
@@ -35,7 +40,8 @@ fn main() ->color_eyre::Result<()>{
             siblings.push(*s);
             path_indices.push(*p);
         });
-        let circuit = proof::build_circuit_with_inputs(leaves[i], &path_indices, &siblings)?;
+        let (secret, salt) = members[i];
+        let circuit = proof::build_circuit_with_inputs(secret, salt, epoch, challenge, &path_indices, &siblings)?;
         let (pf, pubs) = proof::prove(&pk, circuit, &mut std_rng)?;
         assert_eq!(pubs[0], root);
         let ok = proof::verify(&pvk, &pubs, &pf)?;
