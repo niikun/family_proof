@@ -4,9 +4,8 @@ use ark_std::rand::{rngs::StdRng, SeedableRng};
 use ark_ff::PrimeField;
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use crate::proof::to_solidity_calldata;
-mod merkle;
-mod proof;
+use family_proof::merkle;
+use family_proof::proof;
 
 const FAMILY_MEMBERS:u8 = 7;
 
@@ -45,7 +44,7 @@ fn main() ->color_eyre::Result<()>{
         let circuit = proof::build_circuit_with_inputs(secret, salt, epoch, challenge, &path_indices, &siblings)?;
         let (pf, pubs) = proof::prove(&pk, circuit, &mut std_rng)?;
         assert_eq!(pubs[0], root);
-        let (a,b,c) = to_solidity_calldata(pf.clone());
+        let (a,b,c) = proof::to_solidity_calldata(pf.clone());
         let ok = proof::verify(&pvk, &pubs, &pf)?;
         println!("verify = {}", ok);
         

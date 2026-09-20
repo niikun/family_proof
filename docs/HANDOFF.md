@@ -1,8 +1,9 @@
 # HANDOFF — 別PCへの引き継ぎ
 
-最終更新: 2026-09-19（Step 6 着手・Foundry環境構築） / ブランチ: `main` / remote: `git@github.com:niikun/family_proof.git` / 同期: **未コミットあり**（`Cargo.toml` `Cargo.lock` `circuits/*`（input.json/main.circom/build_input.js/新zkey一式/verifier.sol）`docs/SPEC.md` `src/*` `contracts/`（新規、Foundryプロジェクト）。`git add -A && git commit && git push` で `origin/main` と一致させる
+最終更新: 2026-09-20（Step 6 コアほぼ完了・World Chain Sepoliaデプロイ済み・追加拡張B着手中） / ブランチ: `main` / remote: `git@github.com:niikun/family_proof.git` / 同期: **未コミットあり（多数、下記git管理方針参照）**。`git add -A && git commit && git push` で `origin/main` と一致させる
 
-> ✅ **Step 4（RLN）完了・Step 6 大きく進行**。`FamilyRegistry.sol` 実装＋ユニットテスト7本＋本物の証明データでの統合テスト（`forge test` 8本緑）に加え、**Rust側の鍵ミスマッチも解消**（`proof::setup()` が実際の `main_final.zkey` を読み込む形に、`prove()` は `CircomReduction` 指定に修正）。**これで Rust CLI が作る証明はそのまま on-chain の Verifier で検証できる状態になった**（`cargo test` 8本緑・`cargo run` 7人全員 `verify=true`）。**さらに `proof::to_solidity_calldata()`（G1/G2 → Solidity `uint256[2]`/`uint256[2][2]` 変換）を実装・`main.rs` に組み込み済み**。`anvil` にデプロイした本物の `Groth16Verifier.sol` に `cast call` で実測検証し、正しい変換であることを確認済み（下記「Step 6」節に詳細）。残るは testnet デプロイ・通知インフラ・匿名統計公開。
+> ✅ **Step 6 コア完了（Verifier/Registry/テスト/calldata変換/World Chain Sepoliaデプロイ済み）**。`cargo test` 9本緑・`forge test` 8本緑。デプロイ済みアドレスは下記「Step 6」節参照（`FamilyRegistry` は `0xa9f1A920...` が正、`0xD06FcbB5...` は重複デプロイの旧アドレスで放置）。
+> **🆕 9/20、残り約4日を使って追加拡張A（root rotationフロー）/B（通知インフラ+匿名統計）/C（攻撃者期待損失シミュレーション）に着手することを決定。詳細は下記「残り期間での追加拡張」節。当初の優先順位はA→B→Cだったが、実際にはB（`notifier.rs`）から着手済み — `sol!`マクロでのイベント型定義・`alloy`での`get_logs`実測まで完了、次は`src/lib.rs`化（`merkle`/`proof`を`main.rs`と`notifier.rs`で共有）を進めている。Aはその後。**
 > **⚠️ 重要: ETHGlobal Tokyo 2026 の日程・提出ルールが確定済み（下記参照）。この5連休の位置づけが変わったので必読。**
 
 ## ⚠️ ETHGlobal Tokyo 2026 日程・提出ルール（2026-09-19 確認）
@@ -16,7 +17,7 @@
 
 ## いまどこ
 
-ロードマップ（[SPEC.md](SPEC.md) §7）で **Step 0〜4 完了、Step 6 進行中**。全体 ≈ 81%（ウェイト: 0=5/1=5/2=7/3=13/4=25/5=15/6=30、Step6は現在≈85%進捗）。
+ロードマップ（[SPEC.md](SPEC.md) §7）で **Step 0〜4 完了、Step 6 ほぼ完了**。全体 ≈ 87%（ウェイト: 0=5/1=5/2=7/3=13/4=25/5=15/6=30、Step6は現在≈98%進捗）。残りは追加拡張A（root rotation）/C（攻撃者期待損失シミュレーション）とStep5（デモUI、イベント本番）。
 
 | Step | 状態 |
 |---|---|
@@ -41,6 +42,19 @@ RLN（盗んだ secret の使い回し検知）と**脅威モデルを分離**�
 - 競合調査（2026-09-19時点）: ZK × World ID をオレオレ詐欺対策に組み合わせた既存プロジェクトは見つからず、独自性は高そう
 - **ピッチの軸（2026-09-19 追加）**: 「合言葉にZKを足した」だけだとありがちなハッカソン構成（既存の地味な対策＋暗号を足すパターン）に見えるリスクがある。差別化点は技術要素そのものではなく問題設定の切り口 — 「秘密を知っているだけ」では AI 音声クローンに突破される、だから knowledge の証明(RLN)だけでなく liveness の証明(World ID live-challenge)が要る、という脅威分離のロジックをピッチの中心に置く
 - **AI音声クローンデモ（2026-09-19 採用）**: 上記ロジックを言葉でなく体験として見せるため、Step 5 のデモに「クローン音声が正しい合言葉を言っても live-challenge で弾かれる」シーンを追加する。音声クローンは同意を得たチームメンバー本人の声でイベント前に事前生成（ライブ生成は音声合成の失敗・レイテンシ等のデモ事故リスクが高いため）、デモ本番ではその音声の再生＋検知部分のみライブで行う。RLN単体のデモ（漏洩secretの使い回し検知）とは別シーンとして構成。詳細は [SPEC.md](SPEC.md) Step 5 / §9 に反映済み
+
+## 🆕 残り期間での追加拡張 A/B/C（2026-09-20 採用）
+
+Step6コアがデプロイまで完了し、予定より前倒しで進んでいるため、9/20〜24の残り約4日を使って3つの拡張を追加することにした（Continuity Track の「既存部分」に含まれる — World ID/Step5デモのような「イベント中に新規に作る部分」とは別枠）。優先順位はA→B→C。
+
+**進行計画（2026-09-20 実態に合わせて修正）**: 当初はA→B→Cの順で9/20〜21=A、9/22=B、9/23=Cの予定だったが、実際は9/20にBから着手（`notifier.rs`、進行中）。9/20〜21=B、9/22=A、9/23=C、9/24=バッファ・整理・コミット、に読み替える。
+
+- **A（最優先）: root rotation フロー**。「secret漏洩検知→復元→失効」の話に、**実際にメンバーを木から除外して新rootをon-chainに反映する具体的な手順**が無かった穴を塞ぐ。設計:
+  - Rust側: 生き残りメンバーのリストから `merkle::MerkleTree::from_leaves` で新しい木を再構築 → 新root を得る（既存ロジックの延長、新規暗号要素なし）
+  - on-chain反映: **alloyでの署名実装はしない**。`cast send <FamilyRegistry> "updateRoot(uint256)" <新root> --account deployer --rpc-url ...`（Foundry付属、キーストア設定済み）で十分「本物」。alloyは読み取り専用のBで使う、という役割分担
+  - 独立バイナリ（`src/bin/rotate.rs` 案）にするか `main.rs` に機能追加するかは未確定、次回セッションで詰める
+- **B: 通知インフラ＋匿名統計**。既存の「通知インフラ」「匿名統計の公開」タスク（下記Step6節）と同じもの。`notifier.rs` の `alloy` イベント監視基盤をAの検証にも使えないか要検討
+- **C: 攻撃者の期待損失シミュレーション**。`epoch`/`limit` の設定によって「攻撃者が使い回して捕まる確率」がどう変わるかを、小さいモンテカルロシミュレーション（Rust、既存の `recover_secret` ロジックの応用、新規暗号要素なし）で定量化する。ピッチ資料用の数字・グラフを作るのが目的。実装は未着手・詳細設計はこれから
 
 ## 確定済みの設計判断（蒸し返さない）
 
@@ -147,10 +161,25 @@ SPEC §6.2 の式（`a1 = Poseidon(secret,epoch)` / `x = Poseidon(challenge)` / 
   - `cargo run` で7人全員 `verify=true` を維持したまま、calldata出力も正しく得られることを確認済み。
 - [x] **World Chain Sepolia へのデプロイ（2026-09-20 完了）**。`cast wallet` のキーストア（`~/.foundry/keystores/deployer`）を使い `forge create --account deployer` で2件デプロイ（RPC: `https://worldchain-sepolia.g.alchemy.com/public`, chainId 4801）。
   - **Groth16Verifier**: `0x132a7dbd30784d2283b83D96BD45B731AF331c8a`
-  - **FamilyRegistry**: `0xD06FcbB5CB9D3B094874855d3979C8ae8eA09144`（constructor: `verifierAddress`=上記, `initialRoot`=`13298919588855972999610419539218897354041933303975356579871528834317655849272`。この root は `secret="103"`/`salt="9003"` を5枚複製・depth4の木の root で決定論的に再現可能）
+  - **FamilyRegistry**: `0xa9f1A920A96c42BC4aA37DcB513CA615A3B7557d`（constructor: `verifierAddress`=上記, `initialRoot`=`13298919588855972999610419539218897354041933303975356579871528834317655849272`。この root は `secret="103"`/`salt="9003"` を5枚複製・depth4の木の root で決定論的に再現可能）
+    - ⚠️ 同じ内容で `0xD06FcbB5CB9D3B094874855d3979C8ae8eA09144` にも1回デプロイ済み（2026-09-20、再デプロイにより重複）。以後は `0xa9f1A920...` を正とする。旧アドレスは放置（テストネットなので実害なし）
   - デプロイ後 `cast call` で `verifier()`/`owner()`/`familyRoot()` が期待値と一致することを確認済み
   - **ハマりどころ**: `cast wallet address --account deployer` はキーストア復号にパスワード入力が要るが、非対話環境（TTYなし）だと `No such device or address (os error 6)` で失敗する。パスワードが必要なコマンド（`cast wallet address`/`forge create --account`）は本人のターミナルで直接実行する運用にした
-- [ ] **通知インフラ（設計済み・未着手）**: `SecretRevealed`/`PotentialLeak` イベントを監視して該当メンバーにメール通知。Rust の `alloy`（EVMログ取得・デコード）+ `reqwest`（Resend の REST API）+ `tokio` で `src/bin/notifier.rs` として実装する方針（Node.js ではなく Rust で統一）。デプロイ済みコントラクトが無いと作れないので Step 6 コア完了後に着手。
+- [ ] **通知インフラ（2026-09-20 着手・進行中）**: `ProofVerified`/`PotentialLeak` イベントを監視して該当メンバーにメール通知。Rust の `alloy`（EVMログ取得・デコード）+ `reqwest`（Resend の REST API）+ `tokio` で `src/bin/notifier.rs` として実装中（Node.js ではなく Rust で統一）。
+  - **`src/lib.rs`を新規作成**（`pub mod merkle; pub mod proof;`）し、`main.rs`/`src/bin/*.rs` 間で `merkle`/`proof` を共有できるように再構成済み（`main.rs`側は`crate::merkle`→`family_proof::merkle`に変更）。
+  - **`src/bin/submit_demo.rs`を新規作成**: 固定木（`secret="103"`/`salt="9003"`を5枚複製・depth4、index0）で現在時刻ベースのepoch・challenge=777の本物の証明を作り、`to_solidity_calldata`でcalldata化。これを実際に`cast send`でデプロイ済み`FamilyRegistry`(`0xa9f1A920...`)の`verifyMembership`に送信し、**`status: 1 (success)`・`ProofVerified`イベント発行を実チェーン上で確認済み**（tx: `0xdf823cf0124ae7b9ba43595efb09ee923d479ea9a9747249aad056999e767c66`）。回路→Rust→calldata変換→testnetデプロイの全レイヤーが実際に繋がっていることの最終実証。
+  - **`notifier.rs`で実際に`ProofVerified`ログを取得できることを確認済み**（`Filter::new().address(...).event_signature(ProofVerified::SIGNATURE_HASH).from_block(...).to_block(...)`）。
+  - **ハマりどころ**: Alchemyの公開RPC(`worldchain-sepolia.g.alchemy.com/public`)は`eth_getLogs`のブロック範囲が**最大100ブロックまで**に制限されている。`from_block`を指定せず`to_block`も無いと「実質最新ブロックのみ」を見る扱いになり空の結果になる。本番の`notifier`としては「直近ブロック番号を都度取得し100ブロックずつ遡ってポーリングする」ような実装が必要（現状はまだ固定範囲のハードコードで実証しただけ、未実装）。
+  - **`PotentialLeak`シナリオも実チェーン上で実証済み（2026-09-20）**: `submit_demo.rs`にコマンドライン引数でchallengeを変えられるようにし（`cargo run --bin submit_demo -- <challenge>`）、同じsecret/salt/epoch(497192)で`challenge=777`→`888`の2つの証明を生成、`cast send`で連続投入。1回目は`ProofVerified`のみ、**2回目は`PotentialLeak`＋`ProofVerified`の両方が発行**され、`nullifier`が2回とも完全一致することを確認（tx: `0x26f4caa9...`→成功、`0xbc9efc59...`→`PotentialLeak`）。RLNの「使い回し検知」がcircom回路→Rust→本物のtestnet上のコントラクトまで一気通貫で動くことの最終実証。
+  - **ログのデコード（`SolEvent::decode_log`）は`notifier.rs`側で対応中**。`get_logs`が返す`Vec<Log>`から各`log.inner`を`ProofVerified::decode_log`/`PotentialLeak::decode_log`に渡して構造化データ化する。
+  - **secret復元も本物のイベントデータで実証済み（2026-09-20）**: `notifier.rs`で`PotentialLeak::decode_log`した`challenge1,y1,challenge2,y2`（`alloy`の`U256`型）を`Fr::from_str(&x.to_string())`で`ark_bn254::Fr`に変換 → `merkle::hash_single`/`proof::recover_secret`に通し、**`recovered secret = 103`**（実際にsubmitしたsecretと完全一致）を確認。回路→Rust生成の証明→本物のtestnet上のコントラクト→イベントログ→off-chainでのsecret復元、という設計上の全レイヤーが実データで繋がっていることの最終実証。
+  - ハマりどころ: `alloy`側の型（`U256`= `alloy_primitives::Uint<256,4>`）と`arkworks`側の型（`ark_bn254::Fr`）は同じ数値でも別crateの別型なので直接渡せない。既存コードと同じ「10進文字列を介した変換」（`Fr::from_str(&u256_value.to_string())`）で統一。
+  - **Resend APIでのメール送信も実証済み（2026-09-20）**: `dotenvy`で`.env`の`RESEND_API_KEY`/`NOTIFY_TO`を読み込み、`recover_secret`の結果を`reqwest`経由で`https://api.resend.com/emails`にPOST。送信元は検証不要の`onboarding@resend.dev`を使用。実際にメール受信を確認済み。これで「漏洩検知 → secret復元 → 家族への通知」の一連の流れが`notifier.rs`単体で完結することを実証。
+  - **ポーリングループ化 完了（2026-09-20）**: `from_block`を持ち回しながら`loop { get_block_number → from_block~min(from_block+99,latest)でget_logs → 処理 → from_block=to_block+1 → 30秒sleep }`という形に変更。100ブロック制限に対応。
+    - ハマりどころ: `if`ブロックの中に誤って`let mut from_block = ...`をもう1回書いてしまい、外側の`from_block`をシャドーイングして「見た目は動くが実際は永遠に同じ範囲を見続けメールを送り続ける」バグが発生。`cargo check`の`unused_mut`/`value assigned...is never read`警告が発見の手がかりになった。
+  - **匿名統計（日次カウント）完了（2026-09-20）**: `Filter`から`event_signature`指定を外して`address`のみで絞り込み、`log.topics()[0]`で`ProofVerified`/`PotentialLeak`を判定。`block_timestamp / 86400`を日次キーにして`HashMap<u64,(u64,u64)>`（`(ProofVerified件数, PotentialLeak件数)`）に集計、`stats.json`に書き出す。アドレス・nullifierは一切保存しない設計通り。
+    - ハマりどころ: 最初`day`を`block_timestamp`の生値のままキーにしてしまい、秒単位でバラけて実質「イベント1件=1エントリ」になる（日次集計の意図から外れる）バグがあった。`/86400`で日単位に丸めて解消。
+  - **Bのタスク（通知インフラ＋匿名統計）はこれで完了**。`notifier.rs`が「detect → recover → notify → aggregate」を1つのポーリングループで実行する。
 - [ ] **匿名統計の公開（2026-09-20 採用・設計済み・未着手）**: 上記 `notifier.rs`（`alloy` でのイベント監視基盤）を流用し、`RootUpdated`/`PotentialLeak` を集計して「日次の検知件数」だけを公開する。family root・address 等の個人/家族を特定できる情報は公開側に一切出さない（日次カウントのみ、個別イベント単位の時刻・アドレスは出さない）。目的は「表面化しづらいオレオレ詐欺の試行実態を、被害者・家族を特定せずに可視化する」こと。ピッチの Practicality/社会的インパクトの補強にもなる。詳細は [SPEC.md](SPEC.md) Step 6 に反映済み
   - **やらないと決めたこと**: 詐欺の手口（通話内容）をAIが要約して統計化する案は今回のスコープ外。現状の暗号設計は通話内容を一切扱わないため、実現には報告フォーム等の新規データ収集経路がゼロから必要になり、9/24までのコア完成を圧迫する。ピッチの「将来構想」スライドで触れる程度に留める（[SPEC.md](SPEC.md)「時間が余った場合の拡張候補」に記載済み）
 
