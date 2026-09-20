@@ -57,6 +57,14 @@ pub fn prove(pk: &ProvingKey<Bn254>, circuit: CircomCircuit<Fr>, rng: &mut StdRn
     Ok((proof, public_inputs))
 }
 
+pub fn to_solidity_calldata(proof:Proof<Bn254>) -> ([String;2], [[String;2];2],[String;2]){
+    let a = [proof.a.x.into_bigint().to_string(), proof.a.y.into_bigint().to_string()];
+    let b = [[proof.b.x.c1.into_bigint().to_string(), proof.b.x.c0.into_bigint().to_string()],
+         [proof.b.y.c1.into_bigint().to_string(), proof.b.y.c0.into_bigint().to_string()]];
+    let c = [proof.c.x.into_bigint().to_string(), proof.c.y.into_bigint().to_string()];
+    (a, b, c)
+}   
+
 pub fn verify(pvk: &PreparedVerifyingKey<Bn254>, public_inputs: &[Fr], proof: &Proof<Bn254>)
     -> color_eyre::Result<bool> {
     Ok(Groth16::<Bn254>::verify_with_processed_vk(pvk, public_inputs, proof)?)
@@ -71,7 +79,7 @@ pub fn recover_secret(x1: Fr, y1: Fr, x2: Fr, y2: Fr) -> Fr {
 mod test{
     use super::*;
     use ark_std::rand::SeedableRng;
-    use std::str::FromStr;
+    use std::{path, str::FromStr};
 
     #[test]
     fn test_build_circuit(){
@@ -108,7 +116,7 @@ mod test{
         let p = tree.proof(0);
         let siblings: Vec<Fr> = p.iter().map(|x| x.0).collect();
         let path_indices: Vec<bool> = p.iter().map(|x| x.1).collect();
-
+        println!("###root###\n{:?}",tree.root());
         let epoch = Fr::from(1u64);
         let challenge1 = Fr::from(111u64);
         let challenge2 = Fr::from(222u64);
@@ -127,5 +135,23 @@ mod test{
 
         let recovered = recover_secret(x1, pubs1[1], x2, pubs2[1]);
         assert_eq!(recovered, secret);
+    }
+
+    #[test]
+    fn test_to_solidity_calldata() {
+        let mut std_rng = StdRng::seed_from_u64(42);
+        let (pk, _) = setup().unwrap();
+        let secret = Fr::from_str("103").unwrap();
+        let salt = Fr::from_str("9003").unwrap();
+        let leaf = crate::merkle::hash_leaf(secret, salt);
+        let tree = crate::merkle::MerkleTree::from_leaves(vec![leaf; 5], 4);
+        let p = tree.proof(0);
+        let siblings: Vec<Fr> = p.iter().map(|x| x.0).collect();
+        let path_indices: Vec<bool> = p.iter().map(|x| x.1).collect();
+        let epoch = Fr::from(1u64);
+        let challenge = Fr::from(111u64);
+        let circuits = build_circuit_with_inputs(secret, salt, epoch, challenge, &path_indices, &siblings).unwrap();
+        let (proof, public_input) = prove(&pk, circuits, &mut std_rng).unwrap();
+        let (a,b,c) = to_solidity_calldata(proof);
     }
 }

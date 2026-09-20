@@ -2,7 +2,7 @@
 
 最終更新: 2026-09-19（Step 6 着手・Foundry環境構築） / ブランチ: `main` / remote: `git@github.com:niikun/family_proof.git` / 同期: **未コミットあり**（`Cargo.toml` `Cargo.lock` `circuits/*`（input.json/main.circom/build_input.js/新zkey一式/verifier.sol）`docs/SPEC.md` `src/*` `contracts/`（新規、Foundryプロジェクト）。`git add -A && git commit && git push` で `origin/main` と一致させる
 
-> ✅ **Step 4（RLN）完了・Step 6 大きく進行**。`FamilyRegistry.sol` 実装＋ユニットテスト7本＋本物の証明データでの統合テスト（`forge test` 8本緑）に加え、**Rust側の鍵ミスマッチも解消**（`proof::setup()` が実際の `main_final.zkey` を読み込む形に、`prove()` は `CircomReduction` 指定に修正）。**これで Rust CLI が作る証明はそのまま on-chain の Verifier で検証できる状態になった**（`cargo test` 8本緑・`cargo run` 7人全員 `verify=true`）。残るは testnet デプロイと calldata 変換。
+> ✅ **Step 4（RLN）完了・Step 6 大きく進行**。`FamilyRegistry.sol` 実装＋ユニットテスト7本＋本物の証明データでの統合テスト（`forge test` 8本緑）に加え、**Rust側の鍵ミスマッチも解消**（`proof::setup()` が実際の `main_final.zkey` を読み込む形に、`prove()` は `CircomReduction` 指定に修正）。**これで Rust CLI が作る証明はそのまま on-chain の Verifier で検証できる状態になった**（`cargo test` 8本緑・`cargo run` 7人全員 `verify=true`）。**さらに `proof::to_solidity_calldata()`（G1/G2 → Solidity `uint256[2]`/`uint256[2][2]` 変換）を実装・`main.rs` に組み込み済み**。`anvil` にデプロイした本物の `Groth16Verifier.sol` に `cast call` で実測検証し、正しい変換であることを確認済み（下記「Step 6」節に詳細）。残るは testnet デプロイ・通知インフラ・匿名統計公開。
 > **⚠️ 重要: ETHGlobal Tokyo 2026 の日程・提出ルールが確定済み（下記参照）。この5連休の位置づけが変わったので必読。**
 
 ## ⚠️ ETHGlobal Tokyo 2026 日程・提出ルール（2026-09-19 確認）
@@ -16,7 +16,7 @@
 
 ## いまどこ
 
-ロードマップ（[SPEC.md](SPEC.md) §7）で **Step 0〜4 完了、Step 6 進行中**。全体 ≈ 76%（ウェイト: 0=5/1=5/2=7/3=13/4=25/5=15/6=30、Step6は現在≈70%進捗）。
+ロードマップ（[SPEC.md](SPEC.md) §7）で **Step 0〜4 完了、Step 6 進行中**。全体 ≈ 81%（ウェイト: 0=5/1=5/2=7/3=13/4=25/5=15/6=30、Step6は現在≈85%進捗）。
 
 | Step | 状態 |
 |---|---|
@@ -26,7 +26,7 @@
 | 3 `ark-circom` で Rust から proof 生成・検証 | ✅ **完了**。CLI の Merkle root が回路の public root と一致することまで実証済み |
 | 4 RLN（§6.2） | ✅ **完了**（2026-09-19）。回路実装・Rust配線・2点復元テストまで完走。詳細は下記「Step 4」節 |
 | 5 デモ UI | ⬜ **イベント本番（9/25〜27）に着手する方針** |
-| 6 on-chain（+ World ID ゲート） | 🟡 **進行中（≈70%）**。Verifier/Registry/ユニットテスト/本物データでの統合テスト/Rust鍵統一まで済み。**残: testnetデプロイ・calldata変換**。詳細は下記「Step 6」節 |
+| 6 on-chain（+ World ID ゲート） | 🟡 **進行中（≈85%）**。Verifier/Registry/ユニットテスト/本物データでの統合テスト/Rust鍵統一/calldata変換/**World Chain Sepoliaへのデプロイ**まで済み。**残: 通知インフラ・匿名統計公開**。詳細は下記「Step 6」節 |
 
 **スコープ方針（2026-09-19 更新・再更新）**: Must = Step 4 RLN（済） → **Step 6 コア**（Verifier.sol + Registry + testnet デプロイ、9/19〜9/24中に完成させる） → イベント本番で Step 5 最小デモ + World ID 連携。Cut候補 = ENS 名解決・levels=20拡張。World ID は「Should」ではなく**イベント本番の目玉（下記 World ID 音声対策）**に格上げ — Step 6 コア完了後に着手する。
 
@@ -141,9 +141,18 @@ SPEC §6.2 の式（`a1 = Poseidon(secret,epoch)` / `x = Poseidon(challenge)` / 
 - [x] **Rust側の鍵ミスマッチ解消**。`proof::setup()` を `circuit_specific_setup` から `ark_circom::read_zkey()` で `circuits/main_final.zkey` を読み込む形に置き換え（引数なし `setup() -> (ProvingKey, PreparedVerifyingKey)` に変更、`build_setup_circuit()` は不要になり削除）。
   - **ハマりどころ（重要）**: これだけだと `test_prove_verify` が `verify` で失敗する。原因は `prove()` が `Groth16::<Bn254>::prove(...)`（arkworksデフォルトのQAP変換）のままだったこと。**snarkjs/circom生成の鍵を使うときは `Groth16::<Bn254, ark_circom::CircomReduction>::prove(...)` と reduction 型を明示する必要がある**（ark-circom 自身のテスト `zkey.rs::verify_proof_with_zkey_with_r1cs` で確認した正しい書き方）。`verify()`/`setup()` 側は `CircomReduction` 不要（検証側の計算は reduction に依存しない）。
   - `cargo test` 8本緑、`cargo run` で7メンバー全員 `verify=true`（**この鍵は on-chain の `Groth16Verifier.sol` と同一**なので、これで作った証明はそのまま on-chain でも検証できる状態）。
-- [ ] Rust側で証明を作った後、G1/G2の点をSolidity calldata形式（`uint256[2]`/`uint256[2][2]`）に変換する処理（今回は snarkjs の `soliditycalldata` で代用したが、本番のRust CLIデモにはこの変換が要る）。
-- [ ] World Chain Sepolia へのデプロイ（`forge script`）。root 登録の実運用フロー。
+- [x] **calldata変換（2026-09-20 完了）**: `proof::to_solidity_calldata(proof) -> ([String;2], [[String;2];2], [String;2])`（[src/proof.rs](../src/proof.rs)）を実装、`main.rs` の7人ループに組み込み済み。
+  - **ハマりどころ（重要）**: G1（`a`,`c`）は `x,y: Fq` なので `proof.a.x.into_bigint().to_string()` のように座標ごとに変換すればよいが、G2（`b`）は座標自体が `Fq2`（`x.c0,x.c1,y.c0,y.c1`）になっている。最初の実装は `[[x.c0,y.c0],[x.c1,y.c1]]` のように**x/yを跨いでc0同士・c1同士でグループ化してしまうバグ**があり、これは一見自然に見えるが誤り。正しくは `[0]`=x座標のペア・`[1]`=y座標のペアで分け、かつ snarkjs 生成の Verifier の慣習に合わせて各ペア内は `[c1, c0]` の順（`[[x.c1,x.c0],[y.c1,y.c0]]`）。
+  - **検証方法**: `anvil` を起動 → `forge create` で本物の `Groth16Verifier.sol` をデプロイ → Rustで生成した実際の証明を `to_solidity_calldata` で変換し `cast call verifyProof(...)` で直接叩いて `true` が返ることを実測確認（4パターンの組み合わせを試して切り分けた）。`ark_ff::BigInt<N>` は `Display` 実装が内部で `num_bigint::BigUint` 経由の10進文字列を返すため、`.into_bigint().to_string()` だけで Solidity `uint256` にそのまま渡せる文字列になる（`num_bigint` を明示的にimportする必要はない）。
+  - `cargo run` で7人全員 `verify=true` を維持したまま、calldata出力も正しく得られることを確認済み。
+- [x] **World Chain Sepolia へのデプロイ（2026-09-20 完了）**。`cast wallet` のキーストア（`~/.foundry/keystores/deployer`）を使い `forge create --account deployer` で2件デプロイ（RPC: `https://worldchain-sepolia.g.alchemy.com/public`, chainId 4801）。
+  - **Groth16Verifier**: `0x132a7dbd30784d2283b83D96BD45B731AF331c8a`
+  - **FamilyRegistry**: `0xD06FcbB5CB9D3B094874855d3979C8ae8eA09144`（constructor: `verifierAddress`=上記, `initialRoot`=`13298919588855972999610419539218897354041933303975356579871528834317655849272`。この root は `secret="103"`/`salt="9003"` を5枚複製・depth4の木の root で決定論的に再現可能）
+  - デプロイ後 `cast call` で `verifier()`/`owner()`/`familyRoot()` が期待値と一致することを確認済み
+  - **ハマりどころ**: `cast wallet address --account deployer` はキーストア復号にパスワード入力が要るが、非対話環境（TTYなし）だと `No such device or address (os error 6)` で失敗する。パスワードが必要なコマンド（`cast wallet address`/`forge create --account`）は本人のターミナルで直接実行する運用にした
 - [ ] **通知インフラ（設計済み・未着手）**: `SecretRevealed`/`PotentialLeak` イベントを監視して該当メンバーにメール通知。Rust の `alloy`（EVMログ取得・デコード）+ `reqwest`（Resend の REST API）+ `tokio` で `src/bin/notifier.rs` として実装する方針（Node.js ではなく Rust で統一）。デプロイ済みコントラクトが無いと作れないので Step 6 コア完了後に着手。
+- [ ] **匿名統計の公開（2026-09-20 採用・設計済み・未着手）**: 上記 `notifier.rs`（`alloy` でのイベント監視基盤）を流用し、`RootUpdated`/`PotentialLeak` を集計して「日次の検知件数」だけを公開する。family root・address 等の個人/家族を特定できる情報は公開側に一切出さない（日次カウントのみ、個別イベント単位の時刻・アドレスは出さない）。目的は「表面化しづらいオレオレ詐欺の試行実態を、被害者・家族を特定せずに可視化する」こと。ピッチの Practicality/社会的インパクトの補強にもなる。詳細は [SPEC.md](SPEC.md) Step 6 に反映済み
+  - **やらないと決めたこと**: 詐欺の手口（通話内容）をAIが要約して統計化する案は今回のスコープ外。現状の暗号設計は通話内容を一切扱わないため、実現には報告フォーム等の新規データ収集経路がゼロから必要になり、9/24までのコア完成を圧迫する。ピッチの「将来構想」スライドで触れる程度に留める（[SPEC.md](SPEC.md)「時間が余った場合の拡張候補」に記載済み）
 
 ### 既知の小物
 

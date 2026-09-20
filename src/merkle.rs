@@ -130,8 +130,6 @@ use super::*;
         let c = hash_pair(&b,&b);
         let d = hash_pair(&c,&c);
         let e = hash_pair(&d,&d);
-
-        println!("{:?}",tree1);
         assert_eq!(tree1.layers.last().unwrap()[0],e);
     }
     #[test]
@@ -143,7 +141,6 @@ use super::*;
         let c = hash_pair(&b,&b);
         let d = hash_pair(&c,&c);
         let e = hash_pair(&d,&d);
-        println!("{:?}",tree1);
         assert_eq!(tree1.root(),e);
     }
 
