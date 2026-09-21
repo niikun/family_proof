@@ -125,7 +125,7 @@
     <div id="totals" class="totals"></div>
   </div>
 </div>
-
+<script src="stats.js"></script>
 <script>
 async function main() {
   const chartEl = document.getElementById('chart');
@@ -133,9 +133,8 @@ async function main() {
 
   let data;
   try {
-    const res = await fetch('stats.json', { cache: 'no-store' });
-    if (!res.ok) throw new Error('stats.json not found (HTTP ' + res.status + ')');
-    data = await res.json();
+    data = window.STATS_DATA;
+    if (!data) throw new Error('stats.js が読み込めませんでした（同じフォルダに置いてありますか？）');
   } catch (e) {
     chartEl.innerHTML = '<div class="error">stats.json を読み込めませんでした: ' + e.message +
       '<br>このページは stats.json と同じディレクトリで簡易HTTPサーバー越しに開いてください（例: python3 -m http.server）。</div>';

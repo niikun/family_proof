@@ -1,3 +1,4 @@
+use std::process::Command;
 use std::collections::HashMap;
 use std::fs;
 use ark_bn254::Fr;
@@ -25,7 +26,7 @@ pub async fn main(){
     let registry_address:Address = "0xa9f1A920A96c42BC4aA37DcB513CA615A3B7557d".parse().unwrap();
     let url= "https://worldchain-sepolia.g.alchemy.com/public".parse().unwrap();
     let provider = ProviderBuilder::new().connect_http(url);
-    let mut from_block: u64 = 34672100;
+    let mut from_block: u64 = provider.get_block_number().await.unwrap().saturating_sub(50);
     let mut stats: HashMap<u64,(u64, u64)> = fs::read_to_string("stats.json")
                                 .ok()
                                 .and_then(|s| serde_json::from_str(&s).ok())
@@ -74,7 +75,17 @@ pub async fn main(){
                     println!("ProofVerified:{:?},\nPotentialLeak:{:?}",entry.0, entry.1);
                 }
             }
-            fs::write("stats.json",serde_json::to_string_pretty(&stats).unwrap()).unwrap();
+           
+            let json = serde_json::to_string_pretty(&stats).unwrap();
+            fs::write("stats.json", &json).unwrap();
+            fs::write("stats.js", format!("window.STATS_DATA = {};", json)).unwrap();
+            let status = Command::new("aws")
+                .args(["s3", "cp", "stats.json", "s3://niikun.net/family_proof/stats.json"])
+                .status()
+                .expect("failed to spawn aws");
+            if !status.success() {
+                eprintln!("S3 upload failed: {:?}", status);
+            }
             from_block = to_block + 1;
         }
         tokio::time::sleep(std::time::Duration::from_secs(30)).await;
