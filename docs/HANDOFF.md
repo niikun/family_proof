@@ -1,9 +1,10 @@
 # HANDOFF — 別PCへの引き継ぎ
 
-最終更新: 2026-09-20（Step 6 コアほぼ完了・World Chain Sepoliaデプロイ済み・追加拡張B着手中） / ブランチ: `main` / remote: `git@github.com:niikun/family_proof.git` / 同期: **未コミットあり（多数、下記git管理方針参照）**。`git add -A && git commit && git push` で `origin/main` と一致させる
+最終更新: 2026-09-21（Step 6 コア完了、Step 7 Trust Circle/Family Constitution 拡張を採用したうえで**本番期間に実施する順番に変更**） / ブランチ: `main` / remote: `git@github.com:niikun/family_proof.git` / 同期: **未コミットあり（多数、下記git管理方針参照）**。`git add -A && git commit && git push` で `origin/main` と一致させる
 
-> ✅ **Step 6 コア完了（Verifier/Registry/テスト/calldata変換/World Chain Sepoliaデプロイ済み）**。`cargo test` 9本緑・`forge test` 8本緑。デプロイ済みアドレスは下記「Step 6」節参照（`FamilyRegistry` は `0xa9f1A920...` が正、`0xD06FcbB5...` は重複デプロイの旧アドレスで放置）。
-> **🆕 9/20、残り約4日を使って追加拡張A（root rotationフロー）/B（通知インフラ+匿名統計）/C（攻撃者期待損失シミュレーション）に着手することを決定。詳細は下記「残り期間での追加拡張」節。当初の優先順位はA→B→Cだったが、実際にはB（`notifier.rs`）から着手済み — `sol!`マクロでのイベント型定義・`alloy`での`get_logs`実測まで完了、次は`src/lib.rs`化（`merkle`/`proof`を`main.rs`と`notifier.rs`で共有）を進めている。Aはその後。**
+> ✅ **Step 6 コア完了（Verifier/Registry/テスト/calldata変換/World Chain Sepoliaデプロイ済み）**。`cargo test` 9本緑・`forge test` 8本緑。デプロイ済みアドレスは下記「Step 6」節参照（`FamilyRegistry` は `0xa9f1A920...` が正、`0xD06FcbB5...` は重複デプロイの旧アドレスで放置）。追加拡張A/B/Cも完了（下記「残り期間での追加拡張」節）。
+> **🆕🆕 2026-09-21: Trust Circle / Family Constitution 拡張（Step 7）を正式採用（設計は [SPEC.md §11](SPEC.md) 完了）。ただし実施順序を再検討し、Step 5（デモUI + World ID音声クローン対策）を先に・Step 7 を後に入れ替えた。** 理由: Step 5 はピッチのWOW factorの本丸であり、審査員に見せる成果物を先に確定させたい。Step 7 は新しい暗号要素・新SDKを足さない純粋なSolidity/Rustの積み増しで、Step 6 の型がそのまま使えるため本番の短時間でも着手しやすく、「ハッカソン中に新しく作った部分」としてContinuity Trackのストーリーにも向く。
+> **→ 残り2.5日（9/21〜9/23、9/24はバッファ）は Step 5（デモUI + World ID連携）に充てる。Step 7 はイベント本番（9/25〜27）中に着手する。** Claude はコーチのみ、設計を書いただけでコードは書いていない — 実装は引き続きユーザーが行う。
 > **⚠️ 重要: ETHGlobal Tokyo 2026 の日程・提出ルールが確定済み（下記参照）。この5連休の位置づけが変わったので必読。**
 
 ## ⚠️ ETHGlobal Tokyo 2026 日程・提出ルール（2026-09-19 確認）
@@ -13,11 +14,11 @@
 - **AIツール利用ポリシー**: AI支援は許可されるが、人間の実質的な貢献を示しつつ明記が必要。[[no-writing-code]]（Claude はコーチのみ、コードは全部ユーザーが書く）の運用がそのままこの要件を満たす — README/提出文に明記すること
 - デモ動画（2〜4分、720p以上）は任意だが推奨。倍速・電話撮影・テキストのみ+音楽・AIナレーションは禁止
 
-**改訂後の進め方（2026-09-19時点の推奨）**: 今日から9/24（イベント前日）までを「Continuity Track の“既存部分”」の仕上げに使い、**Step 6 のコア（Verifier.sol / Registry / テストネットデプロイ）をここで完成させる**。**イベント本番（9/25〜27）は「期間中に新規に作った部分」として World ID 連携・Step 5 デモUI・統合・デモ動画・Continuity提出文の執筆に充てる。** これで「動くもの」と「イベント中に作った説得力のあるストーリー」の両方を確保する。
+**改訂後の進め方（2026-09-19時点の推奨、2026-09-21 順序再変更）**: 今日から9/24（イベント前日）までを「Continuity Track の“既存部分”」の仕上げに使う。Step 6 のコアは完了済み。**2026-09-21時点の最新方針: 残り2.5日は Step 5（デモUI・World ID音声クローン対策連携）の完成に充てる。イベント本番（9/25〜27）は「期間中に新規に作った部分」として Step 7（Trust Circle/Family Constitution拡張）・統合・デモ動画・Continuity提出文の執筆に充てる。** これで「動くデモ（Step5）」を確実に確保しつつ、「イベント中に作った説得力のあるストーリー（Step7）」も狙う。
 
 ## いまどこ
 
-ロードマップ（[SPEC.md](SPEC.md) §7）で **Step 0〜4 完了、Step 6 ほぼ完了**。全体 ≈ 87%（ウェイト: 0=5/1=5/2=7/3=13/4=25/5=15/6=30、Step6は現在≈98%進捗）。残りは追加拡張A（root rotation）/C（攻撃者期待損失シミュレーション）とStep5（デモUI、イベント本番）。
+ロードマップ（[SPEC.md](SPEC.md) §7）で **Step 0〜4 完了、Step 6 完了**。Step 7（Trust Circle / Family Constitution 拡張、2026-09-21 採用）は設計済み・**実装はイベント本番に持ち越し**。残り2.5日は Step 5（デモUI + World ID連携）に集中する。
 
 | Step | 状態 |
 |---|---|
@@ -26,10 +27,11 @@
 | 2 MVP 回路を自ユースケースへ | ✅ circom 側 done / Rust パディングを `EMPTY_HASH` 固定に（commit `9c52de4`） |
 | 3 `ark-circom` で Rust から proof 生成・検証 | ✅ **完了**。CLI の Merkle root が回路の public root と一致することまで実証済み |
 | 4 RLN（§6.2） | ✅ **完了**（2026-09-19）。回路実装・Rust配線・2点復元テストまで完走。詳細は下記「Step 4」節 |
-| 5 デモ UI | ⬜ **イベント本番（9/25〜27）に着手する方針** |
-| 6 on-chain（+ World ID ゲート） | ✅ **ほぼ完了（≈98%）**。Verifier/Registry/ユニットテスト/本物データでの統合テスト/Rust鍵統一/calldata変換/World Chain Sepoliaへのデプロイ/通知インフラ/匿名統計公開まで全て済み。詳細は下記「Step 6」節 |
+| 5 デモ UI + World ID連携 | ⬜ **2026-09-21 順序変更・残り2.5日（9/21〜9/24）で着手する方針**（旧方針はイベント本番だったが、Step 7 と入れ替えた） |
+| 6 on-chain（+ World ID ゲート） | ✅ **完了**。Verifier/Registry/ユニットテスト/本物データでの統合テスト/Rust鍵統一/calldata変換/World Chain Sepoliaへのデプロイ/通知インフラ/匿名統計公開まで全て済み。詳細は下記「Step 6」節 |
+| 7 Trust Circle / Family Constitution 拡張 | 🆕 **設計は [SPEC.md §11](SPEC.md) 完了。2026-09-21 に実装タイミングをイベント本番（9/25〜27）へ変更**。TODOは下記「🆕 Step 7」節 |
 
-**スコープ方針（2026-09-19 更新・再更新）**: Must = Step 4 RLN（済） → **Step 6 コア**（Verifier.sol + Registry + testnet デプロイ、9/19〜9/24中に完成させる） → イベント本番で Step 5 最小デモ + World ID 連携。Cut候補 = ENS 名解決・levels=20拡張。World ID は「Should」ではなく**イベント本番の目玉（下記 World ID 音声対策）**に格上げ — Step 6 コア完了後に着手する。
+**スコープ方針（2026-09-21 再更新・順序入れ替え）**: Must = Step 4 RLN（済） / Step 6 コア（済） → **残り2.5日（9/21〜9/24）は Step 5（デモUI + World ID音声クローン対策連携）に集中**（Step 6 完了で JS/IDKit 統合に着手できる状態） → イベント本番（9/25〜27）で Step 7 Trust Circle/Family Constitution の実装 + 統合 + デモ動画 + Continuity提出文。Cut候補 = ENS 名解決・levels=20拡張。
 
 ## 🆕 第2の差別化ポイント: World ID live-challenge による AI音声クローン対策（2026-09-19 採用、"Option A"）
 
@@ -38,7 +40,7 @@ RLN（盗んだ secret の使い回し検知）と**脅威モデルを分離**�
 - **絶対に守る設計制約**: RLN の `challenge`/`epoch` を、この生の合言葉に**流用しない**。流用すると、正規メンバーが同一 epoch 内に別々の合言葉で2回正規の通話をしただけで RLN の自己暴露が発動し、secret が漏れてしまう。**完全に分離**すること — 合言葉は World ID の `signal` フィールド（`signal = hash(code)`）にのみ紐付ける。circom 側の変更は不要
 - **検証は on-chain ではなく off-chain**。通話中にブロック確定を待つのは非現実的。フロー: 親が合言葉を読み上げる → 子の端末が (a) `signal=hash(code)` の World ID proof と (b) いつもの RLN proof（別物）を作成 → 親の端末が両方を off-chain 検証し、FamilyProof 側の結果は on-chain Registry の状態（現在の root・失効状況）と突き合わせる。Registry が唯一の正本、通話中の検証はそれに対する高速な off-chain チェック
 - World ID には実機 Orb 不要の Simulator/staging モードがある → デモは親子2役のブラウザ mini-app で十分（電話回線は不要）
-- スコープリスク: これまで Rust + circom + Solidity だけだったスタックに JS/Web フロントエンド（IDKit widget）が新たに加わる。**Step 6 コア完了後に着手**すること
+- スコープリスク: これまで Rust + circom + Solidity だけだったスタックに JS/Web フロントエンド（IDKit widget）が新たに加わる。Step 6 コアは完了済みなので着手可能。**2026-09-21 に着手タイミングを再決定: 残り2.5日（9/21〜9/24、本番前）で着手する**（旧方針は「本番中」だったが、Step 7 と入れ替えた — 理由は上部の更新履歴参照）
 - 競合調査（2026-09-19時点）: ZK × World ID をオレオレ詐欺対策に組み合わせた既存プロジェクトは見つからず、独自性は高そう
 - **ピッチの軸（2026-09-19 追加）**: 「合言葉にZKを足した」だけだとありがちなハッカソン構成（既存の地味な対策＋暗号を足すパターン）に見えるリスクがある。差別化点は技術要素そのものではなく問題設定の切り口 — 「秘密を知っているだけ」では AI 音声クローンに突破される、だから knowledge の証明(RLN)だけでなく liveness の証明(World ID live-challenge)が要る、という脅威分離のロジックをピッチの中心に置く
 - **AI音声クローンデモ（2026-09-19 採用）**: 上記ロジックを言葉でなく体験として見せるため、Step 5 のデモに「クローン音声が正しい合言葉を言っても live-challenge で弾かれる」シーンを追加する。音声クローンは同意を得たチームメンバー本人の声でイベント前に事前生成（ライブ生成は音声合成の失敗・レイテンシ等のデモ事故リスクが高いため）、デモ本番ではその音声の再生＋検知部分のみライブで行う。RLN単体のデモ（漏洩secretの使い回し検知）とは別シーンとして構成。詳細は [SPEC.md](SPEC.md) Step 5 / §9 に反映済み
@@ -47,14 +49,44 @@ RLN（盗んだ secret の使い回し検知）と**脅威モデルを分離**�
 
 Step6コアがデプロイまで完了し、予定より前倒しで進んでいるため、9/20〜24の残り約4日を使って3つの拡張を追加することにした（Continuity Track の「既存部分」に含まれる — World ID/Step5デモのような「イベント中に新規に作る部分」とは別枠）。優先順位はA→B→C。
 
-**進行計画（2026-09-20 実態に合わせて再修正）**: B・Aとも9/20中に完了。想定より前倒し。残りはCのみ、9/24までバッファも含めて余裕あり。次にやるのはC。
+**進行計画（2026-09-21 実態に合わせて再修正）**: A・Bとも9/20中に完了。CはTier1のみ9/21に完了、Tier2は見送り。A/B/Cすべて着地。~~本番まで残り4日はピッチ準備・バッファに充てる。~~ → **2026-09-21 に方針転換**: 空いた時間は Trust Circle / Family Constitution 拡張（Step 7、下記節）に充てる。ピッチ準備は Step 7 の実装状況次第で9/24に圧縮する。
 
 - **A（最優先）: root rotation フロー ✅完了（2026-09-20）**。「secret漏洩検知→復元→失効」の話に、**実際にメンバーを木から除外して新rootをon-chainに反映する具体的な手順**が無かった穴を塞いだ。
   - **`src/bin/rotate.rs`を新規作成**: これまでのデモで実際に漏洩・復元した`secret="103"`（`FamilyRegistry`の現行root＝同secret/salt="9003"を5枚複製した木）のメンバーに、新しい`secret="203"`/`salt="9203"`を再発行し、`merkle::MerkleTree::from_leaves`で木を再構築して新root（`18800580504245480865872636926759076395359931162917691738659468170666629770659`）を算出。既存ロジックの延長のみ、新規暗号要素なし。
   - on-chain反映は`cast send 0xa9f1A920... "updateRoot(uint256)" <新root> --account deployer`（alloyでの署名実装はせず、Foundry付属の`cast`で十分「本物」。alloyは読み取り専用のBで使う、という役割分担を維持）。
   - デプロイ済み`FamilyRegistry`で実行し、**`familyRoot()`が新rootと一致・`RootUpdated`イベント発行（tx: `0x2762bce1...`）を確認済み**。これで「検知→復元→通知→再発行→木の再構築→on-chainでのroot更新」の全フローが実チェーン上で繋がったことを実証。
 - **B: 通知インフラ＋匿名統計**。既存の「通知インフラ」「匿名統計の公開」タスク（下記Step6節）と同じもの。`notifier.rs` の `alloy` イベント監視基盤をAの検証にも使えないか要検討
-- **C: 攻撃者の期待損失シミュレーション**。`epoch`/`limit` の設定によって「攻撃者が使い回して捕まる確率」がどう変わるかを、小さいモンテカルロシミュレーション（Rust、既存の `recover_secret` ロジックの応用、新規暗号要素なし）で定量化する。ピッチ資料用の数字・グラフを作るのが目的。実装は未着手・詳細設計はこれから
+- **C: 攻撃者の期待損失シミュレーション ✅Tier1のみで完了（2026-09-21）、Tier2は見送り**。
+  - **Tier1（採用・完了）**: `src/bin/attacker_sim.rs`。「サービスなし」と「サービスあり（`block_rate`で決め打ち）」の2ケースで期待被害額を比較する決定論的な計算。出典を確認済みの警察庁統計（令和7年確定値、既遂1件あたり523.6万円/オレオレ詐欺サブタイプ785万円等。詳細は`familyproof-verified-scam-stats`メモリ参照）を使用。ピッチ用の数字はこれで確定。
+  - **Tier2（見送り）**: 当初案は`epoch`/`limit`の設定を振って「攻撃者が使い回して捕まる確率」を小さいモンテカルロ（`src/bin/attack_sim.rs`に試作あり、`recover_secret`を実際に呼んで検知が成立することは実証済み）で定量化するものだった。検討の結果、(1) SPEC.md §3.2で「epoch長・limitのチューニングはやらない」と明記済み（デモはepoch=1時間/limit=1固定）でプロダクト設計と噛み合わない、(2) RLNの検知自体は決定論的（2回目に別challengeで証明したら100%失効）でモンテカルロで揺らす確率的要素が本質的に存在せず、乱数化できるのは「攻撃者が1epoch内に何回使うか」という**出典のない仮定**のみ、(3) 残り日程が逼迫（9/21時点で本番まで4日）、という3点から費用対効果が低いと判断し見送り。`src/bin/attack_sim.rs`は試作のまま残すが、Cの正式な成果物はTier1のみとする。
+
+## 🆕 Step 7: Trust Circle / Family Constitution 拡張（2026-09-21 採用）
+
+設計は [SPEC.md §11](SPEC.md) に完了済み（データ構造・関数シグネチャ・デモ台本・既知の制約まで記載）。
+ここでは実装 TODO のみを管理する。**Claude はコード（`.sol`/`.rs`）を書かない** — 設計・レビュー・
+`cargo build`/`cargo test`/`forge test` の実行確認のみ。
+
+- [ ] `contracts/src/FamilyConstitution.sol` 新規作成（§11.4 のデータ構造・関数シグネチャを実装）
+  - `ActionState` struct、`actions` mapping（**キーは `uint256 actionId`。`bytes32` のハッシュではない** —
+    §11.3 の型の落とし穴参照。`keccak256` 出力をそのまま使うと BN254 スカラー体 `r` を超えて
+    回路の `challenge` と食い違いうるため、Rust側で `Fr::from_le_bytes_mod_order` 還元済みの値を
+    唯一の正として on-chain にもそのまま渡す）
+  - `ActionProposed`/`ActionApproved`/`ActionAuthorized` イベント（すべて `actionId: uint256`）
+  - `proposeAction(actionId, tier)`（`onlyAgent` 修飾子で AI Agent 用 EOA からのみ呼べるように）
+  - `approveAction(actionId, pA, pB, pC, pubSignals)`（`FamilyRegistry.verifyMembership()` と同型の
+    root/epoch鮮度/verifier検証 + `pubSignals[4] == actionId` の確認（再ハッシュ不要）+ nullifier 二重承認防止）
+  - tier→`requiredApprovals` のデモ用固定表（0/1/2/3、§11.4）
+- [ ] `contracts/test/FamilyConstitution.t.sol` — 最低限: tier0即実行 / tier2で1人目承認だけでは未実行 /
+      2人目承認で`ActionAuthorized` / 同一nullifierの二重承認はrevert / secretを持たない攻撃者は有効proofを作れない、を確認
+- [ ] Rust側: `src/bin/propose_action.rs`（or 既存 `submit_demo.rs` の拡張）で
+      Action説明文字列 → `keccak256` → `Fr::from_le_bytes_mod_order` で `actionId` を一度だけ算出し、
+      その値を `challenge` としてそのまま proof 生成 → `to_solidity_calldata` → `cast send` で
+      `FamilyConstitution.proposeAction`/`approveAction` に投入する一連の流れ（§11.5）
+- [ ] World Chain Sepolia に `FamilyConstitution.sol` をデプロイし、§11.6 のデモシナリオ（AI提案→攻撃者失敗→
+      メンバー2人承認→`ActionAuthorized`）を実チェーン上で1回通す
+- [ ] SPEC.md §8（脅威モデル）に §11.3 で触れた RLN epoch/limit 共有問題を正式追記するかは、Step 7 の
+      実装が固まった時点で判断（現状は §11.7 に既知の限界として記載済み）
+- [ ] 時間切れの場合は SPEC §7 Step 7 の縮退ライン（Solidity実装のみ→testnet実証→デモ組み込みの順で削る）に従う
 
 ## 確定済みの設計判断（蒸し返さない）
 
@@ -180,7 +212,9 @@ SPEC §6.2 の式（`a1 = Poseidon(secret,epoch)` / `x = Poseidon(challenge)` / 
   - **匿名統計（日次カウント）完了（2026-09-20）**: `Filter`から`event_signature`指定を外して`address`のみで絞り込み、`log.topics()[0]`で`ProofVerified`/`PotentialLeak`を判定。`block_timestamp / 86400`を日次キーにして`HashMap<u64,(u64,u64)>`（`(ProofVerified件数, PotentialLeak件数)`）に集計、`stats.json`に書き出す。アドレス・nullifierは一切保存しない設計通り。
     - ハマりどころ: 最初`day`を`block_timestamp`の生値のままキーにしてしまい、秒単位でバラけて実質「イベント1件=1エントリ」になる（日次集計の意図から外れる）バグがあった。`/86400`で日単位に丸めて解消。
   - **Bのタスク（通知インフラ＋匿名統計）はこれで完了**。`notifier.rs`が「detect → recover → notify → aggregate」を1つのポーリングループで実行する。
-- [ ] **匿名統計の公開（2026-09-20 採用・設計済み・未着手）**: 上記 `notifier.rs`（`alloy` でのイベント監視基盤）を流用し、`RootUpdated`/`PotentialLeak` を集計して「日次の検知件数」だけを公開する。family root・address 等の個人/家族を特定できる情報は公開側に一切出さない（日次カウントのみ、個別イベント単位の時刻・アドレスは出さない）。目的は「表面化しづらいオレオレ詐欺の試行実態を、被害者・家族を特定せずに可視化する」こと。ピッチの Practicality/社会的インパクトの補強にもなる。詳細は [SPEC.md](SPEC.md) Step 6 に反映済み
+- [x] **匿名統計の公開（2026-09-20 採用・2026-09-21 公開完了）**: 上記 `notifier.rs`（`alloy` でのイベント監視基盤）を流用し、`RootUpdated`/`PotentialLeak` を集計して「日次の検知件数」だけを公開する。family root・address 等の個人/家族を特定できる情報は公開側に一切出さない（日次カウントのみ、個別イベント単位の時刻・アドレスは出さない）。目的は「表面化しづらいオレオレ詐欺の試行実態を、被害者・家族を特定せずに可視化する」こと。ピッチの Practicality/社会的インパクトの補強にもなる。詳細は [SPEC.md](SPEC.md) Step 6 に反映済み
+  - **公開ダッシュボード `stats.html`（新規作成・未コミット）**: `stats.json`（`notifier.rs` が書き出す日次集計）を `fetch` して棒グラフ表示する単一HTMLファイル。verified（ProofVerified）/leak（PotentialLeak）を日次で可視化。家族root・address等は一切含まない設計通り。
+  - **S3へのアップロード完了（2026-09-21）**: `stats.json` / `stats.html` をS3にアップロードして一般公開。公開URLはユーザー管理。**更新運用は手動アップロードで決定**（`notifier.rs` からS3への自動同期は実装しない。都度 `notifier.rs` 実行 → `stats.json` 再生成 → 手動でS3に上げ直す）
   - **やらないと決めたこと**: 詐欺の手口（通話内容）をAIが要約して統計化する案は今回のスコープ外。現状の暗号設計は通話内容を一切扱わないため、実現には報告フォーム等の新規データ収集経路がゼロから必要になり、9/24までのコア完成を圧迫する。ピッチの「将来構想」スライドで触れる程度に留める（[SPEC.md](SPEC.md)「時間が余った場合の拡張候補」に記載済み）
 
 ### 既知の小物
@@ -225,7 +259,7 @@ forge test -vv   # ユニットテスト5本緑（Mock Verifier使用）
 
 ### git 管理の方針（2026-09-08 整理済み・2026-09-19 追記）
 
-- **追跡する**: `main.circom` / `scripts/` / `WORKFLOW.md` / `package.json` / `package-lock.json` / `circuits/input.json` / 共有鍵 `main_final.zkey` `verification_key.json` `pot12_final.ptau` / **`circuits/verifier.sol`（新規追加）** / **`contracts/`（Foundryプロジェクト一式。`contracts/lib/forge-std` は `forge init` が clone する外部依存、サブモジュールとして扱うか通常ファイルとして追跡するかは commit 時に要確認）**
+- **追跡する**: `main.circom` / `scripts/` / `WORKFLOW.md` / `package.json` / `package-lock.json` / `circuits/input.json` / 共有鍵 `main_final.zkey` `verification_key.json` `pot12_final.ptau` / **`circuits/verifier.sol`（新規追加）** / **`contracts/`（Foundryプロジェクト一式。`contracts/lib/forge-std` は `forge init` が clone する外部依存、サブモジュールとして扱うか通常ファイルとして追跡するかは commit 時に要確認）** / **`stats.json` `stats.html`（2026-09-21 新規、匿名統計の公開ダッシュボード。S3にもアップロード済みだが repo 側でも追跡する）**
 - **gitignore（各PCで再生成）**: `node_modules/` / `main_js/` / `main.r1cs` / `main.sym` / 中間 ptau / `main_0000.zkey` / `witness.*` / `proof.json` / `public.json`
 - 回路を変えたら zkey/vkey は作り直して**両方コミット**（[WORKFLOW.md](../circuits/WORKFLOW.md) の「0→2」）。1つの鍵を両PCで共有するのが原則。
 

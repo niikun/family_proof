@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FamilyProof 匿名統計</title>
+<style>
+  :root {
+    --bg: #0f1216;
+    --panel: #171b21;
+    --border: #2a2f38;
+    --text: #e8eaed;
+    --muted: #8a929e;
+    --verified: #3b82f6;
+    --leak: #ef4444;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 24px 16px 48px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Hiragino Sans, "Noto Sans JP", sans-serif;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .sub {
+    color: var(--muted);
+    font-size: 13px;
+    margin: 0 0 24px;
+    line-height: 1.6;
+  }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .legend {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+    font-size: 13px;
+  }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+  .dot.verified { background: var(--verified); }
+  .dot.leak { background: var(--leak); }
+
+  .chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 18px;
+    height: 220px;
+    padding: 0 4px;
+    overflow-x: auto;
+  }
+  .col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 56px;
+    height: 100%;
+    justify-content: flex-end;
+  }
+  .bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    height: 100%;
+  }
+  .bar {
+    width: 18px;
+    border-radius: 4px 4px 0 0;
+    min-height: 2px;
+  }
+  .bar.verified { background: var(--verified); }
+  .bar.leak { background: var(--leak); }
+  .col-label {
+    margin-top: 8px;
+    font-size: 11px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .count-label {
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+
+  .empty, .error {
+    color: var(--muted);
+    font-size: 14px;
+    padding: 40px 0;
+    text-align: center;
+  }
+  .error { color: var(--leak); }
+
+  .totals {
+    display: flex;
+    gap: 24px;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
+  .totals div { font-size: 13px; color: var(--muted); }
+  .totals strong { display: block; font-size: 22px; color: var(--text); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>FamilyProof 匿名統計</h1>
+  <p class="sub">
+    オンチェーンの検証イベントを日次で集計したものです。家族の root・アドレス・個別イベントの時刻など、
+    個人・家族を特定できる情報は一切含みません。
+  </p>
+
+  <div class="panel">
+    <div class="legend">
+      <span><i class="dot verified"></i>本人確認成功（ProofVerified）</span>
+      <span><i class="dot leak"></i>secret使い回しの検知（PotentialLeak）</span>
+    </div>
+
+    <div id="chart" class="chart"></div>
+    <div id="totals" class="totals"></div>
+  </div>
+</div>
+
+<script>
+async function main() {
+  const chartEl = document.getElementById('chart');
+  const totalsEl = document.getElementById('totals');
+
+  let data;
+  try {
+    const res = await fetch('stats.json', { cache: 'no-store' });
+    if (!res.ok) throw new Error('stats.json not found (HTTP ' + res.status + ')');
+    data = await res.json();
+  } catch (e) {
+    chartEl.innerHTML = '<div class="error">stats.json を読み込めませんでした: ' + e.message +
+      '<br>このページは stats.json と同じディレクトリで簡易HTTPサーバー越しに開いてください（例: python3 -m http.server）。</div>';
+    return;
+  }
+
+  const days = Object.keys(data).map(Number).sort((a, b) => a - b);
+  if (days.length === 0) {
+    chartEl.innerHTML = '<div class="empty">まだ検知データがありません。</div>';
+    return;
+  }
+
+  const maxCount = Math.max(1, ...days.map(d => Math.max(data[d][0], data[d][1])));
+  const maxBarHeight = 180;
+  let totalVerified = 0, totalLeak = 0;
+
+  for (const day of days) {
+    const [verified, leak] = data[day];
+    totalVerified += verified;
+    totalLeak += leak;
+
+    const date = new Date(day * 86400 * 1000);
+    const label = (date.getMonth() + 1) + '/' + date.getDate();
+
+    const col = document.createElement('div');
+    col.className = 'col';
+
+    const bars = document.createElement('div');
+    bars.className = 'bars';
+
+    const vBar = document.createElement('div');
+    vBar.className = 'bar verified';
+    vBar.style.height = Math.round((verified / maxCount) * maxBarHeight) + 'px';
+    vBar.title = 'ProofVerified: ' + verified;
+
+    const lBar = document.createElement('div');
+    lBar.className = 'bar leak';
+    lBar.style.height = Math.round((leak / maxCount) * maxBarHeight) + 'px';
+    lBar.title = 'PotentialLeak: ' + leak;
+
+    bars.appendChild(vBar);
+    bars.appendChild(lBar);
+
+    const colLabel = document.createElement('div');
+    colLabel.className = 'col-label';
+    colLabel.textContent = label;
+
+    col.appendChild(bars);
+    col.appendChild(colLabel);
+    chartEl.appendChild(col);
+  }
+
+  totalsEl.innerHTML =
+    '<div>累計 本人確認成功<strong>' + totalVerified + '</strong></div>' +
+    '<div>累計 使い回し検知<strong>' + totalLeak + '</strong></div>';
+}
+
+main();
+</script>
+</body>
+</html>

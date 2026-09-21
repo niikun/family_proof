@@ -236,6 +236,21 @@ Rust 4 か月目であることを踏まえ、ZK 特有の概念（制約・witn
   公開側には出さない（再登場パターンからの家族特定を防ぐ）
 - **ゴール**: on-chain 要素（登録・検証・使い回し検知・失効・匿名統計公開）を含めた提出物として完成させる
 
+### Step 7: Trust Circle / Family Constitution 拡張（2026-09-21 採用、残り2.5日でできる範囲を狙う）
+
+「家族であることを証明する」から「Trust Circle が特定の Action を承認したことを証明する」への一般化。詳細な技術設計・データ構造・既知の制約は §11 を参照。ここではロードマップ上の位置づけのみ示す。
+
+- **新規暗号要素は追加しない**方針で設計する。既存の Merkle+ZK+RLN 回路（circom側は無変更）をそのまま使い、`challenge` を「World ID live-challenge の spoken code」ではなく「`actionId`（Action ごとに off-chain で一度だけ算出する、`Fr` 体に還元済みの識別子）」として使う、という Step 6 で既に確立した「challenge の意味を用途ごとに使い分ける」パターンの第3の応用として位置づける
+- 新規追加が必要なもの（すべて Rust/Solidity、回路・zkey の作り直し不要）:
+  - `contracts/src/FamilyConstitution.sol`（Action 提案・ZK証明つき承認カウント・閾値到達で `ActionAuthorized` イベント発行。§11.4 参照）
+  - Rust 側は既存の証明生成フロー（`proof::build_circuit_with_inputs` 等）を `challenge=actionId`（§11.3/§11.5参照）で呼ぶだけで新規バイナリが書ける
+- **ゴール（デモシナリオ）**: 「AI Family Agent が高額 Action（例: 300万円送金）を提案 → Trust Circle メンバー N 人がそれぞれ ZK 証明で承認 → 閾値到達で `ActionAuthorized` が発行される」を World Chain Sepolia 上で実演する。低額 Action は AI 単独で実行できる（0 承認）ことも対比で見せる
+- **時間が足りない場合の優先順位**（2.5日の見積もりが外れた場合の縮退ライン、優先度高い順）:
+  1. `FamilyConstitution.sol` の Solidity 実装 + Foundry ユニットテストのみ（on-chain ロジックの正しさを証明。UI・デモ動画なし）
+  2. 上記 + 実チェーン（World Chain Sepolia）への実際の証明提出（`submit_demo.rs` 相当の拡張で実証）
+  3. デモ UI・動画への組み込みは Step 5（イベント本番 9/25〜27）に回す
+  4. それでも間に合わなければ §11 の設計のみをピッチ資料の "Prove trust, not identity" ビジョンとして提示し、実装は次点候補（従来通りの縮退）に戻す
+
 ### 時間が余った場合の拡張候補
 - 検知された詐欺手口（通話内容・スクリプト等）を家族からの任意報告として集め、AIで要約・統計化して
   公開する構想をピッチ資料上で提示（実装はしない）。現状の暗号設計は通話内容を一切扱わないため、
@@ -243,6 +258,7 @@ Rust 4 か月目であることを踏まえ、ZK 特有の概念（制約・witn
 - モバイル UX（音声変換、SMS 連携）の設計をピッチ資料上で提示（実装はしない）
 - SOS／デュレス機能の設計をピッチ資料上で提示
 - **World ID の一意性を使った root 更新のマルチパーティ承認（2026-09-20 検討・実装見送り）**: 現状 `updateRoot` は owner 単独の秘密鍵で実行できる単一障害点（管理者端末が乗っ取られると木を書き換えられる）。通常のマルチシグは攻撃者が偽ウォレットを量産できるため防御にならないが、World ID は「1人1つしか発行できない」Sybil耐性を持つため、「異なる家族メンバーN人がそれぞれ自分のWorld IDで承認しないとroot更新できない」という仕組みが原理上成立する。ただし既存の owner 単独モデルを丸ごと作り直す規模のスコープになるため今回は実装せず、ピッチの将来構想として提示するに留める
+- ~~Trust Circle / Family Constitution 構想（2026-09-21 検討・実装見送り）~~ → **2026-09-21 に方針転換、正式にスコープ採用（残り2.5日でできる範囲）。詳細設計は Step 7（本節下）と §11。** 当初「新しい回路・コントラクト設計が必要な別プロジェクト規模」として見送ったが、既存の Merkle+ZK+RLN 回路を改変せずに `challenge` の意味を使い分けるだけで実現できる設計に気づいたため、2.5日でも現実的なスコープに収まると判断した（詳細は §11.3 の再利用設計）
 
 ## 8. 脅威モデルと既知の限界
 
@@ -281,3 +297,142 @@ Rust 4 か月目であることを踏まえ、ZK 特有の概念（制約・witn
 - RLN の epoch のソース：クライアント時刻か、on-chain の `block.timestamp` か（検証側と証明側で
   epoch がズレると誤って失効/受理される可能性があるため、丸め幅と許容ズレも要検討）
 - RLN の回路内ハッシュを Poseidon で通すか、パフォーマンス次第で Poseidon2 を検討するか
+
+## 11. Trust Circle / Family Constitution 拡張仕様（2026-09-21 採用）
+
+Step 7（§7）の詳細設計。**残り2.5日（9/21〜9/23、9/24はバッファ）で現実的に狙う範囲**を明示する。
+
+### 11.1 背景・ビジョン（ピッチの軸にもなる要約）
+
+現行 FamilyProof は「本人（血縁の家族）であることを証明する」設計だが、独居高齢者の増加を踏まえると
+「家族がいない・少ない人は誰に守ってもらうのか」という問いが残る。そこで証明対象を一段抽象化する。
+
+- **Before**: 「この人は家族ですか？」を証明する（Identity Proof）
+- **After**: 「本人が選んだ信頼関係（血縁に限らない Trust Circle）が、この Action を承認したこと」を
+  証明する（Action Authorization）
+
+World ID は「スポンサー統合のための後付け機能」ではなく、**Trust Circle を構成する各メンバーが
+一意な人間であること（Sybil耐性）を担保する本質的な部品**として位置づけ直す。さらに Trust Circle には
+人間だけでなく「本人から権限を委譲された AI Family Agent」も参加しうるが、AI は対等なメンバーではなく
+**代理人**（低リスク Action のみ単独実行可、高リスク Action は事前に取り決めた人数の人間承認 =
+Family Constitution が必須）という権限モデルを採る。オレオレ詐欺対策自体も「声や合言葉を信じるか」
+ではなく「高リスクな Action には Trust Circle の承認が要る」という同じ構造に一般化できる。
+ピッチの締めは *"Prove trust, not identity."*
+
+### 11.2 スコープの区切り方
+
+| やること（2.5日で狙う） | やらないこと（明示的に外す） |
+|---|---|
+| 既存 Merkle+ZK+RLN 回路の**そのまま流用**（circom 無変更） | 新しい回路の設計・実装（例: N-of-M 閾値証明を1つの proof に畳み込む等） |
+| `FamilyConstitution.sol`: Action 提案・ZK証明つき承認カウント・閾値実行 | LLM を実際に統合した AI Agent（今回は Rust の固定ロジックで「AI が提案する」ことをシミュレート） |
+| ハードコードされた3階層の閾値（下記11.4） | Family Constitution 自体をメンバーが動的に編集する UI・ガバナンス機構 |
+| World Chain Sepolia 上での実演（`cast send` / Foundry テスト） | AI Agent 自身に暗号的な ID を持たせる設計（§11.7 既知の限界で明記） |
+| Trust Circle という呼称へのピッチ資料上の言い換え（「家族」→「信頼できる関係」も歓迎するナラティブ） | コードベース上の型・変数名の "Family" → "TrustCircle" 全面リネーム（今回のスコープでは不要な作業） |
+
+### 11.3 再利用設計 — なぜ新しい回路がいらないか
+
+既存回路の public input `challenge` は、Step 6 の設計時点ですでに「用途ごとに意味を使い分ける」箱として
+扱われている。これまでの2つの用途に、3つ目を追加するだけで Action Authorization が成立する。
+
+| 用途 | `challenge` の中身 | 既に実装済みか |
+|---|---|---|
+| ① RLN の基本用途（リプレイ防止） | 検証側が発行するランダム nonce | ✅ Step 4 |
+| ② World ID live-challenge（AI音声クローン対策） | `hash(合言葉)`（World ID の `signal` に流用、circom 側は不使用） | 設計済み（HANDOFF参照）、実装は Step 5 でイベント本番中 |
+| ③ **Action Authorization（本節、新規）** | `actionId`（後述、Action ごとに一度だけ off-chain で算出する `Fr` 体の元） | 未実装、本節で設計 |
+
+**⚠️ 型の落とし穴（設計時に潰す）**: 回路の `challenge` public input は BN254 スカラー体の元＝`r`
+（`2^254` 弱）未満の値。`keccak256` の出力（256bit フル）をそのまま `challenge`/コントラクトの
+mapping key に使うと、`r` 以上の値になったときに Rust 側の `Fr::from_le_bytes_mod_order`（mod 還元）と
+Solidity 側の生の `uint256` 比較が食い違いうる。対策は**「還元後の値を Action の唯一の識別子にする」**
+こと（後述 `actionId`）— on-chain・off-chain 双方でハッシュを2回計算し直さない。
+
+①と③は**同じ circom 回路・同じ challenge スロットを共有する**ため、コンパイル済みの `main_final.zkey` /
+`verifier.sol` をそのまま使い回せる。②とは異なる経路（②は on-chain 検証を経由しない off-chain フロー、
+③は on-chain の `FamilyConstitution.sol` で検証する）なので、①③の verifier 検証パスは Step 6 の
+`FamilyRegistry.verifyMembership()` とほぼ同じロジックの再利用になる。
+
+**RLN との相互作用（重要な既知の制約）**: 現行 RLN は `epoch = 1時間 / limit = 1` に固定されている
+（§6.3）。これは「同一 secret が同一 epoch 内に異なる `challenge` で2回証明すると自己暴露する」設計
+そのものなので、**同一メンバーが1時間以内に異なる2つの Action を承認すると、意図せず自分の secret を
+露出させてしまう**。デモでは1メンバーにつき1 Action/デモシーン内で収める運用で回避するが、実運用では
+Action Authorization 用に epoch・limit を別立てにする（RLN のインスタンスを用途ごとに分ける）等の設計変更が
+必要になる。本番実装はスコープ外、§11.7 に既知の限界として明記する。
+
+### 11.4 `FamilyConstitution.sol` 設計（関数シグネチャ・データ構造のみ、実装はユーザーが書く）
+
+```solidity
+struct ActionState {
+    uint256 tier;              // 0=AI単独可, 1=人間1人, 2=人間2人, 3=Constitution変更(人間3人)
+    uint256 requiredApprovals; // tier から決まる閾値
+    uint256 approvalCount;
+    bool executed;
+    mapping(uint256 => bool) usedNullifiers; // このactionIdに対して既に使われたnullifier（二重承認防止）
+}
+
+mapping(uint256 => ActionState) public actions; // actionId => state
+// actionId は bytes32 のハッシュではなく、Fr（BN254スカラー体）に還元済みのuint256。
+// Rust側で「keccak256(action description) を Fr::from_le_bytes_mod_order で還元した値」として
+// 一度だけ算出し、on-chain にはこの値だけを渡す（Solidity側での再ハッシュ・再還元は行わない）。
+
+event ActionProposed(uint256 indexed actionId, uint256 tier, uint256 requiredApprovals);
+event ActionApproved(uint256 indexed actionId, uint256 approvalCount, uint256 requiredApprovals);
+event ActionAuthorized(uint256 indexed actionId); // 閾値到達時に1回だけ発行
+
+function proposeAction(uint256 actionId, uint256 tier) external; // 呼べるのは agent アドレスのみ（onlyAgent）
+function approveAction(
+    uint256 actionId,
+    uint256[2] calldata pA, uint256[2][2] calldata pB, uint256[2] calldata pC,
+    uint256[5] calldata pubSignals // [root, y, nullifier, epoch, challenge] — FamilyRegistryと同一順序
+) external; // 検証ロジックはFamilyRegistry.verifyMembership()とほぼ同じ（root/epoch鮮度/verifier呼び出し）
+            // + pubSignals[4] == actionId を require（"challenge が この Action 用ではない"を弾く。
+            //   Poseidon等の再ハッシュはしない — challenge 自体が actionId そのもの）
+            // + usedNullifiers[nullifier] が false であることを確認してから true にする（同一メンバーの二重承認防止）
+```
+
+- **`tier` → `requiredApprovals` のデモ用固定表**（実運用は Family Constitution として可変にすべきだが、
+  今回は定数でよい）:
+
+  | tier | 意味 | 必要承認人数 |
+  |---|---|---|
+  | 0 | 日常対応・少額（例: 予定管理、1万円未満の支払い） | 0（AI Agent が単独実行、`proposeAction` と同時に `executed=true`） |
+  | 1 | 中額（例: 10万円未満の送金） | 1 |
+  | 2 | 高額（例: 100万円以上の送金） | 2 |
+  | 3 | Trust Circle 構成の変更（新規メンバー追加、AI Agentの権限変更） | 3（デモでは省略可） |
+
+- **AI Agent の権限モデル**: AI Agent は Trust Circle の Merkle Tree に leaf を持たない（＝ZK証明を
+  生成できない）。`proposeAction` を呼べる特別な EOA（`onlyAgent` 修飾子）として実装するだけで、
+  「AI は Action を提案できるが、tier 1 以上は人間の ZK 証明なしには実行されない」が
+  **コントラクトレベルで強制される**（AI が `approveAction` を有効な proof 付きで呼ぶことは、secret を
+  持たない以上できない——ZK の健全性がそのままここでも権限モデルの土台になる）。
+
+### 11.5 Rust 側設計（新規バイナリ、既存コードの再利用のみ）
+
+- `src/bin/propose_action.rs`: Action の説明文字列（例: `"send 3000000 JPY to xxx"`）を受け取り、
+  `keccak256` → `Fr::from_le_bytes_mod_order(&hash_bytes)` で **`actionId` を一度だけ算出**する
+  （これが以後 on-chain の Action 識別子・`challenge` 双方を兼ねる、単一の正）。
+  `proposeAction(actionId, tier)` の calldata を作る、または直接 `cast send` で呼ぶ。
+  承認側は既存の `proof::build_circuit_with_inputs` にこの `actionId` の `Fr` 値をそのまま
+  `challenge` として渡すだけで proof 生成できる（回路側の `x = Poseidon(challenge)` 計算は無変更）。
+  `to_solidity_calldata` も Step 6 の実装をそのまま呼べる。
+- 複数メンバーの承認をシミュレートするには、`submit_demo.rs` と同様に `cast send` で
+  `FamilyConstitution.approveAction(...)` を人数分連続実行すればよい。
+
+### 11.6 デモシナリオ（想定台本）
+
+1. AI Family Agent が「300万円送金」Action を提案（tier=2）→ `ActionProposed` イベント
+2. 攻撃者（secretを持たない）が `approveAction` を試みる → 有効な proof を作れず失敗（証明できないことを見せる）
+3. Trust Circle メンバー1人目が ZK 証明で承認 → `ActionApproved(1/2)`
+4. メンバー2人目が承認 → `ActionApproved(2/2)` → `ActionAuthorized` 発行
+5. 対比として、AI Agent が「予定リマインド送信」（tier=0）を提案 → 即 `executed=true`（人間の承認不要）
+
+### 11.7 既知の限界（§8 に準ずる追記）
+
+- **AI Agent 自身は暗号的な ID を持たない**。今回のデモでは「`proposeAction` を呼べる特定の EOA」という
+  アクセス制御レベルの権限に留める。本来は AI Agent 自身も Sybil耐性のある形で識別・失効できるべきだが
+  （侵害された AI Agent を Trust Circle から切り離す等）、鍵管理・attestation の設計が別途必要になるため
+  2.5日のスコープでは扱わない
+- **RLN の epoch/limit 共有問題**（§11.3 既述）: Action Authorization に既存の RLN インスタンスをそのまま
+  使うと、1時間以内に複数 Action を承認した正規メンバーの secret が意図せず露出しうる。デモでは発生しない
+  順序で進行するが、実運用では別インスタンス化が必要
+- **Family Constitution 自体は可変ではない**（tier→閾値のマッピングはコントラクトの定数）。本来のビジョンで
+  ある「Trust Circle が自分たちで閾値を決める」ガバナンス機構は将来課題として提示するに留める
