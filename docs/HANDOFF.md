@@ -27,7 +27,7 @@
 | 3 `ark-circom` で Rust から proof 生成・検証 | ✅ **完了**。CLI の Merkle root が回路の public root と一致することまで実証済み |
 | 4 RLN（§6.2） | ✅ **完了**（2026-09-19）。回路実装・Rust配線・2点復元テストまで完走。詳細は下記「Step 4」節 |
 | 5 デモ UI | ⬜ **イベント本番（9/25〜27）に着手する方針** |
-| 6 on-chain（+ World ID ゲート） | 🟡 **進行中（≈85%）**。Verifier/Registry/ユニットテスト/本物データでの統合テスト/Rust鍵統一/calldata変換/**World Chain Sepoliaへのデプロイ**まで済み。**残: 通知インフラ・匿名統計公開**。詳細は下記「Step 6」節 |
+| 6 on-chain（+ World ID ゲート） | ✅ **ほぼ完了（≈98%）**。Verifier/Registry/ユニットテスト/本物データでの統合テスト/Rust鍵統一/calldata変換/World Chain Sepoliaへのデプロイ/通知インフラ/匿名統計公開まで全て済み。詳細は下記「Step 6」節 |
 
 **スコープ方針（2026-09-19 更新・再更新）**: Must = Step 4 RLN（済） → **Step 6 コア**（Verifier.sol + Registry + testnet デプロイ、9/19〜9/24中に完成させる） → イベント本番で Step 5 最小デモ + World ID 連携。Cut候補 = ENS 名解決・levels=20拡張。World ID は「Should」ではなく**イベント本番の目玉（下記 World ID 音声対策）**に格上げ — Step 6 コア完了後に着手する。
 
@@ -47,12 +47,12 @@ RLN（盗んだ secret の使い回し検知）と**脅威モデルを分離**�
 
 Step6コアがデプロイまで完了し、予定より前倒しで進んでいるため、9/20〜24の残り約4日を使って3つの拡張を追加することにした（Continuity Track の「既存部分」に含まれる — World ID/Step5デモのような「イベント中に新規に作る部分」とは別枠）。優先順位はA→B→C。
 
-**進行計画（2026-09-20 実態に合わせて修正）**: 当初はA→B→Cの順で9/20〜21=A、9/22=B、9/23=Cの予定だったが、実際は9/20にBから着手（`notifier.rs`、進行中）。9/20〜21=B、9/22=A、9/23=C、9/24=バッファ・整理・コミット、に読み替える。
+**進行計画（2026-09-20 実態に合わせて再修正）**: B・Aとも9/20中に完了。想定より前倒し。残りはCのみ、9/24までバッファも含めて余裕あり。次にやるのはC。
 
-- **A（最優先）: root rotation フロー**。「secret漏洩検知→復元→失効」の話に、**実際にメンバーを木から除外して新rootをon-chainに反映する具体的な手順**が無かった穴を塞ぐ。設計:
-  - Rust側: 生き残りメンバーのリストから `merkle::MerkleTree::from_leaves` で新しい木を再構築 → 新root を得る（既存ロジックの延長、新規暗号要素なし）
-  - on-chain反映: **alloyでの署名実装はしない**。`cast send <FamilyRegistry> "updateRoot(uint256)" <新root> --account deployer --rpc-url ...`（Foundry付属、キーストア設定済み）で十分「本物」。alloyは読み取り専用のBで使う、という役割分担
-  - 独立バイナリ（`src/bin/rotate.rs` 案）にするか `main.rs` に機能追加するかは未確定、次回セッションで詰める
+- **A（最優先）: root rotation フロー ✅完了（2026-09-20）**。「secret漏洩検知→復元→失効」の話に、**実際にメンバーを木から除外して新rootをon-chainに反映する具体的な手順**が無かった穴を塞いだ。
+  - **`src/bin/rotate.rs`を新規作成**: これまでのデモで実際に漏洩・復元した`secret="103"`（`FamilyRegistry`の現行root＝同secret/salt="9003"を5枚複製した木）のメンバーに、新しい`secret="203"`/`salt="9203"`を再発行し、`merkle::MerkleTree::from_leaves`で木を再構築して新root（`18800580504245480865872636926759076395359931162917691738659468170666629770659`）を算出。既存ロジックの延長のみ、新規暗号要素なし。
+  - on-chain反映は`cast send 0xa9f1A920... "updateRoot(uint256)" <新root> --account deployer`（alloyでの署名実装はせず、Foundry付属の`cast`で十分「本物」。alloyは読み取り専用のBで使う、という役割分担を維持）。
+  - デプロイ済み`FamilyRegistry`で実行し、**`familyRoot()`が新rootと一致・`RootUpdated`イベント発行（tx: `0x2762bce1...`）を確認済み**。これで「検知→復元→通知→再発行→木の再構築→on-chainでのroot更新」の全フローが実チェーン上で繋がったことを実証。
 - **B: 通知インフラ＋匿名統計**。既存の「通知インフラ」「匿名統計の公開」タスク（下記Step6節）と同じもの。`notifier.rs` の `alloy` イベント監視基盤をAの検証にも使えないか要検討
 - **C: 攻撃者の期待損失シミュレーション**。`epoch`/`limit` の設定によって「攻撃者が使い回して捕まる確率」がどう変わるかを、小さいモンテカルロシミュレーション（Rust、既存の `recover_secret` ロジックの応用、新規暗号要素なし）で定量化する。ピッチ資料用の数字・グラフを作るのが目的。実装は未着手・詳細設計はこれから
 
