@@ -6,13 +6,15 @@
 > **🆕🆕 2026-09-21: Trust Circle / Family Constitution 拡張（Step 7）を正式採用（設計は [SPEC.md §11](SPEC.md) 完了）。ただし実施順序を再検討し、Step 5（デモUI + World ID音声クローン対策）を先に・Step 7 を後に入れ替えた。** 理由: Step 5 はピッチのWOW factorの本丸であり、審査員に見せる成果物を先に確定させたい。Step 7 は新しい暗号要素・新SDKを足さない純粋なSolidity/Rustの積み増しで、Step 6 の型がそのまま使えるため本番の短時間でも着手しやすく、「ハッカソン中に新しく作った部分」としてContinuity Trackのストーリーにも向く。
 > **→ 2026-09-21 夜、さらに順序を再変更。Step 5（デモUI）が事実上完了したため、Step 7 を本番待ちにせず今から着手する。** 理由: Step6が前倒しで終わって拡張A/B/Cに時間を回した9/20と同じパターン。Step5未完のまま2本同時に走らせるリスクを避けるために本番へ回していたが、そのリスクは解消された。Claude はコーチのみ、設計を書いただけでコードは書いていない — 実装は引き続きユーザーが行う。
 > **⚠️ 重要: ETHGlobal Tokyo 2026 の日程・提出ルールが確定済み（下記参照）。この5連休の位置づけが変わったので必読。**
+> **🆕🆕🆕 2026-09-21 深夜: ピッチの再定義（Trust Circle）を確定し、`README.md`・`docs/PITCH.md`・3枚スライドを作成、`SPEC.md §11.8`（委任権限のZK証明、将来構想）を追記。詳細は下記「🆕 Step 7」節の追加項目、および `README.md`・`docs/PITCH.md` 本体を参照。** Claudeはコーチ・ドキュメント執筆（`.md`）のみ、`.sol`/`.rs`は書いていない。
 
 ## ⚠️ ETHGlobal Tokyo 2026 日程・提出ルール（2026-09-19 確認）
 
 - **イベント本体は 9/25〜27**。提出締切 **9/27 9:00 JST**、遅延提出不可。審査は7分（デモ4分＋Q&A3分）、基準は technicality / originality / practicality / UX / "WOW factor"
 - **Continuity Track での提出が必須**。"Classic From Scratch" はイベント開始後（9/25〜）に書いたコードのみが対象で、Step 0〜4（9/6〜9/19に実装済み）は対象外になってしまう → Continuity Track を選び、「イベント前からの既存部分」と「イベント中に新規に作った部分」を明確に書き分けて提出する
 - **AIツール利用ポリシー**: AI支援は許可されるが、人間の実質的な貢献を示しつつ明記が必要。[[no-writing-code]]（Claude はコーチのみ、コードは全部ユーザーが書く）の運用がそのままこの要件を満たす — README/提出文に明記すること
-- デモ動画（2〜4分、720p以上）は任意だが推奨。倍速・電話撮影・テキストのみ+音楽・AIナレーションは禁止
+- デモ動画（2〜4分、720p以上）は**ETHGlobal提出ルール上は任意だが、ユーザー判断で必須項目に格上げ（2026-09-21）**。倍速・電話撮影・テキストのみ+音楽・AIナレーションは禁止。台本（シーン1・2・3の実演台本、上部「🆕 Step 5」節）が録画の元になる。
+  - ~~順序変更（2026-09-21）: 動画をStep7の③④より先に撮る~~ → **同日中に撤回、③④を先に進める方針に戻す**。動画撮影は③④の後（または一段落してから）
 
 **改訂後の進め方（2026-09-19時点の推奨、2026-09-21 順序再変更）**: 今日から9/24（イベント前日）までを「Continuity Track の“既存部分”」の仕上げに使う。Step 6 のコアは完了済み。**2026-09-21時点の最新方針: 残り2.5日は Step 5（デモUI・World ID音声クローン対策連携）の完成に充てる。イベント本番（9/25〜27）は「期間中に新規に作った部分」として Step 7（Trust Circle/Family Constitution拡張）・統合・デモ動画・Continuity提出文の執筆に充てる。** これで「動くデモ（Step5）」を確実に確保しつつ、「イベント中に作った説得力のあるストーリー（Step7）」も狙う。
 
@@ -29,7 +31,7 @@
 | 4 RLN（§6.2） | ✅ **完了**（2026-09-19）。回路実装・Rust配線・2点復元テストまで完走。詳細は下記「Step 4」節 |
 | 5 デモ UI（World ID部分はモック） | ✅ **2026-09-21 夜、事実上完了**。台本確定・バグ2件修正・`cast send`/S3自動化・シーン3実装・オンチェーンroot表示まで全て動作確認済み。詳細は下記「🆕 Step 5」節 |
 | 6 on-chain（+ World ID ゲート） | ✅ **完了**。Verifier/Registry/ユニットテスト/本物データでの統合テスト/Rust鍵統一/calldata変換/World Chain Sepoliaへのデプロイ/通知インフラ/匿名統計公開まで全て済み。詳細は下記「Step 6」節 |
-| 7 Trust Circle / Family Constitution 拡張 | 🆕 **設計は [SPEC.md §11](SPEC.md) 完了。2026-09-21 夜、Step5完了に伴い本番待ちをやめて今から着手**。TODOは下記「🆕 Step 7」節 |
+| 7 Trust Circle / Family Constitution 拡張 | 🆕 **①②（contract + test）完了、③④（Rust CLI・testnetデプロイ）は設計済みで未着手**。ピッチ再定義（`README.md`/`docs/PITCH.md`/スライド3枚/`SPEC.md §11.8`）は完了。TODOは下記「🆕 Step 7」節 |
 
 **スコープ方針（2026-09-21 夜 再更新・Step7前倒し）**: Must = Step 4 RLN（済） / Step 6 コア（済） / Step 5（済） → **今からStep 7 Trust Circle/Family Constitutionの実装に着手**、縮退ラインは[SPEC.md §7 Step 7](SPEC.md)参照 → 間に合わなければ続きはイベント本番（9/25〜27）に持ち越し。Cut候補 = ENS 名解決・levels=20拡張。
 
@@ -145,27 +147,86 @@ Step 7自体は新しい暗号要素・新SDKを足さないSolidity/Rustの積�
 以下は実装 TODO。**Claude はコード（`.sol`/`.rs`）を書かない** — 設計・レビュー・
 `cargo build`/`cargo test`/`forge test` の実行確認のみ。
 
-- [ ] `contracts/src/FamilyConstitution.sol` 新規作成（§11.4 のデータ構造・関数シグネチャを実装）
-  - `ActionState` struct、`actions` mapping（**キーは `uint256 actionId`。`bytes32` のハッシュではない** —
-    §11.3 の型の落とし穴参照。`keccak256` 出力をそのまま使うと BN254 スカラー体 `r` を超えて
-    回路の `challenge` と食い違いうるため、Rust側で `Fr::from_le_bytes_mod_order` 還元済みの値を
-    唯一の正として on-chain にもそのまま渡す）
-  - `ActionProposed`/`ActionApproved`/`ActionAuthorized` イベント（すべて `actionId: uint256`）
-  - `proposeAction(actionId, tier)`（`onlyAgent` 修飾子で AI Agent 用 EOA からのみ呼べるように）
-  - `approveAction(actionId, pA, pB, pC, pubSignals)`（`FamilyRegistry.verifyMembership()` と同型の
-    root/epoch鮮度/verifier検証 + `pubSignals[4] == actionId` の確認（再ハッシュ不要）+ nullifier 二重承認防止）
-  - tier→`requiredApprovals` のデモ用固定表（0/1/2/3、§11.4）
-- [ ] `contracts/test/FamilyConstitution.t.sol` — 最低限: tier0即実行 / tier2で1人目承認だけでは未実行 /
-      2人目承認で`ActionAuthorized` / 同一nullifierの二重承認はrevert / secretを持たない攻撃者は有効proofを作れない、を確認
+- [x] **① `contracts/src/FamilyConstitution.sol` 完成・`forge build`通過（2026-09-21）**:
+  - `ActionState` struct、`actions` mapping（キーは `uint256 actionId`。§11.3の型の落とし穴通り、
+    `bytes32`ハッシュではなく`Fr::from_le_bytes_mod_order`還元済みの値を唯一の正とする）
+  - `ActionProposed`/`ActionApproved`/`ActionAuthorized` イベント、`proposeAction`（`onlyAgent`）、
+    `approveAction`（root/epoch鮮度/`verifier.verifyProof()`/`challenge==actionId`/nullifier二重承認防止）、
+    `getActionState`（`ActionState`がmappingを含むため`actions`をpublicにできず手書きgetterで対応）
+  - **`registry`は`familyRoot`を自前で持たず、既存デプロイ済み`FamilyRegistry`を`IFamilyRegistry`
+    インターフェース経由で参照する設計**（root rotation時の二重管理・ズレを回避）
+  - 実装時に見つかった不具合3件（ユーザー自身で修正・コーチが指摘）: importのセミコロン抜け、
+    `msg.sender`のタイプミス、**`verifier.verifyProof()`の呼び出し自体が抜けていた**（ZKの安全性が
+    素通りになる重大な抜けだったが修正済み）。加えて全角スペース混入・`actionId`のタイプミスも修正
+- [x] **② `contracts/test/FamilyConstitution.t.sol` 完成・`forge test`全14件PASS（2026-09-21）**:
+      `MockVerifier`（`FamilyRegistry.t.sol`と同じ）＋新規`MockRegistry`（`IFamilyRegistry`実装、
+      固定rootを返すだけ）で6テスト: tier0即実行 / tier2で1人目承認だけでは未実行 / 2人目承認で
+      `ActionAuthorized` / 同一nullifierの二重承認はrevert / challengeが別Action用だとrevert /
+      agent以外からの`proposeAction`はrevert。**「secretを持たない攻撃者は有効proofを作れない」は
+      MockVerifierが常にtrueを返すためユニットテストでは検証不可**（`FamilyRegistry`と同じ構造上の理由）。
+      本物の証明での検証は④（testnetでの一気通貫デモ）で自然にカバーされる
 - [ ] Rust側: `src/bin/propose_action.rs`（or 既存 `submit_demo.rs` の拡張）で
       Action説明文字列 → `keccak256` → `Fr::from_le_bytes_mod_order` で `actionId` を一度だけ算出し、
       その値を `challenge` としてそのまま proof 生成 → `to_solidity_calldata` → `cast send` で
       `FamilyConstitution.proposeAction`/`approveAction` に投入する一連の流れ（§11.5）
+  - **設計コーチ済み（2026-09-21、未実装）**: `actionId`算出は`alloy::primitives::keccak256`（`notifier.rs`で
+    既にalloyを使っているので新規依存不要）→`Fr::from_le_bytes_mod_order`→`.into_bigint().to_string()`で
+    `cast send proposeAction(uint256,uint256) <actionId> <tier> --account agent`に渡す10進文字列にする。
+    承認側は**新規バイナリ不要**、`submit_demo.rs`の`build_circuit_with_inputs`→`setup`→`prove`→
+    `to_solidity_calldata`の流れをそのまま使い、`challenge`をこの`actionId`に、呼び出し先を
+    `FamilyRegistry.verifyMembership`→`FamilyConstitution.approveAction`に差し替えるだけでよい
+    （`pubSignals`の並びは両者で同一）。隣人2人分は`submit_demo.rs`の`MEMBERS`のうちまだ使っていない
+    2人のsecret/saltを割り当てれば足りる。
+  - **運用の未決事項**: `onlyAgent`は`msg.sender==agent`なので、デプロイ時の`agentAddress`に使う
+    `cast`キーストア（`deployer`とは別に`agent`を作るか）を実装前に決めること。まず`anvil`のローカル
+    チェーンで①②③の配線を通してから、実際のSepoliaデプロイ（次項）に進むのが安全
 - [ ] World Chain Sepolia に `FamilyConstitution.sol` をデプロイし、§11.6 のデモシナリオ（AI提案→攻撃者失敗→
       メンバー2人承認→`ActionAuthorized`）を実チェーン上で1回通す
 - [ ] SPEC.md §8（脅威モデル）に §11.3 で触れた RLN epoch/limit 共有問題を正式追記するかは、Step 7 の
       実装が固まった時点で判断（現状は §11.7 に既知の限界として記載済み）
 - [ ] 時間切れの場合は SPEC §7 Step 7 の縮退ライン（Solidity実装のみ→testnet実証→デモ組み込みの順で削る）に従う
+
+### 🆕 ピッチ再定義: Trust Circle を前面に出す（2026-09-21 深夜、完了）
+
+Step 7の実装と並行して、ピッチ全体の枠組みを「オレオレ詐欺対策」から「血縁・婚姻・同居を前提としない
+Trust Circleインフラ」（Family はその一実装）へ再定義した。[SPEC.md §11.1](SPEC.md) の
+"Prove trust, not identity." を軸に、以下をすべて作成・公開済み:
+
+- [x] **`README.md`（リポジトリ直下、新規）**: Trust Circle再定義を冒頭に、原点であるオレオレ詐欺対策、
+      「✅実装済み／🚧本番TODO／🔭ビジョン」の正直な線引き（Continuity Track対策）、アーキテクチャ、
+      Sepoliaデプロイ済みアドレス、セットアップ手順、既知の限界まで収録。日本語のみ（英語版は
+      **日本語が固まってから翻訳する方針、まだ未着手**）
+- [x] **`docs/PITCH.md`（新規）**: 4分デモの秒刻み台本（フック→シーン1〜4→締め）＋Q&A想定問答一式。
+      シーン4は**Claude自身が実際にAI Agent役としてライブで登場する演出**に変更済み（3ターミナル構成:
+      Claude/AI Agent・隣人A・隣人B。Claudeに自然文で相談→tier判断→コマンド提示→自分では承認できない
+      ことを自分の口で説明、というメタな見せ場を追加。新規コード不要、`onlyAgent`のEOA設計は無変更）。
+      ネットワーク不通時のミニフォールバックも記載
+- [x] **スライド3枚（Slides Artifact、v3）**: URL `https://claude.ai/artifact/2dFv5fmLNMKJxw2hZbp9Cz`
+      （private、要共有設定）。1枚目=フック（Trust Circle関係図＋「血縁・住所・氏名では"誰を信頼するか"は
+      証明できない」の橋の一文）、2枚目=AI提案→リスク判定→低リスクAI実行/高リスクTrust Circle承認、という
+      1本の意思決定フロー図（暗号技術の羅列ではなく）、3枚目=ビジョン（Trust Circleの5用途例＋タグライン）
+- [x] **`SPEC.md §11.8`（新規節）**: 「AIにもTrust Circleのsecretを持たせるか」を検討し不採用に
+      （承認閾値が実質1つ下がる／LLMはプロンプトインジェクションで乗っ取られうるためオレオレ詐欺と
+      同型の脆弱性を持ち込む）。代わりに**「ZK-provable delegated capability」**（AIがTrust Circleから
+      委任された制約つき権限をActionごとにレンジ証明で示す、委任の発行はAction Authorizationの
+      仕組みを流用）を将来研究方向として設計・明記。今回は実装しない
+- [x] **`SPEC.md §11.7` 追記（MPC）**: 「AI Agentにも承認権を持たせる」ではなく「AI Agent自身の署名鍵を
+      MPC（閾値署名）で複数主体に分散して守る」案を将来構想として追記（Trust Circle側の非同期ZK承認フロー
+      には影響しない、鍵管理レイヤーの話として§11.8と補完関係）。逆に「Trust Circle側の承認集約自体を
+      MPCにする」案は、非同期承認UXを壊すため検討したが不採用、と明記。README にも1行反映済み
+- [ ] **英語版README/PITCH**: 日本語版確定後に着手する方針（まだ未着手）
+- [ ] **ETHGlobalプラットフォームへの提出文自体**（GitHub repo・description・partner-prize選択）はまだ書いていない
+- [ ] **🆕 時間が余ったら（stretch）: シーン4のMCP化**（2026-09-21 深夜、検討）。今のシーン4は
+      「Claudeが会話でコマンドを提案→人間がコピペで`cast send`を実行」という設計だが、`propose_action`等を
+      MCPサーバーとしてラップし、**Claudeが実際にツールを叩いてon-chainに送信する**形に格上げできないか
+      という案。MPC/委任権限（ZK）と違って暗号を一切触らない薄いラッパーなので技術的難易度は低いが、
+      (a) Rust向けMCP SDKは未経験の新規依存、(b) 本番会場でMCPサーバーの接続を維持する必要があり、
+      シーン4の不確定要素（ネットワーク・LLM揺れ）がさらに1つ増える、という2点がリスク。
+      **優先順位: 必ず③Rust CLI（`propose_action.rs`、手動cast版）を先に完成・通しリハーサルまで
+      済ませてから、時間が余った場合にのみ着手する**。「advise（助言）→execute（実行）」への格上げ演出、
+      という位置づけ
+
+Claudeはこれらすべて`.md`のドキュメント執筆のみ（コーチ）で、`.sol`/`.rs`は一切書いていない。
 
 ## 確定済みの設計判断（蒸し返さない）
 
