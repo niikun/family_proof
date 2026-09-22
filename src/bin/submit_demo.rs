@@ -60,13 +60,14 @@ pub fn main() {
     .status()
     .expect("failed to spawn cast"); 
     if status.success() {
-        println!("#################################### Membership Verified ####################################");
+        println!("############################ Membership Verified #############################");
         println!("");
         println!("challenge: {}", challenge_str);
-        println!("nullifier={}", pubs[2].into_bigint().to_string());
+        let nullifier_full = pubs[2].into_bigint().to_string();
+        let nullifier_short = format!("{}...{}", &nullifier_full[..8], &nullifier_full[nullifier_full.len()-6..]);
+        println!("nullifier: {}", nullifier_short);
         println!("");
-        println!("#############################################################################################");
-    } else {
+        println!("##############################################################################");
         eprintln!("cast send failed: {:?}", status);
     }
 }
