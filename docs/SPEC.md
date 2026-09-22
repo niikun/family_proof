@@ -3,8 +3,9 @@
 ETHGlobal Tokyo 2026 提出プロジェクト
 「秘密を一度も明かさずに、家族であることを証明する」オレオレ詐欺対策
 
-ステータス（2026-09-06 更新）: Step 0（ZK なしの Merkle 骨格）実装中。技術的差別化として
-RLN（Rate-Limiting Nullifier）の導入を決定し、本仕様に反映済み。
+ステータス（2026-09-21 更新）: Step 0〜6（ZK Merkle 証明・RLN・on-chain Registry・通知インフラ・
+匿名統計）は完了し World Chain Sepolia に実デプロイ済み。Step 7（Trust Circle / Family Constitution
+拡張、§11）は設計完了・実装中。最新の進捗は [HANDOFF.md](HANDOFF.md) を参照。
 
 ---
 
@@ -85,8 +86,8 @@ ZK 方式では **検証側は root（公開情報）だけを知っていれば
 
 ```
 [オンボーディング(一度だけ)]
-  各メンバー: 端末内で secret を乱数生成（外部送信しない）
-  leaf = Hash(secret)
+  各メンバー: 端末内で secret と salt を乱数生成（外部送信しない）
+  leaf = Poseidon([0, secret, salt])  // 先頭 0 はドメインタグ
   全メンバーの leaf から Merkle Tree 構築 → root
   → root を FamilyRegistry コントラクトに登録（改ざん防止の公開情報）
 
@@ -123,9 +124,9 @@ ZK 方式では **検証側は root（公開情報）だけを知っていれば
 
 **目的**: secret が家族の Merkle Tree に含まれることのみを証明する（challenge との紐付けはまだ含めない）
 
-- Private input: `secret`, `pathElements[levels]`, `pathIndices[levels]`
+- Private input: `secret`, `salt`, `pathElements[levels]`, `pathIndices[levels]`
 - Public input: `root`
-- 制約: `leaf = Poseidon(secret)` を計算し、Merkle path を辿って `root` と一致することを検証
+- 制約: `leaf = Poseidon([0, secret, salt])` を計算し、Merkle path を辿って `root` と一致することを検証
 
 ### 6.2 拡張版：RLN（MVP が動いてから追加する）
 
@@ -142,12 +143,12 @@ ZK 方式では **検証側は root（公開情報）だけを知っていれば
 
 | 種別 | 変数 |
 |---|---|
-| Private input | `secret`, `pathElements[levels]`, `pathIndices[levels]` |
+| Private input | `secret`, `salt`, `pathElements[levels]`, `pathIndices[levels]` |
 | Public input | `root`, `epoch`, `challenge` |
 | Public output | `y`, `nullifier` |
 
 **回路内で計算・制約するもの**
-- `leaf = Poseidon(secret)` を計算し、Merkle path を辿って `root` と一致（MVP と同じ）
+- `leaf = Poseidon([0, secret, salt])` を計算し、Merkle path を辿って `root` と一致（MVP と同じ、先頭 0 はドメインタグ）
 - `a1 === Poseidon(secret, epoch)` … 多項式の 1 次係数
 - `x === Poseidon(challenge)` … 評価点。検証側の challenge に紐づき、prover は選べない
 - `y === secret + a1 · x` … Shamir シェア（`a0 = secret`）。体は BN254 スカラー体

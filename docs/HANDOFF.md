@@ -1,12 +1,11 @@
 # HANDOFF — 別PCへの引き継ぎ
 
-最終更新: 2026-09-21（Step 6 コア完了、Step 7 Trust Circle/Family Constitution 拡張を採用したうえで**本番期間に実施する順番に変更**） / ブランチ: `main` / remote: `git@github.com:niikun/family_proof.git` / 同期: **未コミットあり（多数、下記git管理方針参照）**。`git add -A && git commit && git push` で `origin/main` と一致させる
+最終更新: 2026-09-22（Step 7 ③ `propose_action.rs`/`approve_action.rs` ともにSepoliaフォーク上で動作確認完了。tier0/tier1/tier2〈承認2人・異なるnullifier〉まで実証済み。次は④本番Sepoliaデプロイ） / ブランチ: `main` / remote: `git@github.com:niikun/family_proof.git`
 
-> ✅ **Step 6 コア完了（Verifier/Registry/テスト/calldata変換/World Chain Sepoliaデプロイ済み）**。`cargo test` 9本緑・`forge test` 8本緑。デプロイ済みアドレスは下記「Step 6」節参照（`FamilyRegistry` は `0xa9f1A920...` が正、`0xD06FcbB5...` は重複デプロイの旧アドレスで放置）。追加拡張A/B/Cも完了（下記「残り期間での追加拡張」節）。
-> **🆕🆕 2026-09-21: Trust Circle / Family Constitution 拡張（Step 7）を正式採用（設計は [SPEC.md §11](SPEC.md) 完了）。ただし実施順序を再検討し、Step 5（デモUI + World ID音声クローン対策）を先に・Step 7 を後に入れ替えた。** 理由: Step 5 はピッチのWOW factorの本丸であり、審査員に見せる成果物を先に確定させたい。Step 7 は新しい暗号要素・新SDKを足さない純粋なSolidity/Rustの積み増しで、Step 6 の型がそのまま使えるため本番の短時間でも着手しやすく、「ハッカソン中に新しく作った部分」としてContinuity Trackのストーリーにも向く。
-> **→ 2026-09-21 夜、さらに順序を再変更。Step 5（デモUI）が事実上完了したため、Step 7 を本番待ちにせず今から着手する。** 理由: Step6が前倒しで終わって拡張A/B/Cに時間を回した9/20と同じパターン。Step5未完のまま2本同時に走らせるリスクを避けるために本番へ回していたが、そのリスクは解消された。Claude はコーチのみ、設計を書いただけでコードは書いていない — 実装は引き続きユーザーが行う。
+> ✅ **Step 6 コア完了（Verifier/Registry/テスト/calldata変換/World Chain Sepoliaデプロイ済み）**。デプロイ済みアドレスは下記「Step 6」節参照（`FamilyRegistry` は `0xa9f1A920...` が正、`0xD06FcbB5...` は重複デプロイの旧アドレスで放置）。追加拡張A/B/Cも完了（下記「残り期間での追加拡張」節）。
+> **🆕 Step 7（Trust Circle / Family Constitution 拡張）を正式採用し、2026-09-21 夜から着手済み**（設計は [SPEC.md §11](SPEC.md) 完了）。進捗は下記「いまどこ」節参照。Claude はコーチのみ、設計を書いただけでコードは書いていない — 実装は引き続きユーザーが行う。
 > **⚠️ 重要: ETHGlobal Tokyo 2026 の日程・提出ルールが確定済み（下記参照）。この5連休の位置づけが変わったので必読。**
-> **🆕🆕🆕 2026-09-21 深夜: ピッチの再定義（Trust Circle）を確定し、`README.md`・`docs/PITCH.md`・3枚スライドを作成、`SPEC.md §11.8`（委任権限のZK証明、将来構想）を追記。詳細は下記「🆕 Step 7」節の追加項目、および `README.md`・`docs/PITCH.md` 本体を参照。** Claudeはコーチ・ドキュメント執筆（`.md`）のみ、`.sol`/`.rs`は書いていない。
+> **🆕 ピッチの再定義（Trust Circle）を確定し、`README.md`・`docs/PITCH.md`・3枚スライドを作成、`SPEC.md §11.8`（委任権限のZK証明、将来構想）を追記。詳細は下記「🆕 Step 7」節の追加項目、および `README.md`・`docs/PITCH.md` 本体を参照。**
 
 ## ⚠️ ETHGlobal Tokyo 2026 日程・提出ルール（2026-09-19 確認）
 
@@ -20,7 +19,7 @@
 
 ## いまどこ
 
-ロードマップ（[SPEC.md](SPEC.md) §7）で **Step 0〜4 完了、Step 5 事実上完了、Step 6 完了**。Step 7（Trust Circle / Family Constitution 拡張、2026-09-21 採用）は設計済み・**2026-09-21 夜から着手（本番待ちをやめた）**。
+ロードマップ（[SPEC.md](SPEC.md) §7）で **Step 0〜4 完了、Step 5 事実上完了、Step 6 完了**。Step 7（Trust Circle / Family Constitution 拡張、2026-09-21 採用）は①②③完了（`propose_action.rs`/`approve_action.rs`ともにSepoliaフォーク上でtier0/tier1/tier2まで動作確認済み）、④本番Sepoliaデプロイのみ未着手。詳細は下記「🆕 Step 7」節参照。
 
 | Step | 状態 |
 |---|---|
@@ -31,7 +30,7 @@
 | 4 RLN（§6.2） | ✅ **完了**（2026-09-19）。回路実装・Rust配線・2点復元テストまで完走。詳細は下記「Step 4」節 |
 | 5 デモ UI（World ID部分はモック） | ✅ **2026-09-21 夜、事実上完了**。台本確定・バグ2件修正・`cast send`/S3自動化・シーン3実装・オンチェーンroot表示まで全て動作確認済み。詳細は下記「🆕 Step 5」節 |
 | 6 on-chain（+ World ID ゲート） | ✅ **完了**。Verifier/Registry/ユニットテスト/本物データでの統合テスト/Rust鍵統一/calldata変換/World Chain Sepoliaへのデプロイ/通知インフラ/匿名統計公開まで全て済み。詳細は下記「Step 6」節 |
-| 7 Trust Circle / Family Constitution 拡張 | 🆕 **①②（contract + test）完了、③④（Rust CLI・testnetデプロイ）は設計済みで未着手**。ピッチ再定義（`README.md`/`docs/PITCH.md`/スライド3枚/`SPEC.md §11.8`）は完了。TODOは下記「🆕 Step 7」節 |
+| 7 Trust Circle / Family Constitution 拡張 | 🆕 **①②（contract + test）完了。③`propose_action.rs`（提案）/`approve_action.rs`（承認）ともに実装完了、Sepoliaフォーク上でtier0（即実行）/tier1（承認1人）/tier2（承認2人、異なるnullifier）まで動作確認済み。④本番Sepoliaへのデプロイは未着手**。ピッチ再定義（`README.md`/`docs/PITCH.md`/スライド3枚/`SPEC.md §11.8`）は完了。TODOは下記「🆕 Step 7」節 |
 
 **スコープ方針（2026-09-21 夜 再更新・Step7前倒し）**: Must = Step 4 RLN（済） / Step 6 コア（済） / Step 5（済） → **今からStep 7 Trust Circle/Family Constitutionの実装に着手**、縮退ラインは[SPEC.md §7 Step 7](SPEC.md)参照 → 間に合わなければ続きはイベント本番（9/25〜27）に持ち越し。Cut候補 = ENS 名解決・levels=20拡張。
 
@@ -165,21 +164,54 @@ Step 7自体は新しい暗号要素・新SDKを足さないSolidity/Rustの積�
       agent以外からの`proposeAction`はrevert。**「secretを持たない攻撃者は有効proofを作れない」は
       MockVerifierが常にtrueを返すためユニットテストでは検証不可**（`FamilyRegistry`と同じ構造上の理由）。
       本物の証明での検証は④（testnetでの一気通貫デモ）で自然にカバーされる
-- [ ] Rust側: `src/bin/propose_action.rs`（or 既存 `submit_demo.rs` の拡張）で
-      Action説明文字列 → `keccak256` → `Fr::from_le_bytes_mod_order` で `actionId` を一度だけ算出し、
-      その値を `challenge` としてそのまま proof 生成 → `to_solidity_calldata` → `cast send` で
-      `FamilyConstitution.proposeAction`/`approveAction` に投入する一連の流れ（§11.5）
-  - **設計コーチ済み（2026-09-21、未実装）**: `actionId`算出は`alloy::primitives::keccak256`（`notifier.rs`で
-    既にalloyを使っているので新規依存不要）→`Fr::from_le_bytes_mod_order`→`.into_bigint().to_string()`で
-    `cast send proposeAction(uint256,uint256) <actionId> <tier> --account agent`に渡す10進文字列にする。
-    承認側は**新規バイナリ不要**、`submit_demo.rs`の`build_circuit_with_inputs`→`setup`→`prove`→
-    `to_solidity_calldata`の流れをそのまま使い、`challenge`をこの`actionId`に、呼び出し先を
-    `FamilyRegistry.verifyMembership`→`FamilyConstitution.approveAction`に差し替えるだけでよい
-    （`pubSignals`の並びは両者で同一）。隣人2人分は`submit_demo.rs`の`MEMBERS`のうちまだ使っていない
-    2人のsecret/saltを割り当てれば足りる。
-  - **運用の未決事項**: `onlyAgent`は`msg.sender==agent`なので、デプロイ時の`agentAddress`に使う
-    `cast`キーストア（`deployer`とは別に`agent`を作るか）を実装前に決めること。まず`anvil`のローカル
-    チェーンで①②③の配線を通してから、実際のSepoliaデプロイ（次項）に進むのが安全
+- [x] **③ `src/bin/propose_action.rs`（提案）/ `src/bin/approve_action.rs`（承認）: 両方実装・実チェーン(フォーク)でtier0/tier1/tier2まで動作確認済み（2026-09-22 完了）**:
+  - **運用決定（2026-09-22）**: `agentAddress`用に`deployer`とは別の`cast`キーストア（`agent`、
+    アドレス`0xF44de778B27FAe7554b582BC629AfF7238c3e519`）を新規作成
+  - **anvil forkでのリハーサル方式を採用（2026-09-22）**: 実Sepoliaに直接デプロイする前に、
+    `anvil --fork-url https://worldchain-sepolia.g.alchemy.com/public`でSepoliaをフォークした
+    ローカルチェーンを使う。既存の`Groth16Verifier`/`FamilyRegistry`はフォーク元にそのまま存在する
+    ため再デプロイ不要、`agent`への資金注入は`cast rpc anvil_setBalance <addr> <wei> --rpc-url
+    http://127.0.0.1:8545`でfaucet待ちせず即座に可能。理由: これまでの開発で「実際動かして初めて
+    見つかるバグ」（calldata座標のバグ、`verifyProof()`呼び忘れ、下記のtierハッシュのバグ等）が
+    繰り返し起きているため、実Sepoliaのgas・待ち時間を消費する前に無料で何度もリハーサルできる場を
+    用意した
+  - `FamilyConstitution.sol`をforkにデプロイ（`forge create --rpc-url http://127.0.0.1:8545
+    --account deployer --broadcast ...`。**`--broadcast`忘れでdry runのまま`Deployed to:`が出ない
+    ハマりどころに遭遇・解決**）: フォーク上のアドレス`0x560726714672c28657c6a54421446a64EDfC2232`
+  - `propose_action.rs`実装: `actionId`算出は`alloy::primitives::keccak256(description)` →
+    `Fr::from_le_bytes_mod_order` → `.into_bigint().to_string()`で10進文字列にし、
+    `cast send proposeAction(uint256,uint256) <actionId> <tier> --account agent`で送信。
+    実装中に見つかった不具合2件（ユーザー自身で修正・コーチが指摘）:
+    **`tier`まで`actionId`と同じくkeccakハッシュしてしまい`requiredApprovalsForTier`が常にrevert
+    するバグ**（`tier`は0/1/2/3のenum値なのでハッシュ不要、生の整数のまま渡す）／送信先アドレスが
+    `FamilyRegistry`のままで`FamilyConstitution`に向いていなかったバグ（selector不一致でempty revert）
+  - **動作確認済み（フォーク上、2026-09-22）**: tier0（description="schedule reminder"）で
+    `ActionProposed`+`ActionAuthorized`が同一tx内で発火、承認不要の即時実行を実チェーン上で確認。
+    tier1（description="203"）は`proposeAction`は成功したが`approveAction`が未実装のため
+    `executed=false`のまま（`getActionState`で確認済み）
+  - **`approve_action.rs`実装（2026-09-22 完了）**: `submit_demo.rs`と同じ
+    `build_circuit_with_inputs`→`setup`→`prove`→`to_solidity_calldata`の流れを使い、`challenge`は
+    `description`文字列を`propose_action.rs`と全く同じ手順（`keccak256`→`Fr::from_le_bytes_mod_order`）
+    でハッシュ化した`actionId`と一致させる。送信先は`FamilyConstitution.approveAction`、`cast send`の
+    第1引数に`actionId`を明示的に渡す（`onlyAgent`制約は無いので送信者は`deployer`でよい）。
+    CLI引数に承認者を選ぶ`leaf_idx`（0〜4）を追加し、複数メンバーでの承認をシミュレート可能にした
+  - **実装中に見つかった不具合（ユーザー自身で修正・コーチが指摘、2026-09-22）**:
+    `tree.proof(leaf_idx)`でMerkleパスは`leaf_idx`に応じて切り替えていたのに、証明に使う`secret`/`salt`
+    自体が`leaf_idx`によらず常に`(203, 9203)`固定のままだったバグ。パスとsecret/saltの組み合わせが
+    食い違うと回路が計算するrootが実際の木のrootと一致せず`"Invalid root"`でrevertする。
+    `leaf_idx==0`なら`(203, 9203)`、それ以外は`(103, 9003)`を使うよう分岐させて解消
+  - **重要な制約（2026-09-22）**: `nullifier`は`secret`のみ（＋`epoch`）で決まり、Merkle
+    パスや`salt`には依存しない。現在on-chainの木はindex1〜4が全部同じ`secret="103"`の複製なので、
+    承認2人分に使える「nullifierが別になる」実質的な組み合わせは`(secret="203", index0)`と
+    `(secret="103", index1〜4のどれか)`の**2種類のみ**。tier2（承認2人）のデモにはちょうど足りるが、
+    3人以上必要なActionは今の木では組めない（tier3はSPEC上デモでは省略可のため許容）
+  - **動作確認済み（フォーク上、2026-09-22）**:
+    - tier0（description="schedule reminder"）: `ActionProposed`+`ActionAuthorized`が同一tx内で発火
+    - tier1（description="go to school", tier=1）: `approve_action`をindex0（secret=203）で1回実行 →
+      `ActionApproved(1/1)`＋`ActionAuthorized`が同一txで発火
+    - tier2（description="go to univ", tier=2、想定）: `approve_action`をindex0→index1の順で2回実行 →
+      1回目は`ActionApproved(1/2)`のみ、2回目は`ActionApproved(2/2)`＋`ActionAuthorized`が発火。
+      2回のnullifierが異なる値になっていることも確認済み（別人格からの承認であることの実証）
 - [ ] World Chain Sepolia に `FamilyConstitution.sol` をデプロイし、§11.6 のデモシナリオ（AI提案→攻撃者失敗→
       メンバー2人承認→`ActionAuthorized`）を実チェーン上で1回通す
 - [ ] SPEC.md §8（脅威モデル）に §11.3 で触れた RLN epoch/limit 共有問題を正式追記するかは、Step 7 の
@@ -224,7 +256,13 @@ Trust Circleインフラ」（Family はその一実装）へ再定義した。[
       シーン4の不確定要素（ネットワーク・LLM揺れ）がさらに1つ増える、という2点がリスク。
       **優先順位: 必ず③Rust CLI（`propose_action.rs`、手動cast版）を先に完成・通しリハーサルまで
       済ませてから、時間が余った場合にのみ着手する**。「advise（助言）→execute（実行）」への格上げ演出、
-      という位置づけ
+      という位置づけ。
+      **なぜ意義があるか（2026-09-21 深夜、後日追記）**: MCPのツール定義（何を呼べるか＝インターフェース層）
+      と、ZK証明＋Trust Circleの承認（何が実際に許可されるか＝信頼の層）が疎結合になる。`propose_action`
+      ツールをClaudeに渡しても、`approve_action`は呼べる形にしても有効な証明（＝secret）を作れず安全に
+      失敗する——インターフェースをどれだけ広げても信頼の層が独立して守ってくれる、という構造そのものが
+      ピッチの一言として使える: **"MCP defines the interface; ZK defines the trust."**
+      （"Prove trust, not identity." と並ぶ副タグライン候補。実装する場合はPITCH.md/READMEにも反映する）
 
 Claudeはこれらすべて`.md`のドキュメント執筆のみ（コーチ）で、`.sol`/`.rs`は一切書いていない。
 

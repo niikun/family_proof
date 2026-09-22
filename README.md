@@ -122,11 +122,12 @@ Continuity Track はイベント前からの既存部分とイベント中に新
 - `FamilyConstitution.sol`: Action の提案（`proposeAction`、AI Agent 役の EOA のみ実行可）、ZK証明つき承認（`approveAction`）、tier別閾値での自動実行、`ActionAuthorized` イベント
 - ユニットテスト6本全緑（tier0即実行／tier2の1人承認では未実行／2人承認で実行／同一nullifierの二重承認防止／challenge不一致でrevert／agent以外からの提案でrevert）
 - **AI Agent はコントラクトレベルで「提案はできるが、tier1以上は人間の有効な ZK 証明なしには実行できない」ことが強制される**。AI Agent 自身は Trust Circle の Merkle Tree に leaf を持たない（＝secret を持たない＝有効な proof を作れない）ため、これは権限管理の実装ではなく ZK の健全性そのものの帰結
+- `propose_action.rs`（Action 提案 CLI）: Action 説明文字列から `keccak256` → `Fr` 還元で `actionId` を算出し `proposeAction` を送信。World Chain Sepolia をフォークしたローカルチェーン上で実際に動作確認済み（tier0 は承認不要のため `ActionProposed`＋`ActionAuthorized` が同一トランザクション内で発火することまで実チェーンで実証）
 
 ### 🚧 未実装・イベント本番（9/25〜27）で取り組む予定
 
-- Rust側の Action 提案〜承認 CLI（`propose_action.rs` 相当）
-- `FamilyConstitution.sol` の World Chain Sepolia への実デプロイと testnet 上でのデモ一気通貫実演
+- Rust側の Action 承認 CLI（`approveAction` を呼ぶ部分。提案側 `propose_action.rs` は実装・動作確認済み、承認側は未着手）
+- `FamilyConstitution.sol` の World Chain Sepolia への実デプロイ（現状は Sepolia をフォークしたローカルチェーンでリハーサル中）と testnet 上でのデモ一気通貫実演
 
 ### 🔭 ビジョン（設計はしたが、今回のスコープでは実装しない）
 
