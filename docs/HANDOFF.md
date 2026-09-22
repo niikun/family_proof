@@ -1,6 +1,6 @@
 # HANDOFF — 別PCへの引き継ぎ
 
-最終更新: 2026-09-22（Step 7 ③ `propose_action.rs`/`approve_action.rs` ともにSepoliaフォーク上で動作確認完了。tier0/tier1/tier2〈承認2人・異なるnullifier〉まで実証済み。次は④本番Sepoliaデプロイ） / ブランチ: `main` / remote: `git@github.com:niikun/family_proof.git`
+最終更新: 2026-09-22（Step 7 ①〜④ すべて完了。`FamilyConstitution.sol`を本番World Chain Sepoliaにデプロイ〈`0xf7f344E9399638b69DF158877F1e77a39A5F3D73`〉し、AI提案→2人承認→`ActionAuthorized`を実チェーン上で実証済み。残りはデモ動画・英語版・提出文・stretchのMCP化） / ブランチ: `main` / remote: `git@github.com:niikun/family_proof.git`
 
 > ✅ **Step 6 コア完了（Verifier/Registry/テスト/calldata変換/World Chain Sepoliaデプロイ済み）**。デプロイ済みアドレスは下記「Step 6」節参照（`FamilyRegistry` は `0xa9f1A920...` が正、`0xD06FcbB5...` は重複デプロイの旧アドレスで放置）。追加拡張A/B/Cも完了（下記「残り期間での追加拡張」節）。
 > **🆕 Step 7（Trust Circle / Family Constitution 拡張）を正式採用し、2026-09-21 夜から着手済み**（設計は [SPEC.md §11](SPEC.md) 完了）。進捗は下記「いまどこ」節参照。Claude はコーチのみ、設計を書いただけでコードは書いていない — 実装は引き続きユーザーが行う。
@@ -19,7 +19,7 @@
 
 ## いまどこ
 
-ロードマップ（[SPEC.md](SPEC.md) §7）で **Step 0〜4 完了、Step 5 事実上完了、Step 6 完了**。Step 7（Trust Circle / Family Constitution 拡張、2026-09-21 採用）は①②③完了（`propose_action.rs`/`approve_action.rs`ともにSepoliaフォーク上でtier0/tier1/tier2まで動作確認済み）、④本番Sepoliaデプロイのみ未着手。詳細は下記「🆕 Step 7」節参照。
+ロードマップ（[SPEC.md](SPEC.md) §7）で **Step 0〜4 完了、Step 5 事実上完了、Step 6 完了、Step 7 完了**（①〜④すべて済み。`FamilyConstitution.sol`を本番World Chain Sepoliaにデプロイし、AI提案→2人承認→`ActionAuthorized`を実チェーン上で実証済み）。残るはデモ動画・英語版README/PITCH・ETHGlobal提出文と、stretchのMCP化（本番中に着手予定）。詳細は下記「🆕 Step 7」節参照。
 
 | Step | 状態 |
 |---|---|
@@ -30,7 +30,7 @@
 | 4 RLN（§6.2） | ✅ **完了**（2026-09-19）。回路実装・Rust配線・2点復元テストまで完走。詳細は下記「Step 4」節 |
 | 5 デモ UI（World ID部分はモック） | ✅ **2026-09-21 夜、事実上完了**。台本確定・バグ2件修正・`cast send`/S3自動化・シーン3実装・オンチェーンroot表示まで全て動作確認済み。詳細は下記「🆕 Step 5」節 |
 | 6 on-chain（+ World ID ゲート） | ✅ **完了**。Verifier/Registry/ユニットテスト/本物データでの統合テスト/Rust鍵統一/calldata変換/World Chain Sepoliaへのデプロイ/通知インフラ/匿名統計公開まで全て済み。詳細は下記「Step 6」節 |
-| 7 Trust Circle / Family Constitution 拡張 | 🆕 **①②（contract + test）完了。③`propose_action.rs`（提案）/`approve_action.rs`（承認）ともに実装完了、Sepoliaフォーク上でtier0（即実行）/tier1（承認1人）/tier2（承認2人、異なるnullifier）まで動作確認済み。④本番Sepoliaへのデプロイは未着手**。ピッチ再定義（`README.md`/`docs/PITCH.md`/スライド3枚/`SPEC.md §11.8`）は完了。TODOは下記「🆕 Step 7」節 |
+| 7 Trust Circle / Family Constitution 拡張 | ✅ **①〜④すべて完了**（2026-09-22）。`FamilyConstitution.sol`は本番World Chain Sepolia `0xf7f344E9399638b69DF158877F1e77a39A5F3D73` にデプロイ済み、`propose_action.rs`/`approve_action.rs`でtier0/tier1/tier2（承認2人、異なるnullifier）まで実チェーン上で実証済み。ピッチ再定義（`README.md`/`docs/PITCH.md`/スライド3枚/`SPEC.md §11.8`）も完了。残タスクは下記「🆕 Step 7」節（デモ動画・英語版・提出文・stretchのMCP化） |
 
 **スコープ方針（2026-09-21 夜 再更新・Step7前倒し）**: Must = Step 4 RLN（済） / Step 6 コア（済） / Step 5（済） → **今からStep 7 Trust Circle/Family Constitutionの実装に着手**、縮退ラインは[SPEC.md §7 Step 7](SPEC.md)参照 → 間に合わなければ続きはイベント本番（9/25〜27）に持ち越し。Cut候補 = ENS 名解決・levels=20拡張。
 
@@ -212,8 +212,23 @@ Step 7自体は新しい暗号要素・新SDKを足さないSolidity/Rustの積�
     - tier2（description="go to univ", tier=2、想定）: `approve_action`をindex0→index1の順で2回実行 →
       1回目は`ActionApproved(1/2)`のみ、2回目は`ActionApproved(2/2)`＋`ActionAuthorized`が発火。
       2回のnullifierが異なる値になっていることも確認済み（別人格からの承認であることの実証）
-- [ ] World Chain Sepolia に `FamilyConstitution.sol` をデプロイし、§11.6 のデモシナリオ（AI提案→攻撃者失敗→
-      メンバー2人承認→`ActionAuthorized`）を実チェーン上で1回通す
+- [x] **World Chain Sepolia に `FamilyConstitution.sol` をデプロイし、§11.6 のデモシナリオ（AI提案→
+      メンバー2人承認→`ActionAuthorized`）を実チェーン上で1回通す（2026-09-22 完了）**:
+  - デプロイ: `forge create --account deployer --broadcast`（constructor引数は既存の
+    `Groth16Verifier`/`FamilyRegistry`/`agent`の本番アドレスをそのまま使用）→
+    `FamilyConstitution` = **`0xf7f344E9399638b69DF158877F1e77a39A5F3D73`**。
+    `verifier()`/`registry()`/`owner()`/`agent()`をすべて`cast call`で期待値と一致することを確認済み
+  - 事前準備: `agent`アカウントの本番Sepolia残高が0だったため、ユーザーの個人ウォレットから`deployer`へ
+    0.1 ETH、`deployer`から`agent`へ0.02 ETH送金（`cast send --value ...`）してガス代を確保
+  - `propose_action.rs`/`approve_action.rs`のハードコード2箇所（宛先アドレス・`--rpc-url`）を
+    フォーク向けから本番Sepolia向けに書き換え（ユーザー自身が編集）
+  - 実行: `propose_action "play work" 2`（tier2で`ActionProposed`）→
+    `approve_action "play work" 0`（`ActionApproved(1/2)`）→
+    `approve_action "play work" 1`（`ActionApproved(2/2)`＋`ActionAuthorized`）。
+    `getActionState`で`tier=2, requiredApprovals=2, approvalCount=2, proposed=true, executed=true`を確認。
+    tx: propose `0xc76a25bf...` / approve1 `0xa421b7f1...` / approve2 `0xdfee0dd2...`
+  - これでStep 7（Trust Circle / Family Constitution拡張）は①〜④すべて完了。残る作業はデモ動画・
+    英語版README/PITCH・ETHGlobal提出文・（stretchで）MCP化のみ
 - [ ] SPEC.md §8（脅威モデル）に §11.3 で触れた RLN epoch/limit 共有問題を正式追記するかは、Step 7 の
       実装が固まった時点で判断（現状は §11.7 に既知の限界として記載済み）
 - [ ] 時間切れの場合は SPEC §7 Step 7 の縮退ライン（Solidity実装のみ→testnet実証→デモ組み込みの順で削る）に従う

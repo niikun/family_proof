@@ -62,15 +62,15 @@ pub fn main() {
     let status = Command::new("cast")
         .args([
             "send",
-            "0x560726714672c28657c6a54421446a64EDfC2232",
+            "0xf7f344E9399638b69DF158877F1e77a39A5F3D73",
             "approveAction(uint256,uint256[2],uint256[2][2],uint256[2],uint256[5])",
             &challenge_arg,
             &a_arg,
             &b_arg,
             &c_arg,
             &pubs_arg,
-            "--rpc-url", "http://127.0.0.1:8545",
-            "--account", "agent",  // または "deployer"
+            "--rpc-url", " https://worldchain-sepolia.g.alchemy.com/public",
+            "--account", "agent",  
         ])
         .status()
         .expect("faild to spwan cast");
