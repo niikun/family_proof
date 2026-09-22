@@ -35,7 +35,6 @@ pub fn main() {
     let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
     let epoch = Fr::from(now / 3600);
 
-
     let challenge_hashed = keccak256(challenge_str.as_bytes());
     let challenge = Fr::from_le_bytes_mod_order(challenge_hashed.as_slice());
     let siblings:Vec<Fr> = proof.iter().map(|p| p.0).collect();
@@ -47,7 +46,7 @@ pub fn main() {
     let mut rng = StdRng::seed_from_u64(0);
     let (pf, pubs) = proof::prove(&pk, circuit, &mut rng).unwrap();
     let (a, b, c) = proof::to_solidity_calldata(pf);
-    println!("a={:?}\nb={:?}\nc={:?}\npubs={:?}", a, b, c, pubs);
+    // println!("a={:?}\nb={:?}\nc={:?}\npubs={:?}", a, b, c, pubs);
     let challenge_arg = format!("{:?}",challenge);
     let a_arg = format!("[{}]", a.join(","));
     let b_arg = format!("[[{}],[{}]]",b[0].join(","), b[1].join(","));
@@ -69,12 +68,20 @@ pub fn main() {
             &b_arg,
             &c_arg,
             &pubs_arg,
-            "--rpc-url", " https://worldchain-sepolia.g.alchemy.com/public",
+            "--rpc-url", "https://worldchain-sepolia.g.alchemy.com/public",
             "--account", "agent",  
         ])
         .status()
-        .expect("faild to spwan cast");
-    if !status.success(){
+        .expect("failed to spawn cast");
+
+    if status.success(){
+        println!("############################## Action Approved ##############################");
+        println!("");
+        println!("action: {} is approved by idx-{}",challenge_str,leaf_idx);
+        println!("action_id={}", pubs[4]);
+        println!("");
+        println!("##############################################################################");
+    } else {
         eprint!("cast send failed: {:?}", status);
     }
 

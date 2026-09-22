@@ -13,7 +13,7 @@ pub fn main() {
     let description_hashed: alloy::primitives::FixedBytes<32> = keccak256(description.as_bytes());
     let action_id = Fr::from_le_bytes_mod_order(description_hashed.as_slice());  
     let action_id_str = action_id.into_bigint().to_string();
-    println!("action_id={}", action_id_str);
+    
 
     let status = Command::new("cast")
         .args([
@@ -29,7 +29,14 @@ pub fn main() {
         .status()
         .expect("failed to spawn cast");
 
-    if !status.success() {
+    if status.success() {
+        println!("############################## Action Proposed ##############################");
+        println!("");
+        println!("action: {} is proposed - tier: {}",description,tier_num);
+        println!("action_id={}", action_id_str);
+        println!("");
+        println!("##############################################################################");
+    } else {
         eprintln!("cast send failed: {:?}", status);
     }
     

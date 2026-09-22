@@ -32,7 +32,7 @@ pub fn main() {
     let mut rng =StdRng::seed_from_u64(0);
     let (pf,pubs) = proof::prove(&pk, circuits, &mut rng).unwrap();
     let (a, b, c) = proof::to_solidity_calldata(pf);
-    println!("a={:?}\nb={:?}\nc={:?}\npubs={:?}", a, b, c, pubs);
+    // println!("a={:?}\nb={:?}\nc={:?}\npubs={:?}", a, b, c, pubs);
 
     let a_arg = format!("[{}]",a.join(","));
     let b_arg = format!("[[{}],[{}]]",b[0].join(","), b[1].join(","));
@@ -58,10 +58,15 @@ pub fn main() {
         "--account", "deployer",
     ])
     .status()
-    .expect("failed to spawn cast");
-
-    if !status.success() {
+    .expect("failed to spawn cast"); 
+    if status.success() {
+        println!("#################################### Membership Verified ####################################");
+        println!("");
+        println!("challenge: {}", challenge_str);
+        println!("nullifier={}", pubs[2].into_bigint().to_string());
+        println!("");
+        println!("#############################################################################################");
+    } else {
         eprintln!("cast send failed: {:?}", status);
     }
-
 }

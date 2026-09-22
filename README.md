@@ -1,5 +1,7 @@
 # FamilyProof
 
+🌐 [English version](README.en.md)
+
 **Prove trust, not identity.**
 
 > **家族は、血縁だけではない。**
@@ -19,7 +21,7 @@ FamilyProof は、
 
 を、秘密や個人情報を明かさずに検証します。
 
-> 正確に言うと、暗号的に証明しているのは「信頼」そのものではなく「本人が選んだ Trust Circle の membership」です。"Prove trust, not identity." は思想のタグライン、技術的な主張としては "Prove membership, protect identity." が正確です。
+> 正確に言うと、暗号的に証明しているのは「信頼」そのものではなく「本人が選んだ Trust Circle の membership」です。
 
 ---
 
@@ -34,8 +36,7 @@ FamilyProof は、
 FamilyProof：
 
 ```text
-「本人が選んだTrust Circleが
- このActionを承認したか？」
+「本人が選んだTrust Circleが、このActionを承認したか？」
 ```
 
 Trust Circle は固定された「家族属性」ではありません。
@@ -215,7 +216,7 @@ AI Agent 自身は Trust Circle の Merkle Tree に入っていないため、Hu
 
 ### ✅ Implemented & verified on World Chain Sepolia（イベント開始前、〜9/24）
 
-Step 0–6:
+Core ZK membership + leak detection:
 
 * Merkle membership proof / Poseidon commitment
 * Groth16 proof generation / verification（Rust witness/provingパイプライン）
@@ -223,7 +224,7 @@ Step 0–6:
 * `Groth16Verifier.sol` / `FamilyRegistry.sol`
 * 通知・匿名統計インフラ（`notifier.rs`, `stats.html`）
 
-Step 7（Family Constitution）:
+Family Constitution（tier別Action Authorization）:
 
 * `FamilyConstitution.sol`: `proposeAction` / ZK-backed `approveAction` / tier別自動実行 / `ActionAuthorized` / 二重承認防止 / challenge不一致防御 / AI Agent限定の提案権限。ユニットテスト全緑
 * `propose_action.rs` / `approve_action.rs`（Action提案・承認CLI）
@@ -307,7 +308,7 @@ forge test -vv
 | FamilyRegistry | `0xa9f1A920A96c42BC4aA37DcB513CA615A3B7557d` |
 | FamilyConstitution | `0xf7f344E9399638b69DF158877F1e77a39A5F3D73` |
 
-匿名統計ダッシュボード（誰がいつ検証・漏洩検知されたかは含まない、日次カウントのみ公開）: `stats.html`（ローカルで直接開くか、S3公開版）
+匿名統計ダッシュボード（誰がいつ検証・漏洩検知されたかは含まない、日次カウントのみ公開）: `stats.html`（ローカルで直接開くか、[公開版](https://niikun.net/family_proof/)）
 
 ---
 
@@ -344,7 +345,7 @@ FamilyProof が目指すのは、AI時代の新しいTrust Circleです。
 
 ## Continuity Track / AI利用方針
 
-本プロジェクトは ETHGlobal Tokyo 2026 の **Continuity Track** に提出する。Step 0〜7（ZK回路・RLN・on-chain Registry・Family Constitution・通知/統計インフラ）はイベント開始前（〜9/24）の既存部分、MCPサーバー化（AI Agent役をClaudeが実際にツール呼び出しで操作する部分）はイベント期間中（9/25〜27）に新規実装する部分として明確に区別している。
+本プロジェクトは ETHGlobal Tokyo 2026 の **Continuity Track** に提出する。ZK回路・RLN・on-chain Registry・Family Constitution・通知/統計インフラはイベント開始前（〜9/24）の既存部分、MCPサーバー化（AI Agent役をClaudeが実際にツール呼び出しで操作する部分）はイベント期間中（9/25〜27）に新規実装する部分として明確に区別している。
 
 AI（Claude）はコーチ・設計レビュー・ビルド/テスト実行確認のみを担当し、**Solidity/Rust のコードは一切書いていない**。実装はすべて開発者本人（ソロ開発）が書いている。
 

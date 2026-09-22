@@ -1,8 +1,10 @@
 # ピッチ台本（ETHGlobal Tokyo 2026）
 
+🌐 [English version](PITCH.en.md)（資料用。本番の実演自体は日本語で行う）
+
 審査枠: 7分（デモ4分 + Q&A3分）。基準: technicality / originality / practicality / UX / WOW factor。
 
-前提: 動作確認済みの実演のみをここに書く。Step 7（Family Constitution）のtestnet実演がイベント本番中に間に合わなかった場合の代替も併記する（「間に合わなかった場合」節）。
+前提: 動作確認済みの実演のみをここに書く。Family Constitution（tier別Action Authorization）はイベント前に本番World Chain Sepoliaへのデプロイ・testnet実演まで完了済み。イベント本番中に着手するMCPサーバー化が間に合わなかった場合の代替も併記する（「MCPが間に合わなかった場合」節）。
 
 ---
 
@@ -85,37 +87,49 @@ cast call 0xa9f1A920... "familyRoot()"
 
 ## 4. シーン4: Family Constitution（2:25–3:15、~50秒）
 
-前提: `FamilyConstitution.sol` を World Chain Sepolia にデプロイ済み、Rust側の提案/承認CLIが動く状態（イベント本番のTODO。**間に合わなかった場合は「間に合わなかった場合」節参照**）。
+前提: `FamilyConstitution.sol` は本番World Chain Sepoliaにすでにデプロイ済み（`0xf7f344E9399638b69DF158877F1e77a39A5F3D73`）、Rust側の提案/承認CLIもtier0/1/2まで実チェーンで動作確認済み（いずれもイベント前に完了）。イベント本番でのTODOは、この`propose_action`/`approve_action`をMCPサーバー化し、**Claudeが人間の代わりに実際のツール呼び出しでオンチェーン送信まで行う**形にアップグレードすること。**MCPが間に合わなかった場合は、下記の「Claudeが提案→人間が`cast send`をコピペ実行」という、すでに実証済みの形でそのまま進行できる**（詳細は「MCPが間に合わなかった場合」節）。
 
 画面構成: ターミナル3枠を並べる。**A枠 = Claude Code（AI Agent役、実際にClaudeが登場する）**、B枠 = 隣人A、C枠 = 隣人B（B・Cは同じ木の別メンバーのsecret/saltを保持、既存デモの鍵をそのまま使う）。
 
 > 「ここからが本題です。FamilyProofが証明しているのは、実は『家族かどうか』じゃなく、『信頼できる関係が、この行動を承認したかどうか』です。ここからのAI Agent役は、演技ではなく本物のClaudeにやってもらいます。」
 
-デモシナリオ（§SPEC.md §11.6準拠、AI役を実際のLLM対話に置き換え）:
+デモシナリオ（§SPEC.md §11.6準拠、AI役を実際のLLM対話に置き換え。台詞と流れはMCPの有無で変わらず、実行方法だけが変わる）:
 
-1. **A枠（Claude）**: 「母の介護費用で300万円の送金が必要そうなんだけど、提案しておいて」とClaudeに話しかける。Claudeがそのリスクの大きさからtier=2と判断し、実行すべきコマンドを返す:
-   ```bash
-   cast send <FamilyConstitution> "proposeAction(uint256,uint256)" <actionId> 2 --account agent
-   ```
-   → 提示されたコマンドをそのまま実行 → `ActionProposed`
-   > 「これは台本ではなく、今この場でClaudeが判断してコマンドを出しています。」
-2. 攻撃者（secretを持たない）が `approveAction` を試みる → 有効な証明を作れず失敗
-3. **A枠（Claude）**: 「Claude、自分でも承認してみて」と振る → Claudeは「自分にはTrust CircleのMerkle Treeのsecretがないので、有効なZK証明を作れず承認できません」と答える（実際に`approveAction`を試みてrevertすることを見せてもよい）
+1. **A枠（Claude）**: 「母の介護費用で300万円の送金が必要そうなんだけど、提案しておいて」とClaudeに話しかける。Claudeがそのリスクの大きさからtier=2と判断:
+   - **MCP対応済みの場合**: Claudeが`propose_action`ツールを直接呼び出し、その場でオンチェーン送信まで完了 → `ActionProposed`
+   - **MCP未対応（フォールバック）の場合**: Claudeが実行すべきコマンドを返す（`actionId`は`description`文字列から`propose_action`/`approve_action`側が自動計算するので、人間が事前に数値を計算・入力する必要はない）:
+     ```bash
+     cargo run --bin propose_action "母の介護費用、300万円" 2
+     ```
+     → 提示されたコマンドをそのまま実行 → `ActionProposed`
+   > 「これは台本ではなく、今この場でClaudeが判断して実行しています。」
+2. 攻撃者（secretを持たない）が `approve_action` を試みる → 有効な証明を作れず失敗
+3. **A枠（Claude）**: 「Claude、自分でも承認してみて」と振る → Claudeは「自分にはTrust CircleのMerkle Treeのsecretがないので、有効なZK証明を作れず承認できません」と答える（MCP対応済みならClaudeが実際に`approve_action`ツールを呼び出してrevertする様子を、未対応なら同じ`description`で`cargo run --bin approve_action "母の介護費用、300万円" <leaf_idx>`を実行してrevertする様子を見せてもよい）
    > 「AI自身にも、コントラクトの制御ではなくZKの健全性そのものが『承認できない』ことを強制しています。」
-4. **B枠（隣人A）**: 実際のZK証明つきで承認 → `ActionApproved(1/2)`
-5. **C枠（隣人B）**: 実際のZK証明つきで承認 → `ActionApproved(2/2)` → `ActionAuthorized`
+4. **B枠（隣人A）**: 実際のZK証明つきで承認:
+   ```bash
+   cargo run --bin approve_action "母の介護費用、300万円" 0
+   ```
+   → `ActionApproved(1/2)`
+5. **C枠（隣人B）**: 実際のZK証明つきで承認（別のメンバーなので`leaf_idx`が異なり、nullifierも別の値になる）:
+   ```bash
+   cargo run --bin approve_action "母の介護費用、300万円" 1
+   ```
+   → `ActionApproved(2/2)` → `ActionAuthorized`
 6. 対比: **A枠（Claude）**に「予定リマインドを出しておいて」と頼む → Claudeがtier=0と判断 → 即実行
    > 「日常の判断はAIが単独でこなせますが、リスクが上がるほど人間の合意が要る。家族だから何でも自由、ではなく、信頼関係の合意をプロトコル化しています。」
 
 **Claude接続不可（ネットワーク等）時のミニフォールバック**: A枠のやり取りが失敗したら、「今日はAIとの対話がうまく繋がらないので」と一言断り、あらかじめ用意した`actionId`で1のコマンドをそのまま実行して進行する。2以降はネットワークに依存しないのでそのまま続けられる。
 
-### 間に合わなかった場合（フォールバック）
+### MCPが間に合わなかった場合（フォールバック）
 
-testnetデプロイ・実演が本番中に間に合わなければ、`forge test -vv` のローカル実行結果（6テスト全緑）を見せつつ口頭で説明に切り替える:
+MCPサーバー化がイベント本番中に間に合わなくても、Family Constitution自体（コントラクト・CLI・本番Sepoliaデプロイ）はイベント前にすでに完成・実証済みなので、シーン4は「Claudeが提案文言・リスク判断を会話で行い、実行コマンドは人間がコピペする」という、上記ですでに書いた形でそのまま実演できる。台詞・流れは変えず、実行方法だけが変わる——デモが破綻するリスクは無い。
 
-> 「Family Constitutionのコントラクトとテストはすでに完成していて、6つのシナリオ——tier0の即時実行から、二重承認防止、不正な攻撃者の拒否まで——すべて緑です。testnetへの実演は残念ながらここまでですが、コードは公開しているので見ていただけます。」
+万一Sepolia自体への接続やtestnetの調子が悪いなど、さらに一段深いトラブルが起きた場合は、`forge test -vv` のローカル実行結果（全テスト緑）を見せつつ口頭で説明に切り替える:
 
-正直に「未完了」と言う。Continuity Trackの審査は誠実な進捗報告も評価対象。
+> 「Family Constitutionのコントラクトとテストはすでに完成していて、tier0の即時実行から、二重承認防止、不正な攻撃者の拒否まで、すべて緑です。今日は接続の都合でtestnetでの実演まではお見せできませんが、コードは公開しているので見ていただけます。」
+
+正直に状況を伝える。Continuity Trackの審査は誠実な進捗報告も評価対象。
 
 ---
 
@@ -144,13 +158,13 @@ A: 既知の限界として明記しています。現状のRLNは1時間に1回
 A: AI Agentはtier0（低リスク）しか単独実行できず、tier1以上は必ず人間のZK証明が必要です。AI Agent自身はMerkle Treeにleafを持たないので、有効な証明を作ることは原理的にできません。ただしAI Agent自身に暗号的なID・失効機構がないのは既知の限界で、侵害されたAgentをTrust Circleから切り離す仕組みは将来課題です。
 
 **Q: このプロジェクトのどこがイベント前で、どこがイベント中の新規実装か？**
-A: ZK回路・RLN・FamilyRegistry・通知インフラ・匿名統計（Step 0〜6）はイベント開始前（〜9/24）に実装し、実チェーンで動作確認済みです。Family Constitution（Step 7、今日お見せした信頼関係の合意プロトコル拡張）はイベント期間中（9/25〜27）に新規実装しました。README/Continuity提出文に明記しています。
+A: ZK回路・RLN・FamilyRegistry・通知インフラ・匿名統計・Family Constitution（今日お見せした信頼関係の合意プロトコル拡張を含む）は、イベント開始前（〜9/24）に実装し、本番World Chain Sepolia上で実チェーン動作確認まで済ませています。イベント期間中（9/25〜27）に新規実装したのは、`propose_action`/`approve_action`をMCPサーバー化し、AI Agent役をClaude自身が実際のツール呼び出しで操作できるようにした部分です。README/Continuity提出文に明記しています。
 
 **Q: コードは全部自分で書いたのか？AIはどう使ったのか？**
 A: Solidity/Rustのコードはすべて自分で書きました。Claudeはコーチ・設計レビュー・テスト実行確認のみで、コードは一切書いていません。実装バグの発見・指摘は受けましたが、修正は自分で行いました。
 
 **Q: デモでClaudeがAI Agent役をやっていたが、コントラクトにLLMが統合されているのか？**
-A: いいえ、統合はしていません。`proposeAction`を呼べるのは`onlyAgent`で指定した1つのEOAだけ、という設計はStep 7当初のままです。今日はその「提案する主体」を、Rustの固定ロジックではなく実際のClaudeとの対話に置き換えて見せました。本質は変わりません——AIが何を提案しようと、tier1以上は人間のZK証明なしには実行できないことがコントラクトレベルで強制されています。むしろその「AIが自分自身を承認できない」様子を実際のLLMで見せることで、この設計の意味が伝わりやすくなると考えています。
+A: いいえ、統合はしていません。`proposeAction`を呼べるのは`onlyAgent`で指定した1つのEOAだけ、という設計はFamily Constitutionを最初に作った時のままです。今日はその「提案する主体」を、Rustの固定ロジックではなく実際のClaudeとの対話に置き換えて見せました。本質は変わりません——AIが何を提案しようと、tier1以上は人間のZK証明なしには実行できないことがコントラクトレベルで強制されています。むしろその「AIが自分自身を承認できない」様子を実際のLLMで見せることで、この設計の意味が伝わりやすくなると考えています。
 
 **Q: AIにもTrust Circleのsecretを持たせて、AI自身が承認に参加できるようにはしないのか？**
 A: 意図的にそうしていません。AIがsecretを持てば、AIの証明が承認の1票としてカウントされ、必要人数の閾値が実質1つ下がってしまいます。さらにLLMはプロンプトインジェクションで判断を乗っ取られうるので、「AIのsecret」は結局「プロンプト経由で引き出されうる秘密」になり、本プロジェクトの出発点である「電話越しに秘密を言わされる」というオレオレ詐欺の構図をAI側に持ち込むことになります。だからAIには最初から一切持たせていません。
