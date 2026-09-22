@@ -68,6 +68,7 @@ pub fn main() {
         println!("nullifier: {}", nullifier_short);
         println!("");
         println!("##############################################################################");
+    } else {
         eprintln!("cast send failed: {:?}", status);
     }
 }

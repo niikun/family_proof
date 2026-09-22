@@ -58,7 +58,7 @@ pub fn main() {
             .collect::<Vec<_>>()
             .join(",")
     );
-    let status = Command::new("cast")
+    let output = Command::new("cast")
         .args([
             "send",
             "0xf7f344E9399638b69DF158877F1e77a39A5F3D73",
@@ -71,18 +71,29 @@ pub fn main() {
             "--rpc-url", "https://worldchain-sepolia.g.alchemy.com/public",
             "--account", "agent",  
         ])
-        .status()
+        .output()
         .expect("failed to spawn cast");
 
-    if status.success(){
+    print!("{}", String::from_utf8_lossy(&output.stdout));
+    
+    let authorized = String::from_utf8_lossy(&output.stdout)
+    .contains("0xb402c6ca06ec77e392ffe0828856a7aa022bea631ef0a4a96359d6dfc3e9b9d0");
+
+    if output.status.success(){
         println!("############################## Action Approved ##############################");
         println!("");
         println!("action: {} is approved by idx-{}",challenge_str,leaf_idx);
         println!("action_id={}", pubs[4]);
         println!("");
         println!("##############################################################################");
+        if authorized {
+        println!("🎉 ActionAuthorized!");
+        } else {
+            println!("(pending — threshold not yet reached)");
+        }
+
     } else {
-        eprint!("cast send failed: {:?}", status);
+        eprint!("cast send failed: {:?}", output.status);
     }
 
 }

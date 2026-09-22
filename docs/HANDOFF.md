@@ -1,6 +1,6 @@
 # HANDOFF — 別PCへの引き継ぎ
 
-最終更新: 2026-09-22（Step 7 ①〜④ すべて完了。`FamilyConstitution.sol`を本番World Chain Sepoliaにデプロイ〈`0xf7f344E9399638b69DF158877F1e77a39A5F3D73`〉し、AI提案→2人承認→`ActionAuthorized`を実チェーン上で実証済み。残りはデモ動画・英語版・提出文・stretchのMCP化） / ブランチ: `main` / remote: `git@github.com:niikun/family_proof.git`
+最終更新: 2026-09-22夜（Step 7 ①〜④完了に加え、README/PITCH/提出文の整備まで完了。**明日(9/23)からMCP化に着手**。残りはMCP化・デモ動画・デモリハーサル） / ブランチ: `main` / remote: `git@github.com:niikun/family_proof.git`
 
 > ✅ **Step 6 コア完了（Verifier/Registry/テスト/calldata変換/World Chain Sepoliaデプロイ済み）**。デプロイ済みアドレスは下記「Step 6」節参照（`FamilyRegistry` は `0xa9f1A920...` が正、`0xD06FcbB5...` は重複デプロイの旧アドレスで放置）。追加拡張A/B/Cも完了（下記「残り期間での追加拡張」節）。
 > **🆕 Step 7（Trust Circle / Family Constitution 拡張）を正式採用し、2026-09-21 夜から着手済み**（設計は [SPEC.md §11](SPEC.md) 完了）。進捗は下記「いまどこ」節参照。Claude はコーチのみ、設計を書いただけでコードは書いていない — 実装は引き続きユーザーが行う。
@@ -19,7 +19,7 @@
 
 ## いまどこ
 
-ロードマップ（[SPEC.md](SPEC.md) §7）で **Step 0〜4 完了、Step 5 事実上完了、Step 6 完了、Step 7 完了**（①〜④すべて済み。`FamilyConstitution.sol`を本番World Chain Sepoliaにデプロイし、AI提案→2人承認→`ActionAuthorized`を実チェーン上で実証済み）。残るはデモ動画・英語版README/PITCH・ETHGlobal提出文と、stretchのMCP化（本番中に着手予定）。詳細は下記「🆕 Step 7」節参照。
+ロードマップ（[SPEC.md](SPEC.md) §7）で **Step 0〜4 完了、Step 5 事実上完了、Step 6 完了、Step 7 完了**（①〜④すべて済み。`FamilyConstitution.sol`を本番World Chain Sepoliaにデプロイし、AI提案→2人承認→`ActionAuthorized`を実チェーン上で実証済み）。README/README.en/PITCH/PITCH.en/SUBMISSION.enの整備も完了（2026-09-22夜）。**残るのはMCP化（明日9/23〜着手）・デモ動画・シーン3カットの要否判断・`submit_demo.rs`の残バグ修正**。詳細は下記「🆕 README/PITCH/提出文の整備」節参照。
 
 | Step | 状態 |
 |---|---|
@@ -232,6 +232,41 @@ Step 7自体は新しい暗号要素・新SDKを足さないSolidity/Rustの積�
 - [ ] SPEC.md §8（脅威モデル）に §11.3 で触れた RLN epoch/limit 共有問題を正式追記するかは、Step 7 の
       実装が固まった時点で判断（現状は §11.7 に既知の限界として記載済み）
 - [ ] 時間切れの場合は SPEC §7 Step 7 の縮退ライン（Solidity実装のみ→testnet実証→デモ組み込みの順で削る）に従う
+
+### 🆕 README/PITCH/提出文の整備（2026-09-22 夜、完了）・明日からMCP化に着手
+
+Step 7 ①〜④完了後、審査員向けドキュメント一式を整備した。
+
+- [x] **README.md 全面改稿**: 冗長だった語り口を削り、構造化された簡潔な形に書き直し（ユーザー主導のドラフトをベースにClaudeが最新状況の反映漏れ・正確性を指摘して修正）。修正点:
+  - `In progress`節が古いままだった（承認CLI・本番デプロイ・実演は実際は完了済み）→ `Current Status`に統合
+  - `Live Contracts`に`FamilyConstitution`のアドレスが抜けていた → 追加
+  - World IDが他の実装済みprimitiveと同列に書かれていた（実際は自前JSモック）→ 明示的に区別する注記を追加
+  - 見出し「RLN: Stolen Secrets Self-Destruct」→「RLN: Reusing a Stolen Secret Backfires」に変更（「自壊」という不正確な表現は2026-09-21に一度排除済みだったのが再発していたため）
+  - AI利用方針の開示・既知の限界セクション・オレオレ詐欺の統計出典（削られていた）を簡潔な形で復元
+  - S3公開版ダッシュボードのURL（`https://niikun.net/family_proof/`）を追記
+- [x] **`README.en.md`（新規）**: 日本語版を主、英語版を副とする方針で作成。相互リンクを両ファイル冒頭に追加
+- [x] **`docs/PITCH.en.md`（新規）**: 本番の実演自体は日本語で行う前提（英語版は資料用）で全訳
+- [x] **「Step 0」「Step 7」等の内部管理番号を審査員向け文書から全削除**（ユーザー指摘: 「審査する側からは全く興味ないのでは」）。README/README.en/PITCH/PITCH.en/SUBMISSION.enの該当箇所を「Family Constitution（tier別Action Authorization）」のような機能名ベースの説明に置き換え。HANDOFF.md/SPEC.mdは開発ログなのでStep番号のまま維持
+- [x] **PITCH.md/PITCH.en.mdの実態不一致を修正**:
+  - シーン4前提が「デプロイ・実演はイベント本番のTODO」のままだったのを「イベント前に完了済み、本番はMCPサーバー化のみ」に修正
+  - デモ手順を「MCP対応時／未対応時（フォールバック）」の2パターン併記に変更
+  - 「間に合わなかった場合」節を「MCPが間に合わなかった場合」に作り直し（ベースのCLIデモがすでに実証済みなので、フォールバックの安全度が大幅に向上）
+  - Q&Aの「イベント前／イベント中」の区切りを実態（Step0〜7＝イベント前、MCP＝イベント中）に修正
+  - **サンプルコマンドのバグ2件を修正**: ①`--rpc-url`が抜けていて実際に接続エラーを再現した、②`actionId`を人間が事前計算して`cast send`に埋める前提の非現実的なコマンドだったのを、`description`文字列だけで完結する`cargo run --bin propose_action/approve_action`に置き換え（`propose_action`/`approve_action`が内部で自動的にactionIdを計算するため、人間が数値を扱う必要が無くなった）
+  - ステップ4・5（隣人A・Bの承認）にも具体的な`cargo run --bin approve_action "<description>" <leaf_idx>`コマンドを追加（`leaf_idx`違いで別のnullifierになる点も明記）
+- [x] **`docs/SUBMISSION.en.md`（新規）**: ETHGlobal提出フォーム用の下書き（タイトル・タグライン・description・Continuity Track区切り・tech stack・ライブコントラクト表）。パートナー賞は`ethglobal.com/events/tokyo2026/prizes`を検索して調査した結果、**World（`Best Use of IDKit` / `Best Use of World ID for Agents`、各$7,500）以外はFamilyProofの技術スタックと合わず候補外**と判断。World IDは自前モックなので要件を満たさない可能性が高いが、「同一パートナーの複数トラックは1枠としてカウント」というETHGlobalのルールにより応募コストがゼロなため、正直に開示した上でダメ元応募する方針に決定
+- [x] **`propose_action.rs`/`approve_action.rs`のCLI出力を仕上げ**:
+  - 成功/失敗の分岐バグを修正（以前は`status.success()`のチェック前に成功バナーを出力していたため、失敗時にも成功したように見えた）
+  - 両ファイルの成功バナーを78文字幅・`# ラベル #`形式に統一
+  - タイポ修正（`faild`→`failed`、`spwan`→`spawn`）
+  - `approve_action.rs`: `.status()`を`.output()`に変更してcastの標準出力をキャプチャし、`ActionAuthorized`イベントのトピックハッシュ（`0xb402c6ca...`）を文字列検索することで、閾値到達で実行されたかどうか（`🎉 ActionAuthorized!` / `(pending — threshold not yet reached)`）をCLI上で分かりやすく表示するように改修
+- [x] **`submit_demo.rs`のCLI出力も改善**: 成功時に`Membership Verified`バナー・`nullifier`の短縮表示（先頭8桁+末尾6桁、フルの78桁は読みにくいため）を追加
+  - ~~未修正の既知バグ: `eprintln!("cast send failed: ...")`が`if status.success() {}`の中に紛れ込んでおり`else`が無い~~ → **2026-09-22中に修正済み**。`eprintln!`を`else`節に正しく移動、成功時はバナーのみ・失敗時はエラーメッセージのみが出ることを確認済み
+- [x] **`.env`の不備を修正**: 末尾に`KEY=VALUE`形式でない生のtx hash行が残っており、`dotenvy::dotenv().ok()`（`notifier.rs`が使用）が`.ok()`でエラーを握りつぶすため`.env`全体が読み込まれなくなるリスクがあった → ユーザーが修正済み。`FamilyConstitution=0xf7f344...`の行も追加
+- [x] **運用判断: `approve_action.rs`は`propose_action.rs`と同じ`agent`キーストアを使い続ける（隣人A・B用に別アカウントは作らない）**。理由: `FamilyConstitution.approveAction`には`onlyAgent`のような制限が無く、認証の実体は`msg.sender`ではなくZK証明（secret+Merkle path）なので、送信アカウントを分ける必要は無い。デモの見栄え上「隣人A/Bが同じアドレスから送信している」ことに気づかれるリスクはあるが、突っ込まれても正しく説明できるため許容
+- [x] **本番デモでは`cargo run --release`を使うことを推奨**として記録。理由: Groth16の`prove`はデバッグビルドだと大幅に遅く、4分の持ち時間を圧迫するため。事前に`cargo build --release`しておき、本番中は`--release`付きで実行する運用
+- [ ] **未決定: シーン3（World IDモック）をデモから丸ごとカットするか**。ユーザーから「デモが長すぎて分かりづらい、Family Constitutionの方が面白い」という指摘があり、Claudeはシーン3カット＋Family Constitutionに2分程度まで拡大する再配分案を提示したが、**最終決定はまだ**。次回セッションで確認すること
+- [ ] **明日(2026-09-23)からMCP化に着手**。設計方針（2026-09-21時点の検討）: `propose_action`/`approve_action`を`rmcp`クレート（公式Rust MCP SDK、[modelcontextprotocol/rust-sdk](https://github.com/modelcontextprotocol/rust-sdk)、2026-09-22時点の最新版3.4系）でMCPサーバー化し、Claude Code自身がツール呼び出しでオンチェーン送信まで行えるようにする。ユーザーへのチュートリアル形式でのコーチングを開始済み（Step 1: `Cargo.toml`に`rmcp = { version = "3.4", features = ["server", "transport-io"] }` / `schemars = "0.8"` / `serde = { version = "1", features = ["derive"] }`を追加するところまで指示済み、実装はまだ）。最小サンプル構成（`#[tool_router(server_handler)]` + `#[tool(description = "...")]`付きメソッド + `stdio()`トランスポート + `ServiceExt::serve`）は調査済み。MCPサーバーが立ち上がったら、Claude Codeの設定（`.mcp.json`など）に登録して実際にツール呼び出しができるかを確認するのが次のマイルストーン
 
 ### 🆕 ピッチ再定義: Trust Circle を前面に出す（2026-09-21 深夜、完了）
 
