@@ -6,7 +6,7 @@
 > **🆕 Step 7（Trust Circle / Family Constitution 拡張）を正式採用し、2026-09-21 夜から着手済み**（設計は [SPEC.md §11](SPEC.md) 完了）。進捗は下記「いまどこ」節参照。Claude はコーチのみ、設計を書いただけでコードは書いていない — 実装は引き続きユーザーが行う。
 > **⚠️ 重要: ETHGlobal Tokyo 2026 の日程・提出ルールが確定済み（下記参照）。この5連休の位置づけが変わったので必読。**
 > **🆕 ピッチの再定義（Trust Circle）を確定し、`README.md`・`docs/PITCH.md`・3枚スライドを作成、`SPEC.md §11.8`（委任権限のZK証明、将来構想）を追記。詳細は下記「🆕 Step 7」節の追加項目、および `README.md`・`docs/PITCH.md` 本体を参照。**
-> **🆕 World ID実SDK統合の2日間練習を開始（2026-09-23）**: 本番中(9/25〜27)にWorld ID実SDK統合へ再挑戦するかどうかの判断材料として、イベント前日までの2日間（9/23〜24）で`learn-worldid/`（本編とは独立の練習用サンドボックス）を使って軽く触っておく方針。詳細は下記「🆕 World ID実SDK再挑戦に向けた2日間練習」節参照。
+> **🆕 World ID実SDK統合の2日間練習を開始（2026-09-23、現状: 教材準備のみ完了・着手前）**: 本番中(9/25〜27)にWorld ID実SDK統合へ再挑戦するかどうかの判断材料として、イベント前日までの2日間（9/23〜24）で`learn-worldid/`（本編・Continuity Track提出物とは完全に独立の練習用サンドボックス、コミット済み・未push）を使って軽く触っておく方針。**次にやること（この順で）**: ① `learn-worldid/README.md`の「最優先」節にあるSandboxアプリのアクセス申請を出す → ② `day1_js_basics/`のJS基礎6問（`exercises.mjs`のTODO）をこなす → ③ `day2_idkit_practice/`でIDKit（RP署名サーバー＋フロントエンド）のTODOを埋めて動かす。詳細・用語集・進め方（コーチ方式、JS完全初心者前提）は下記「🆕 World ID実SDK再挑戦に向けた2日間練習」節参照。
 
 ## ⚠️ ETHGlobal Tokyo 2026 日程・提出ルール（2026-09-19 確認）
 
@@ -34,6 +34,8 @@
 | 7 Trust Circle / Family Constitution 拡張 | ✅ **①〜④すべて完了**（2026-09-22）。`FamilyConstitution.sol`は本番World Chain Sepolia `0xf7f344E9399638b69DF158877F1e77a39A5F3D73` にデプロイ済み、`propose_action.rs`/`approve_action.rs`でtier0/tier1/tier2（承認2人、異なるnullifier）まで実チェーン上で実証済み。ピッチ再定義（`README.md`/`docs/PITCH.md`/スライド3枚/`SPEC.md §11.8`）も完了。残タスクは下記「🆕 Step 7」節（デモ動画・英語版・提出文・stretchのMCP化） |
 
 **スコープ方針（2026-09-21 夜 再更新・Step7前倒し）**: Must = Step 4 RLN（済） / Step 6 コア（済） / Step 5（済） → **今からStep 7 Trust Circle/Family Constitutionの実装に着手**、縮退ラインは[SPEC.md §7 Step 7](SPEC.md)参照 → 間に合わなければ続きはイベント本番（9/25〜27）に持ち越し。Cut候補 = ENS 名解決・levels=20拡張。
+
+**サイドトラック（本編Step 0〜7とは別枠、提出物ではない）**: World ID実SDK統合の2日間練習が2026-09-23に着手済み。現状は教材（`learn-worldid/`）の準備のみ完了、実際の練習（Sandbox申請・JS基礎・IDKit実装）はまだこれから。詳細は下記「🆕 World ID実SDK再挑戦に向けた2日間練習」節。
 
 ## 🆕 Step 5: デモUI（2026-09-21 UI方針決定、シーン3はモックに最終決定）
 
@@ -278,17 +280,6 @@ Step 7 ①〜④完了後、審査員向けドキュメント一式を整備し�
 
 **背景・なぜ本番前ではなくこのタイミングでやっているか**: 当初「Step 7完了直後は全部終わってしまうとContinuity Trackの『イベント中に作った部分』が無くなる」という懸念から、MCP化は本番中(9/25〜27)にやる予定だった。その後「今日中にMCPを終わらせられれば、本番中の時間をWorld ID実SDK統合（2026-09-21に一度見送った、より難易度の高い挑戦）に使える」という提案があり、**今日(2026-09-23)のうちにMCP化を進める方針に変更**。ただしWorld ID再挑戦は「MCPが余裕を持って完全に終わった場合のみ」という条件付き（詳細は本セッションの会話ログ、HANDOFFには特に追加記載なし）。
 
-### 🆕 World ID実SDK再挑戦に向けた2日間練習（2026-09-23 着手、Claudeが教材を用意）
-
-MCP化（`propose_action`）が本番前に完了したことで条件が満たされたため、**本番中(9/25〜27)にWorld ID実SDK統合へ再挑戦する可能性が現実的になった**。ただしぶっつけ本番はリスクが高いため、イベント前日までの2日間（**2026-09-23〜24**）で軽く触って感覚を掴んでおく方針を採用。
-
-- **`learn-worldid/`ディレクトリを新設**: FamilyProof本編・Continuity Track提出物とは完全に独立した練習用サンドボックス（`.gitignore`済み、`git add`しない運用）。進め方は本編と同じ「コーチ方式」——[[no-writing-code]]をここにも適用する方針をユーザーが明示的に選択（AskUserQuestionで確認済み。「動くサンプルを用意する」選択肢もあったが、コーチ方式を選択。ただしJavaScript完全初心者なので伴走を厚めに、という条件付き）。Claudeは骨格・課題・参考リンクのみ用意し、実装コードは書いていない
-- **`README.md`**: 2日間ロードマップ・用語集（App ID/Action/Signal/nullifier/Verification Level/RP signing/Sandbox）・**Sandboxアプリのアクセス申請を最優先タスクとして明記**（承認にTestFlight招待/Google Play非公開テストの審査時間がかかるため、コードを書き始める前に申請だけ先に出す運用）
-- **`day1_js_basics/`**: JavaScript完全初心者向けに、IDKit実装で実際に使う構文（`const`/テンプレート文字列、アロー関数、オブジェクトの分割代入、`async`/`await`、`fetch`+JSON、`import`/`export`）だけに絞った6問の練習課題（`exercises.mjs`、TODOコメントのみで解答は書いていない）
-- **`day2_idkit_practice/`**: `express` + 公式`@worldcoin/idkit-server`（RP署名ヘルパー）を使った最小サーバー（`server.js`）と、`voice_challenge.html`と同じ「ビルドツール無し」方針を維持したフロントエンド（`public/index.html`、`esm.sh`経由で`@worldcoin/idkit-core`をブラウザから直接import）。どちらもTODOコメントのみの骨格で実装は含まない。`package.json`・`.env.example`も用意済み
-- **docs.world.org を2026-09-23時点で再調査した新事実**: 2026-09-21時点の判断（IDKit v4はRP署名用の小さなバックエンドが実質必須）は変わっていないことを確認。ただし**`@worldcoin/idkit-server`パッケージの`signRequest()`ヘルパーの存在が新たに判明**——RP署名（Keccak-256ベースのnonce生成＋ECDSA secp256k1署名）を自前実装する必要は無く、関数呼び出し1回で済む。2026-09-21時点でこれを見送った最大の理由（「署名ロジックは公式SDK以外に仕様が無く自前実装はリスクが高い」）は、少なくとも署名生成そのものについては解消されている
-- **本番当日の実装可否はこの2日間の練習の進捗次第、まだ未確定**。練習が順調に進めばIDKitへの理解を前提に本番中(9/25〜27)に実統合へ挑戦し、World ID/Worldcoinパートナー賞（`Best Use of IDKit`/`Best Use of World ID for Agents`、各$7,500、`docs/SUBMISSION.en.md`参照）に正式に挑戦できる可能性がある。進まなければ現状の自前JSモック（`voice_challenge.html`、disclosed mockとして提出）のまま据え置く
-
 **方針（確定済み）**: `propose_action`/`approve_action`を`rmcp`クレート（公式Rust MCP SDK、[modelcontextprotocol/rust-sdk](https://github.com/modelcontextprotocol/rust-sdk)、2026-09-22時点の最新版3.4系）でMCPサーバー化し、Claude Code自身が「AI Agent」役としてツール呼び出しで実際にオンチェーン送信まで行えるようにする。PITCH.md/PITCH.en.mdのシーン4は既に「MCP対応済みの場合／未対応（フォールバック）の場合」の両方が書いてあるので、MCPが完成してもしなくてもデモ台本自体は変更不要。
 
 **進め方はチュートリアル形式**（ユーザーからのリクエスト、MCPを学びながら実装したいとのこと）。[[no-writing-code]]の方針通り、Claudeは概念説明とステップ指示のみ、コードは全部ユーザーが書く。
@@ -312,6 +303,24 @@ MCP化（`propose_action`）が本番前に完了したことで条件が満た�
   6. `mcp_server.rs`が`cargo run --bin propose_action`の引数に`--password-file <path>`を余分に渡していたが、`propose_action.rs`は`args.len() == 3`（バイナリ名＋description＋tier）を前提にしており、パスワードパスはCLI引数として受け取らず内部で自前計算する設計だった → 余分な引数を渡すと`assertion failed: args.len() == 3`でpanicすることを実機再現して確認、`mcp_server.rs`側の該当引数を削除して解消
 - [x] **再接続完了（2026-09-23）**: MCPサーバーへの再接続後、`propose_action`ツールが実際に結果を返すことを確認済み（`mcp__family-proof__propose_action`としてClaude Codeから呼び出し可能）。これで「MCP化（`propose_action`のみ）」はStep 1〜5すべて完了
 - [ ] **`approve_action`用の2つ目のツールメソッドを`mcp_server.rs`に追加する（まだ未着手・任意のstretch）**。`approve_action.rs`自体は既に`--password-file`対応済み（`propose_action.rs`と同じ設計: パスは内部で自前計算、CLI引数としては受け取らない。`mcp_server.rs`側から余分な引数を渡さないよう注意）。未着手のため、README/PITCH/SUBMISSION.en.mdでは承認ステップ（`approve_action`）は引き続きCLI実行として記載している（2026-09-23、下記「🆕 README/PITCH/提出文の整備」節のMCP反映エントリ参照）
+
+### 🆕 World ID実SDK再挑戦に向けた2日間練習（2026-09-23 着手、Claudeが教材を用意）
+
+MCP化（`propose_action`）が本番前に完了したことで条件が満たされたため、**本番中(9/25〜27)にWorld ID実SDK統合へ再挑戦する可能性が現実的になった**。ただしぶっつけ本番はリスクが高いため、イベント前日までの2日間（**2026-09-23〜24**）で軽く触って感覚を掴んでおく方針を採用。
+
+- **`learn-worldid/`ディレクトリを新設**: FamilyProof本編・Continuity Track提出物とは完全に独立した練習用サンドボックス（`.gitignore`済み、`git add`しない運用）。進め方は本編と同じ「コーチ方式」——[[no-writing-code]]をここにも適用する方針をユーザーが明示的に選択（AskUserQuestionで確認済み。「動くサンプルを用意する」選択肢もあったが、コーチ方式を選択。ただしJavaScript完全初心者なので伴走を厚めに、という条件付き）。Claudeは骨格・課題・参考リンクのみ用意し、実装コードは書いていない
+- **`README.md`**: 2日間ロードマップ・用語集（App ID/Action/Signal/nullifier/Verification Level/RP signing/Sandbox）・**Sandboxアプリのアクセス申請を最優先タスクとして明記**（承認にTestFlight招待/Google Play非公開テストの審査時間がかかるため、コードを書き始める前に申請だけ先に出す運用）
+- **`day1_js_basics/`**: JavaScript完全初心者向けに、IDKit実装で実際に使う構文（`const`/テンプレート文字列、アロー関数、オブジェクトの分割代入、`async`/`await`、`fetch`+JSON、`import`/`export`）だけに絞った6問の練習課題（`exercises.mjs`、TODOコメントのみで解答は書いていない）
+- **`day2_idkit_practice/`**: `express` + 公式`@worldcoin/idkit-server`（RP署名ヘルパー）を使った最小サーバー（`server.js`）と、`voice_challenge.html`と同じ「ビルドツール無し」方針を維持したフロントエンド（`public/index.html`、`esm.sh`経由で`@worldcoin/idkit-core`をブラウザから直接import）。どちらもTODOコメントのみの骨格で実装は含まない。`package.json`・`.env.example`も用意済み
+- **docs.world.org を2026-09-23時点で再調査した新事実**: 2026-09-21時点の判断（IDKit v4はRP署名用の小さなバックエンドが実質必須）は変わっていないことを確認。ただし**`@worldcoin/idkit-server`パッケージの`signRequest()`ヘルパーの存在が新たに判明**——RP署名（Keccak-256ベースのnonce生成＋ECDSA secp256k1署名）を自前実装する必要は無く、関数呼び出し1回で済む。2026-09-21時点でこれを見送った最大の理由（「署名ロジックは公式SDK以外に仕様が無く自前実装はリスクが高い」）は、少なくとも署名生成そのものについては解消されている
+- **本番当日の実装可否はこの2日間の練習の進捗次第、まだ未確定**。練習が順調に進めばIDKitへの理解を前提に本番中(9/25〜27)に実統合へ挑戦し、World ID/Worldcoinパートナー賞（`Best Use of IDKit`/`Best Use of World ID for Agents`、各$7,500、`docs/SUBMISSION.en.md`参照）に正式に挑戦できる可能性がある。進まなければ現状の自前JSモック（`voice_challenge.html`、disclosed mockとして提出）のまま据え置く
+
+**現在地点（次回はここから再開）**:
+- [x] 教材一式を`learn-worldid/`に用意（README・用語集・day1 JS基礎課題・day2 IDKit骨格）、コミット済み（未push）
+- [ ] Sandboxアプリのアクセス申請（Developer Portal、承認待ちが発生するので最優先）
+- [ ] Day1: `day1_js_basics/exercises.mjs`のTODO1〜6
+- [ ] Day2: `day2_idkit_practice/server.js`・`public/index.html`のTODOを埋めて動作確認
+- [ ] 練習の進捗を踏まえて、本番中にWorld ID実SDK統合へ挑戦するか最終判断
 
 ### 🆕 デモ動画の編集方針（2026-09-23、進行中）
 
@@ -597,6 +606,17 @@ export PATH="$PATH:$HOME/.foundry/bin"   # ~/.bashrc に追記推奨。無けれ
 cd contracts
 forge build      # Groth16Verifier.sol / FamilyRegistry.sol / IGroth16Verifier.sol
 forge test -vv   # ユニットテスト5本緑（Mock Verifier使用）
+```
+
+`learn-worldid/`（World ID練習用、本編とは無関係。詳細は上部「🆕 World ID実SDK再挑戦に向けた2日間練習」節）:
+
+```bash
+cd learn-worldid/day2_idkit_practice
+cp .env.example .env   # .envはgitignore済みなので付いてこない。各PCで作り直す
+# .env を開いて、Developer Portal（https://developer.world.org/）で発行された
+# APP_ID / RP_ID / RP_SIGNING_KEY を実際の値に書き換える
+npm install             # node_modulesはgitignore済み、各PCで再インストール
+node server.js          # http://localhost:3000 で確認
 ```
 
 ### git 管理の方針（2026-09-08 整理済み・2026-09-19 追記）
