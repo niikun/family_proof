@@ -10,20 +10,21 @@ Premise: only rehearsed, working demonstrations are scripted here. Family Consti
 
 ## Overall structure (target timing)
 
+**Revised 2026-09-22: Scene 3 (AI voice-clone defense) has been cut from the demo, and its time reallocated to Family Constitution** (the developer's call: "the demo was too long and hard to follow — Family Constitution is the more interesting part"). The World ID voice-clone-defense design itself isn't gone — it's just not performed live; it's covered in the Q&A prep section instead.
+
 | Part | Time | Content |
 |---|---|---|
-| 0. Hook (problem statement + reframe) | 0:00–0:30 | The contradiction in phone-scam countermeasures → pivot to "this is actually a bigger story" |
-| 1. Scene 1: family-impersonation check | 0:30–0:50 | Verification succeeds without ever revealing the secret |
-| 2. Scene 2: RLN reuse detection | 0:50–1:40 | A stolen secret used twice gets recovered and revoked |
-| 3. Scene 3: AI voice-clone defense | 1:40–2:25 | Knowing the password alone isn't enough (mock) |
-| 4. Scene 4: Family Constitution | 2:25–3:15 | Claude actually plays the AI Agent role → proposes → the attacker/Claude itself fails to approve → two neighbors approve and it executes |
-| 5. Close (vision + tagline) | 3:15–4:00 | Trust Circle / a society of people living alone |
+| 0. Hook (problem statement + reframe) | 0:00–0:25 | The contradiction in phone-scam countermeasures → pivot to "this is actually a bigger story" |
+| 1. Scene 1: family-impersonation check | 0:25–0:45 | Verification succeeds without ever revealing the secret |
+| 2. Scene 2: RLN reuse detection | 0:45–1:25 | A stolen secret used twice gets recovered and revoked |
+| 3. Family Constitution (centerpiece) | 1:25–3:30 | Claude actually plays the AI Agent role → proposes → the attacker/Claude itself fails to approve → two neighbors approve and it executes |
+| 4. Close (vision + tagline) | 3:30–4:00 | Trust Circle / a society of people living alone |
 
 Anticipated Q&A is in the "Q&A prep" section at the end.
 
 ---
 
-## 0. Hook (0:00–0:30)
+## 0. Hook (0:00–0:25)
 
 > "The standard defense against phone impersonation scams in Japan is a family password. But the password approach has a built-in contradiction: the very act of saying a secret to verify your identity exposes that secret to being overheard on the call. Once it leaks, you can never use it again."
 >
@@ -33,7 +34,7 @@ Anticipated Q&A is in the "Q&A prep" section at the end.
 
 ---
 
-## 1. Scene 1: family-impersonation check (0:30–0:50, ~20 sec)
+## 1. Scene 1: family-impersonation check (0:25–0:45, ~20 sec)
 
 Setup: keep `cargo run --bin notifier` running continuously in Terminal A. Terminal B is ready for commands. The `cast` keystore password has been confirmed beforehand.
 
@@ -47,7 +48,7 @@ cargo run --bin submit_demo -- 777
 
 ---
 
-## 2. Scene 2: RLN reuse detection (0:50–1:40, ~45–60 sec)
+## 2. Scene 2: RLN reuse detection (0:45–1:25, ~40 sec)
 
 ```bash
 cargo run --bin submit_demo -- 888
@@ -71,21 +72,7 @@ cast call 0xa9f1A920... "familyRoot()"
 
 ---
 
-## 3. Scene 3: AI voice-clone defense (1:40–2:25, ~45 sec)
-
-Open `voice_challenge.html`. **Always disclose upfront** (don't overstate it):
-
-> "There's another threat: an attacker doesn't even need the secret if they can clone a voice with AI. RLN can't stop that. I've validated the production design using World ID's live-challenge, but given time constraints, today's SDK integration is replaced with a self-contained JS mock — I want to be upfront about that."
-
-Demo:
-1. Select "legitimate member" → enter the passphrase (`toranomon`) → passphrase matches ✅ + persona ID matches ✅ → accepted
-2. Select "attacker (AI-cloned voice)" → enter the same passphrase → passphrase matches ✅ but persona ID doesn't match ❌ → rejected
-
-> "Knowing the passphrase alone isn't enough to pass. The key idea is separating proof of *knowledge* ('I know the secret') from proof of *liveness* ('the real person is responding right now')."
-
----
-
-## 4. Scene 4: Family Constitution (2:25–3:15, ~50 sec)
+## 3. Family Constitution (centerpiece, 1:25–3:30, ~2 min 5 sec)
 
 Premise: `FamilyConstitution.sol` is already deployed to production World Chain Sepolia (`0xf7f344E9399638b69DF158877F1e77a39A5F3D73`), and the Rust propose/approve CLIs are verified on-chain through Tier 0/1/2 (all completed before the event). The event-day goal is to wrap `propose_action`/`approve_action` as an MCP server so that **Claude itself sends the on-chain transaction via a real tool call, instead of a human running it**. **If MCP doesn't make it in time, the demo falls back to the already-proven "Claude proposes → a human copy-pastes the `cast send` command" flow below** (see "If MCP doesn't make it in time").
 
@@ -123,7 +110,7 @@ Demo scenario (per SPEC.md §11.6, with the AI role replaced by an actual live L
 
 ### If MCP doesn't make it in time (fallback)
 
-Even if the MCP-server integration doesn't make it in time, Family Constitution itself — the contract, the CLIs, the production Sepolia deployment — was already finished and proven before the event, so Scene 4 still runs exactly as scripted above: Claude reasons about the request and proposes/judges tier in conversation, and a human runs the resulting command. Same lines, same flow — only the execution mechanism changes. There's no risk of the demo itself falling apart.
+Even if the MCP-server integration doesn't make it in time, Family Constitution itself — the contract, the CLIs, the production Sepolia deployment — was already finished and proven before the event, so this scene still runs exactly as scripted above: Claude reasons about the request and proposes/judges tier in conversation, and a human runs the resulting command. Same lines, same flow — only the execution mechanism changes. There's no risk of the demo itself falling apart.
 
 Only if something deeper goes wrong (Sepolia connectivity, a flaky testnet, etc.) fall back further to showing the local `forge test -vv` results (all tests green) while explaining verbally:
 
@@ -133,7 +120,7 @@ Be upfront about the actual situation — the Continuity Track also rewards hone
 
 ---
 
-## 5. Close (3:15–4:00)
+## 4. Close (3:30–4:00)
 
 > "In a society with more elderly people and single-person households living alone, defining 'family' only by blood leaves many people without anyone to turn to for important decisions. What FamilyProof aims to build is infrastructure that lets an AI and a handful of trusted people — neighbors, friends, whoever you choose — function as 'family,' while protecting everyone's privacy."
 >
@@ -146,7 +133,7 @@ Be upfront about the actual situation — the Continuity Track also rewards hone
 ## Q&A prep
 
 **Q: Isn't World ID actually not integrated?**
-A: That's correct, and I want to be upfront about it. I validated the production design (RP-signing + v4 verify API) against docs.world.org and documented it in SPEC.md, but given a 2.5-day window, I prioritized hardening the core ZK + RLN + on-chain implementation over taking on the risk of a from-scratch integration. Scene 3 of the demo is a proof-of-concept mock. I understand this may disqualify the project from a World ID/Worldcoin partner prize.
+A: That's correct, and I want to be upfront about it. I validated the production design (RP-signing + v4 verify API) against docs.world.org and documented it in SPEC.md, but given a 2.5-day window, I prioritized hardening the core ZK + RLN + on-chain implementation over taking on the risk of a from-scratch integration. The AI-voice-clone defense design — separating proof of knowledge from proof of liveness — is written up in the README/SPEC.md, but it only exists as a self-contained JS mock, not something I demoed live in today's 4 minutes. I understand this may disqualify the project from a World ID/Worldcoin partner prize.
 
 **Q: Why not just use TOTP (a rotating one-time password)?**
 A: A TOTP scheme requires the verifying device to also hold the secret (or equivalent information), so you can't escape the problem of "the secret has to live somewhere." With the ZK approach, the verifier only ever needs the (public) root — verification completes without the verifier learning the secret at all. Even the provider of an anti-scam app never has to hold the family's secret.
