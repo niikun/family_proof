@@ -1,6 +1,6 @@
 # HANDOFF — 別PCへの引き継ぎ
 
-最終更新: 2026-09-23（Step 7 ①〜④・README/PITCH/提出文整備に加え、シーン3カットを確定し、デモ動画のラフカット（本物の画面録画ベース、2分26秒・無音、Trust Circle3段階図・フロー図・進捗バッジ付き）を作成。ナレーション原稿も作成済み。**MCP化はまだ未着手**（Cargo.toml依存追加をコーチ中）。残りはMCP化・未収録3箇所の撮影・ナレーション収録・最終合成） / ブランチ: `main` / remote: `git@github.com:niikun/family_proof.git`
+最終更新: 2026-09-23（Step 7 ①〜④・README/PITCH/提出文整備に加え、シーン3カットを確定し、デモ動画のラフカット（本物の画面録画ベース、2分26秒・無音、Trust Circle3段階図・フロー図・進捗バッジ付き）を作成。ナレーション原稿も作成済み。**MCP化はStep 1〜4完了、Step 5（MCP経由での動作確認）作業中にバグ6件を発見・修正（キーストアパスワード非対話化・タイポ・umask残留によるビルド権限エラー・ツール関数の戻り値実装漏れ・`main()`誤修正・不要な引数渡し、詳細は下記「🆕 MCP化の進め方」節）。現在のブロッカーはコード側ではなく、Claude Codeが起動中の`mcp_server`子プロセスが古いバイナリのままで再接続待ち**。残りはMCP再接続確認・`approve_action`ツール追加・未収録3箇所の撮影・ナレーション収録・最終合成） / ブランチ: `main` / remote: `git@github.com:niikun/family_proof.git`
 
 > ✅ **Step 6 コア完了（Verifier/Registry/テスト/calldata変換/World Chain Sepoliaデプロイ済み）**。デプロイ済みアドレスは下記「Step 6」節参照（`FamilyRegistry` は `0xa9f1A920...` が正、`0xD06FcbB5...` は重複デプロイの旧アドレスで放置）。追加拡張A/B/Cも完了（下記「残り期間での追加拡張」節）。
 > **🆕 Step 7（Trust Circle / Family Constitution 拡張）を正式採用し、2026-09-21 夜から着手済み**（設計は [SPEC.md §11](SPEC.md) 完了）。進捗は下記「いまどこ」節参照。Claude はコーチのみ、設計を書いただけでコードは書いていない — 実装は引き続きユーザーが行う。
@@ -19,7 +19,7 @@
 
 ## いまどこ
 
-ロードマップ（[SPEC.md](SPEC.md) §7）で **Step 0〜4 完了、Step 5 事実上完了、Step 6 完了、Step 7 完了**（①〜④すべて済み。`FamilyConstitution.sol`を本番World Chain Sepoliaにデプロイし、AI提案→2人承認→`ActionAuthorized`を実チェーン上で実証済み）。README/README.en/PITCH/PITCH.en/SUBMISSION.enの整備も完了（2026-09-22夜）。**残るのはMCP化（明日9/23〜着手）・デモ動画・シーン3カットの要否判断**。詳細は下記「🆕 README/PITCH/提出文の整備」節参照。
+ロードマップ（[SPEC.md](SPEC.md) §7）で **Step 0〜4 完了、Step 5 事実上完了、Step 6 完了、Step 7 完了**（①〜④すべて済み。`FamilyConstitution.sol`を本番World Chain Sepoliaにデプロイし、AI提案→2人承認→`ActionAuthorized`を実チェーン上で実証済み）。README/README.en/PITCH/PITCH.en/SUBMISSION.enの整備も完了（2026-09-22夜）。**残るのはMCP化の動作確認（Step 5、MCPサーバー再接続待ち。コード側のバグは全て修正済み）・`approve_action`ツール追加・デモ動画**。詳細は下記「🆕 README/PITCH/提出文の整備」節参照。
 
 | Step | 状態 |
 |---|---|
@@ -266,9 +266,9 @@ Step 7 ①〜④完了後、審査員向けドキュメント一式を整備し�
 - [x] **運用判断: `approve_action.rs`は`propose_action.rs`と同じ`agent`キーストアを使い続ける（隣人A・B用に別アカウントは作らない）**。理由: `FamilyConstitution.approveAction`には`onlyAgent`のような制限が無く、認証の実体は`msg.sender`ではなくZK証明（secret+Merkle path）なので、送信アカウントを分ける必要は無い。デモの見栄え上「隣人A/Bが同じアドレスから送信している」ことに気づかれるリスクはあるが、突っ込まれても正しく説明できるため許容
 - [x] **本番デモでは`cargo run --release`を使うことを推奨**として記録。理由: Groth16の`prove`はデバッグビルドだと大幅に遅く、4分の持ち時間を圧迫するため。事前に`cargo build --release`しておき、本番中は`--release`付きで実行する運用
 - [x] **シーン3（World IDモック）はデモから丸ごとカット、確定**（2026-09-23）。ユーザーの「デモが長すぎて分かりづらい、Family Constitutionの方が面白い」という指摘を受け、シーン3を削除しFamily Constitutionに時間を再配分。PITCH.md/PITCH.en.mdの構成・タイミング表を修正済み（World ID音声クローン対策の設計自体はQ&A想定問答に残してあり、無くなってはいない）
-- [ ] **MCP化（2026-09-23 着手・チュートリアル形式でコーチング中、実装はまだ0行）**。下記「🆕 MCP化の進め方」節を参照
+- [ ] **MCP化（2026-09-23 着手・チュートリアル形式でコーチング中。Step 1〜4実装完了、Step 5でMCP経由の動作テスト中にバグ6件発見・修正済み、現在は古いプロセスの再接続待ち）**。下記「🆕 MCP化の進め方」節を参照
 
-### 🆕 MCP化の進め方（2026-09-23 着手、実装はまだ0行）
+### 🆕 MCP化の進め方（2026-09-23 着手、Step 1〜4完了・Step 5はバグ修正完了・再接続待ち）
 
 **背景・なぜ本番前ではなくこのタイミングでやっているか**: 当初「Step 7完了直後は全部終わってしまうとContinuity Trackの『イベント中に作った部分』が無くなる」という懸念から、MCP化は本番中(9/25〜27)にやる予定だった。その後「今日中にMCPを終わらせられれば、本番中の時間をWorld ID実SDK統合（2026-09-21に一度見送った、より難易度の高い挑戦）に使える」という提案があり、**今日(2026-09-23)のうちにMCP化を進める方針に変更**。ただしWorld ID再挑戦は「MCPが余裕を持って完全に終わった場合のみ」という条件付き（詳細は本セッションの会話ログ、HANDOFFには特に追加記載なし）。
 
@@ -277,15 +277,24 @@ Step 7 ①〜④完了後、審査員向けドキュメント一式を整備し�
 **進め方はチュートリアル形式**（ユーザーからのリクエスト、MCPを学びながら実装したいとのこと）。[[no-writing-code]]の方針通り、Claudeは概念説明とステップ指示のみ、コードは全部ユーザーが書く。
 
 **調査済みの技術詳細**:
-- 依存関係: `Cargo.toml`に`rmcp = { version = "3.4", features = ["server", "transport-io"] }` / `schemars = "0.8"` / `serde = { version = "1", features = ["derive"] }`を追加（`tokio`/`serde_json`は既存のものbut使い回せる）
-- 最小サンプル構成（rmcp公式READMEで確認済み）: `#[derive(Deserialize, JsonSchema)]`なパラメータ構造体 → `#[tool_router(server_handler)]`を付けたimplブロックの中に`#[tool(description = "...")]`付きメソッド → `main()`で`Service::serve(stdio())` + `.waiting().await`
+- 依存関係: `Cargo.toml`に`rmcp = { version = "3.4", features = ["server", "transport-io"] }` / `schemars = "1"`（**訂正: 当初`0.8`と記録していたが、rmcp 3.4が内部で`schemars 1.0`系を使っており、バージョン不一致で`derive(JsonSchema)`のtrait boundエラーになった。`1`に修正して解決**） / `serde = { version = "1", features = ["derive"] }` / `anyhow = "1.0.104"`（`main()`の戻り値`anyhow::Result<()>`用）を追加
+- 最小サンプル構成（rmcp公式READMEで確認済み・実装で踏襲）: `#[derive(Debug, Deserialize, JsonSchema)]`なパラメータ構造体（トップレベルに定義。`main()`内にネストすると別のimplブロックから見えずコンパイルエラーになるので注意） → ツールメソッドの引数は生の構造体ではなく`Parameters<T>`（`rmcp::handler::server::wrapper::Parameters`）でラップする必要がある → `#[tool_router(server_handler)]`を付けたimplブロックの中に`#[tool(description = "...")]`付きメソッド（`server_handler`を付けると`ServerHandler`トレイト実装まで自動生成される） → `main()`は`#[tokio::main]` + `async fn`にして`FamilyProofServer.serve(stdio()).await?; service.waiting().await?;`
 
 **現在地点（次回はここから再開）**:
-- [ ] **Step 1（提示済み・ユーザー未着手）**: 上記3つの依存関係を`Cargo.toml`に追加し、`cargo build`が通ることを確認する
-- [ ] Step 2（未提示）: パラメータ用の構造体を1つ定義してみる（`propose_action`用: `description: String, tier: u32`）
-- [ ] Step 3（未提示）: `#[tool_router]`を使ったサーバー構造体とツール関数の実装（中身は`propose_action.rs`と同じロジックを流用する想定——別プロセスの`cargo run --bin propose_action`を`Command`で呼ぶ薄いラッパーにするか、`family_proof::merkle`/`proof`を直接呼ぶ形にするかは未決定、次回相談）
-- [ ] Step 4: `stdio()`トランスポートで`main()`を実装、`cargo run`で単体起動確認
-- [ ] Step 5: Claude Codeの設定（`.mcp.json`等）にこのMCPサーバーを登録し、実際にツール呼び出しができるかを確認
+- [x] **Step 1**: `rmcp`/`schemars`/`serde`（+`anyhow`）を`Cargo.toml`に追加、`cargo build`通過
+- [x] Step 2: `ProposeActionParams { description: String, tier: u32 }`をトップレベルに定義（`src/bin/mcp_server.rs`）
+- [x] Step 3: サブプロセス方式を採用（`family_proof::merkle`/`proof`を直接呼ぶのではなく、`Command::new("cargo").args(["run","--release","--bin","propose_action",...])`で既存の実証済みバイナリを呼ぶ薄いラッパー。理由: 今日という時間制約の中でZKロジックを新たに移植して動作を分岐させるより、動画収録済み・実証済みのバイナリをそのまま呼ぶ方がデモ前日のバグ混入リスクが低いため）。`FamilyProofServer`（サーバー構造体）+ `#[tool_router(server_handler)]`実装完了
+- [x] Step 4: `stdio()`トランスポートで`async fn main()`実装、`cargo build --release --bin mcp_server`通過、`target/release/mcp_server`生成確認済み
+- [x] **Step 5: `.mcp.json`作成**（`family-proof`というエントリで`target/release/mcp_server`を`stdio`起動するよう登録）。Claude Code側にも`mcp__family-proof__propose_action`ツールとして認識されることを確認済み
+- [x] **Step 5: 実際にMCP経由で`propose_action`を呼ぶテストの過程でバグ6件を発見・修正（2026-09-23）**:
+  1. **キーストアパスワードの非対話化**: `cast send --account agent`は通常パスワードを対話的に手入力する前提だが、MCP経由（`mcp_server`がClaude Codeとstdioで通信しており、そこから`Command`でぶら下げた`cast`の標準入力には対話入力できる相手がいない）で呼ぶとハングするリスクが判明。`cast send --help`で確認した`--password-file <PATH>`が`--account`と併用できることを実機検証（テストネットへのダミーtx送信、`status: 1 (success)`確認）で確定。パスワードは`~/.foundry/keystores/agent.pw`に`chmod 600`（`umask 177`を使って作成）で1行だけ保存する運用に決定。パスは`std::env::var("HOME")`で実行時に組み立てる（別PCでの動作を考慮し、ユーザー名を含む絶対パスをソースにハードコードしない）
+  2. `propose_action.rs`で`.foundry/keysotres/`とタイポ（`keystores`の`s`と`o`が入れ替わり）→ 修正
+  3. **`umask 177`がシェルセッションに残留し、その後の`cargo build`で新規作成されるディレクトリの権限が600（実行権限なし）になり`Permission denied`でビルド失敗**。`umask 022`で戻し、`chmod -R u+rwX target`（`X`はディレクトリのみに実行権限を足す）で復旧。恒久対策として、rust-analyzerに`target`ディレクトリを分離させる設定（`.vscode/settings.json`に`"rust-analyzer.cargo.targetDir": true`）を提案済み・**未設定のまま**
+  4. `mcp_server.rs`の`propose_action`ツール関数が`()`（何も返さない）実装のままで、MCP呼び出しの結果が常に空になっていた → `Command::output()`でcastの標準出力をキャプチャし、戻り値の型を`String`に変更。実装パターンはローカルの`~/.cargo/registry/.../rmcp-3.4.0/tests/test_tool_macros.rs`（`async fn hello(&self) -> String`のような実例）で確認して踏襲
+  5. 4.の修正時に誤って`main()`の戻り値まで`anyhow::Result<String>`に変更してしまい、`Termination`トレイト未実装でビルド失敗（`main()`と`propose_action`ツール関数は別スコープで、`main()`は元の`anyhow::Result<()>`のままにする必要があった）→ 元に戻して解決
+  6. `mcp_server.rs`が`cargo run --bin propose_action`の引数に`--password-file <path>`を余分に渡していたが、`propose_action.rs`は`args.len() == 3`（バイナリ名＋description＋tier）を前提にしており、パスワードパスはCLI引数として受け取らず内部で自前計算する設計だった → 余分な引数を渡すと`assertion failed: args.len() == 3`でpanicすることを実機再現して確認、`mcp_server.rs`側の該当引数を削除して解消
+- [ ] **現在のブロッカー（コード側ではない）**: 上記修正はソース・`target/release/mcp_server`バイナリには反映済み・ビルド確認済みだが、**Claude Codeが起動している`mcp_server`の子プロセスは古いバイナリのまま動き続けている**（`ps`でのプロセス起動時刻とバイナリのビルド時刻を比較して確認済み。ファイルを差し替えても実行中プロセスのメモリ上のコードには影響しない）。MCPサーバーへの再接続（`/mcp`コマンド、それで効かなければセッション再起動）が必要。**次回はこの再接続から再開し、`propose_action`ツールが実際に結果を返すか確認する**
+- [ ] （再接続確認後）`approve_action`用の2つ目のツールメソッドを`mcp_server.rs`に追加する（まだ未着手）。`approve_action.rs`自体は既に`--password-file`対応済み（`propose_action.rs`と同じ設計: パスは内部で自前計算、CLI引数としては受け取らない。`mcp_server.rs`側から余分な引数を渡さないよう注意）
 
 ### 🆕 デモ動画の編集方針（2026-09-23、進行中）
 

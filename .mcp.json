@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "family-proof": {
+      "type": "stdio",
+      "command": "/home/userniikun/project/family_proof/target/release/mcp_server",
+      "args": []
+    }
+  }
+}

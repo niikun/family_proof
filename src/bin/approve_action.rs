@@ -1,5 +1,6 @@
 use std::process::Command;
 use std::env;
+use std::env::var;
 use ark_bn254::Fr;
 use ark_ff::PrimeField;
 use alloy::primitives::keccak256;
@@ -51,6 +52,8 @@ pub fn main() {
     let a_arg = format!("[{}]", a.join(","));
     let b_arg = format!("[[{}],[{}]]",b[0].join(","), b[1].join(","));
     let c_arg = format!("[{}]",c.join(","));
+    let home = var("HOME").unwrap();
+    let path = format!("{}/.foundry/keystores/agent.pw",home);
     let pubs_arg = format!(
         "[{}]",
         pubs.iter()
@@ -70,6 +73,7 @@ pub fn main() {
             &pubs_arg,
             "--rpc-url", "https://worldchain-sepolia.g.alchemy.com/public",
             "--account", "agent",  
+            "--password-file",&path
         ])
         .output()
         .expect("failed to spawn cast");

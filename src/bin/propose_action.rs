@@ -1,5 +1,6 @@
 use std::process::Command;
 use std::env;
+use std::env::var;
 use ark_bn254::Fr;
 use ark_ff::PrimeField;
 use alloy::primitives::keccak256;
@@ -13,8 +14,8 @@ pub fn main() {
     let description_hashed: alloy::primitives::FixedBytes<32> = keccak256(description.as_bytes());
     let action_id = Fr::from_le_bytes_mod_order(description_hashed.as_slice());  
     let action_id_str = action_id.into_bigint().to_string();
-    
-
+    let home = var("HOME").unwrap();
+    let path = format!("{}/.foundry/keystores/agent.pw",home);
     let status = Command::new("cast")
         .args([
             "send",
@@ -25,6 +26,7 @@ pub fn main() {
             "--rpc-url", "https://worldchain-sepolia.g.alchemy.com/public",
             // "--rpc-url", "http://127.0.0.1:8545",  //local test 環境
             "--account", "agent",
+            "--password-file",&path
         ])
         .status()
         .expect("failed to spawn cast");
