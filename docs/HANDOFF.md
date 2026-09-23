@@ -1,6 +1,6 @@
 # HANDOFF — 別PCへの引き継ぎ
 
-最終更新: 2026-09-23（Step 7 ①〜④・README/PITCH/提出文整備に加え、シーン3カットを確定し、デモ動画のラフカット（本物の画面録画ベース、2分21秒・無音）を作成。ナレーション原稿も作成済み。**MCP化はまだ未着手**。残りはMCP化・未収録3箇所の撮影・ナレーション収録・最終合成） / ブランチ: `main` / remote: `git@github.com:niikun/family_proof.git`
+最終更新: 2026-09-23（Step 7 ①〜④・README/PITCH/提出文整備に加え、シーン3カットを確定し、デモ動画のラフカット（本物の画面録画ベース、2分26秒・無音、Trust Circle3段階図・フロー図・進捗バッジ付き）を作成。ナレーション原稿も作成済み。**MCP化はまだ未着手**（Cargo.toml依存追加をコーチ中）。残りはMCP化・未収録3箇所の撮影・ナレーション収録・最終合成） / ブランチ: `main` / remote: `git@github.com:niikun/family_proof.git`
 
 > ✅ **Step 6 コア完了（Verifier/Registry/テスト/calldata変換/World Chain Sepoliaデプロイ済み）**。デプロイ済みアドレスは下記「Step 6」節参照（`FamilyRegistry` は `0xa9f1A920...` が正、`0xD06FcbB5...` は重複デプロイの旧アドレスで放置）。追加拡張A/B/Cも完了（下記「残り期間での追加拡張」節）。
 > **🆕 Step 7（Trust Circle / Family Constitution 拡張）を正式採用し、2026-09-21 夜から着手済み**（設計は [SPEC.md §11](SPEC.md) 完了）。進捗は下記「いまどこ」節参照。Claude はコーチのみ、設計を書いただけでコードは書いていない — 実装は引き続きユーザーが行う。
@@ -266,28 +266,57 @@ Step 7 ①〜④完了後、審査員向けドキュメント一式を整備し�
 - [x] **運用判断: `approve_action.rs`は`propose_action.rs`と同じ`agent`キーストアを使い続ける（隣人A・B用に別アカウントは作らない）**。理由: `FamilyConstitution.approveAction`には`onlyAgent`のような制限が無く、認証の実体は`msg.sender`ではなくZK証明（secret+Merkle path）なので、送信アカウントを分ける必要は無い。デモの見栄え上「隣人A/Bが同じアドレスから送信している」ことに気づかれるリスクはあるが、突っ込まれても正しく説明できるため許容
 - [x] **本番デモでは`cargo run --release`を使うことを推奨**として記録。理由: Groth16の`prove`はデバッグビルドだと大幅に遅く、4分の持ち時間を圧迫するため。事前に`cargo build --release`しておき、本番中は`--release`付きで実行する運用
 - [x] **シーン3（World IDモック）はデモから丸ごとカット、確定**（2026-09-23）。ユーザーの「デモが長すぎて分かりづらい、Family Constitutionの方が面白い」という指摘を受け、シーン3を削除しFamily Constitutionに時間を再配分。PITCH.md/PITCH.en.mdの構成・タイミング表を修正済み（World ID音声クローン対策の設計自体はQ&A想定問答に残してあり、無くなってはいない）
-- [ ] **明日(2026-09-23)からMCP化に着手**。設計方針（2026-09-21時点の検討）: `propose_action`/`approve_action`を`rmcp`クレート（公式Rust MCP SDK、[modelcontextprotocol/rust-sdk](https://github.com/modelcontextprotocol/rust-sdk)、2026-09-22時点の最新版3.4系）でMCPサーバー化し、Claude Code自身がツール呼び出しでオンチェーン送信まで行えるようにする。ユーザーへのチュートリアル形式でのコーチングを開始済み（Step 1: `Cargo.toml`に`rmcp = { version = "3.4", features = ["server", "transport-io"] }` / `schemars = "0.8"` / `serde = { version = "1", features = ["derive"] }`を追加するところまで指示済み、実装はまだ）。最小サンプル構成（`#[tool_router(server_handler)]` + `#[tool(description = "...")]`付きメソッド + `stdio()`トランスポート + `ServiceExt::serve`）は調査済み。MCPサーバーが立ち上がったら、Claude Codeの設定（`.mcp.json`など）に登録して実際にツール呼び出しができるかを確認するのが次のマイルストーン
+- [ ] **MCP化（2026-09-23 着手・チュートリアル形式でコーチング中、実装はまだ0行）**。下記「🆕 MCP化の進め方」節を参照
+
+### 🆕 MCP化の進め方（2026-09-23 着手、実装はまだ0行）
+
+**背景・なぜ本番前ではなくこのタイミングでやっているか**: 当初「Step 7完了直後は全部終わってしまうとContinuity Trackの『イベント中に作った部分』が無くなる」という懸念から、MCP化は本番中(9/25〜27)にやる予定だった。その後「今日中にMCPを終わらせられれば、本番中の時間をWorld ID実SDK統合（2026-09-21に一度見送った、より難易度の高い挑戦）に使える」という提案があり、**今日(2026-09-23)のうちにMCP化を進める方針に変更**。ただしWorld ID再挑戦は「MCPが余裕を持って完全に終わった場合のみ」という条件付き（詳細は本セッションの会話ログ、HANDOFFには特に追加記載なし）。
+
+**方針（確定済み）**: `propose_action`/`approve_action`を`rmcp`クレート（公式Rust MCP SDK、[modelcontextprotocol/rust-sdk](https://github.com/modelcontextprotocol/rust-sdk)、2026-09-22時点の最新版3.4系）でMCPサーバー化し、Claude Code自身が「AI Agent」役としてツール呼び出しで実際にオンチェーン送信まで行えるようにする。PITCH.md/PITCH.en.mdのシーン4は既に「MCP対応済みの場合／未対応（フォールバック）の場合」の両方が書いてあるので、MCPが完成してもしなくてもデモ台本自体は変更不要。
+
+**進め方はチュートリアル形式**（ユーザーからのリクエスト、MCPを学びながら実装したいとのこと）。[[no-writing-code]]の方針通り、Claudeは概念説明とステップ指示のみ、コードは全部ユーザーが書く。
+
+**調査済みの技術詳細**:
+- 依存関係: `Cargo.toml`に`rmcp = { version = "3.4", features = ["server", "transport-io"] }` / `schemars = "0.8"` / `serde = { version = "1", features = ["derive"] }`を追加（`tokio`/`serde_json`は既存のものbut使い回せる）
+- 最小サンプル構成（rmcp公式READMEで確認済み）: `#[derive(Deserialize, JsonSchema)]`なパラメータ構造体 → `#[tool_router(server_handler)]`を付けたimplブロックの中に`#[tool(description = "...")]`付きメソッド → `main()`で`Service::serve(stdio())` + `.waiting().await`
+
+**現在地点（次回はここから再開）**:
+- [ ] **Step 1（提示済み・ユーザー未着手）**: 上記3つの依存関係を`Cargo.toml`に追加し、`cargo build`が通ることを確認する
+- [ ] Step 2（未提示）: パラメータ用の構造体を1つ定義してみる（`propose_action`用: `description: String, tier: u32`）
+- [ ] Step 3（未提示）: `#[tool_router]`を使ったサーバー構造体とツール関数の実装（中身は`propose_action.rs`と同じロジックを流用する想定——別プロセスの`cargo run --bin propose_action`を`Command`で呼ぶ薄いラッパーにするか、`family_proof::merkle`/`proof`を直接呼ぶ形にするかは未決定、次回相談）
+- [ ] Step 4: `stdio()`トランスポートで`main()`を実装、`cargo run`で単体起動確認
+- [ ] Step 5: Claude Codeの設定（`.mcp.json`等）にこのMCPサーバーを登録し、実際にツール呼び出しができるかを確認
 
 ### 🆕 デモ動画の編集方針（2026-09-23、進行中）
 
-デモ動画は`demo/`ディレクトリで編集中。現状のラフカット: `demo/family_proof_rough_cut.mp4`（2分21秒、無音）。
+デモ動画は`demo/`ディレクトリで編集中。現状のラフカット: **`demo/family_proof_rough_cut.mp4`（2分26秒、無音）**。編集用のソース一式（`cards.html`/`badge.html`/Playwrightスクリプト/ffmpegコマンド）はこのセッションのスクラッチ領域にあり、リポジトリには含めていない（再現手順は下記に残す）。
 
 **基本方針（確定）**:
-1. **本物の画面録画を無加工で使う。合成・モックのターミナル再現は不採用**。当初Claude側でxterm.js（本物のターミナルエンジン）を使った完全モックのデモ動画を作ったが、見た目をどれだけ本物に近づけても「作り物っぽい」（ユーザー評）という結論になり、**ユーザー自身が実際のWindows Terminal（WSL）で本物のコマンドを実行し、画面録画したものに全面的に切り替えた**。合成モック版は`demo/raw/`には含めず作業用に破棄（作り方自体はxterm.js＋Playwright＋ffmpegの組み合わせとして技術メモに残す価値はあるが、今回は不採用）
-2. **本物の映像には一切加工（テロップ・色調補正等）を加えない**。説明が必要な部分は、クリップとクリップの間に**黒背景のシンプルなタイトルカード**を挟む形にする（本物の映像の中に合成物を混ぜない、という一線を守る）
-3. **無音区間はジャンプカットで詰める、倍速にはしない**。`Enter keystore password:`で待っている無音区間（20秒前後）はffmpegのシーン検出（`select='gt(scene,0.01)'`）で前後の切り替わりタイムスタンプを検出し、単純にカット＆結合。ETHGlobalの動画ルール「倍速禁止」に抵触しないよう、速度を変える処理は一切していない
-4. **字幕・テロップはルール上問題ない**。ETHGlobalが禁止しているのは「テキストのみ＋音楽」（実演もナレーションも無い動画）であって、本物の実演に字幕を添えるのは通常の編集であり問題ない
-5. **英語を主・日本語を副に統一**（2026-09-23、ユーザー判断）。本番の実演自体は日本語で話す前提なので、画面のテキストは音声ではカバーされない英語話者向けの情報源として機能させる。全カードで英語の見出し（大きく）＋日本語の補足（小さく）という構成に統一
-6. **配色は緑一色に統一**（2026-09-23、ユーザー判断）。当初は緑（Trust Circle/成功）＋紫（AI Agent）の2色だったが、**本物のターミナル録画自体がすでに緑を使っている**（プロンプト・`status: 1 (success)`等）ため、タイトルカード側も紫をやめて緑一色に統一し、実写パートとの視覚的连続性を確保。AI Agentは色を変える代わりに、破線の枠線・破線の接続線で視覚的に区別している
+1. **本物の画面録画を無加工で使う。合成・モックのターミナル再現は不採用**。当初Claude側でxterm.js（本物のターミナルエンジン）を使った完全モックのデモ動画を作ったが、見た目をどれだけ本物に近づけても「作り物っぽい」（ユーザー評）という結論になり、**ユーザー自身が実際のWindows Terminal（WSL）で本物のコマンドを実行し、画面録画したものに全面的に切り替えた**。合成モック版は不採用・破棄（作り方自体はxterm.js＋Playwright＋ffmpegの組み合わせとして技術メモに残す価値はあるが今回は使っていない）
+2. **本物の映像そのものには一切加工（色調補正等）を加えない**。説明が必要な部分は、クリップとクリップの間に**黒背景のシンプルなタイトルカード**を挟む形にする（本物の映像の中身を合成物とすり替えない、という一線を守る）
+3. **半透明の進捗バッジは「本物の映像の上に別レイヤーとして重ねる」形なら許容**（2026-09-23、方針を1段階緩和）。方針2の「無加工」はターミナル画面そのものを偽装・改変しないという意味であり、画面の隅に別要素として重ねる情報オーバーレイ（スポーツ中継のスコアボードのようなもの）は別物と整理。詳細は下記「進捗バッジ」参照
+4. **無音区間はジャンプカットで詰める、倍速にはしない**。`Enter keystore password:`で待っている無音区間（20秒前後）はffmpegのシーン検出（`select='gt(scene,0.01)'`）で前後の切り替わりタイムスタンプを検出し、単純にカット＆結合。ETHGlobalの動画ルール「倍速禁止」に抵触しないよう、速度を変える処理は一切していない
+5. **字幕・テロップはルール上問題ない**。ETHGlobalが禁止しているのは「テキストのみ＋音楽」（実演もナレーションも無い動画）であって、本物の実演に字幕を添えるのは通常の編集であり問題ない
+6. **英語を主・日本語を副に統一**（2026-09-23、ユーザー判断）。本番の実演自体は日本語で話す前提なので、画面のテキストは音声ではカバーされない英語話者向けの情報源として機能させる。全カード・Trust Circle図のノードラベルまで含めて、英語の見出し（大きく）＋日本語の補足（小さく）という構成に統一
+7. **配色は緑一色に統一**（2026-09-23、ユーザー判断）。当初は緑（Trust Circle/成功）＋紫（AI Agent）の2色だったが、**本物のターミナル録画自体がすでに緑を使っている**（プロンプト・`status: 1 (success)`等）ため、タイトルカード側も紫をやめて緑一色に統一し、実写パートとの視覚的連続性を確保。AI Agentは色を変える代わりに、破線の枠線・破線の接続線で視覚的に区別している
 
-**Trust Circle図（オープニング直後に挿入）**: 「本人」を中心に「家族」「信頼できる隣人」「友人・支援者」「AI Agent」が繋がる関係図を、**3段階の展開アニメーション**として作成（ユーザー提案）:
+**Trust Circle図（オープニング直後に挿入、3段階の展開アニメーション、ユーザー提案）**:
   1. You + Family のみ（血縁だけの伝統的な家族像）
   2. + Trusted Neighbor + Friends/Supporters（Trust Circleが形成される、点線の楕円で囲む）
   3. + AI Agent（**Trust Circleの点線の輪の外側に配置**、破線の接続線で繋がる「Delegate」として描画）
 
   3.の「AIを輪の外側に置く」設計は、単なる見た目の工夫ではなく、**プロジェクトの核心的な設計方針（AIはTrust Circleの対等なメンバーではなく代理人）を図として正確に反映**したもの（ユーザー指摘により実現）。
 
-**技術的な作り方**: HTML/CSS/SVGでカードをデザイン → Playwright（`chromium.launch`、`--no-sandbox`）でheadless renderしスクリーンショット化 → 各カードを画像→固定尺の無音動画に変換（`anullsrc`で無音トラックを合成、実写クリップと音声トラックの形式を揃えるため）→ 実写クリップ（`ffmpeg -vf scale=1920:1080:force_original_aspect_ratio=decrease,pad=...`で解像度統一）と`concat`で結合。ffmpeg本体は`pip`ではなく`imageio-ffmpeg`パッケージ経由でsudo不要で調達（スクラッチ領域に venv を作成）。
+**フロー図カード（Family Constitution導入の直後に挿入、ユーザー提案）**: `AI Agent proposes → Tier 2 → Human #1 approves → Human #2 approves → ✓ Action Authorized`を横並びの5ボックス＋矢印で示す、シンプルな一枚絵。実写クリップに入る前に全体の流れを一目で見せる狙い。
+
+**進捗バッジ（Family Constitutionの実写3クリップに合成、2026-09-23追加）**: 画面右下に半透明パネルで現在のステップをハイライト表示する透過オーバーレイ。
+  - `propose`クリップ → 「AI Agent proposes」がアクティブ
+  - `approve idx-0`クリップ → 「Human #1 approves」がアクティブ（完了済みステップには✓）
+  - `approve idx-1`クリップ → 前半は「Human #2 approves」がアクティブ、**実写側に`🎉 ActionAuthorized!`が表示される瞬間（シーン検出で11.5秒地点と特定）に合わせてバッジも「✓ Action Authorized」に切り替わる**（ffmpegの`overlay`フィルタを`enable='between(t,...)'`で時間分割）
+  - 文字サイズは大きめ（本文23px、最終ステップ26px）、アクティブ行は緑のハイライトボックス＋▶マーカーで強調（ユーザーからの3点フィードバックで調整済み: 文字を大きく／現在地を分かりやすく／Authorizedを分かりやすく）
+  - 透過PNGはPlaywrightの`page.screenshot({omitBackground:true})`で生成し、`ffmpeg overlay=W-w-40:H-h-40`で右下に合成
+
+**技術的な作り方**: HTML/CSS/SVGでカード・バッジをデザイン → Playwright（`chromium.launch`、`--no-sandbox`）でheadless renderしスクリーンショット化 → 各カードを画像→固定尺の無音動画に変換（`anullsrc`で無音トラックを合成、実写クリップと音声トラックの形式を揃えるため）→ 実写クリップ（`ffmpeg -vf scale=1920:1080:force_original_aspect_ratio=decrease,pad=...`で解像度統一）と`concat`で結合。ffmpeg本体は`pip`ではなく`imageio-ffmpeg`パッケージ経由でsudo不要で調達（スクラッチ領域にvenvを作成）。
 
 **実写クリップのトリミング方針**: `ffmpeg -vf "select='gt(scene,0.01)',showinfo"`でシーン変化のタイムスタンプを検出 → パスワード待ちの無音区間を切り出して除去 → 前後を`concat`demuxerで結合、`-c:v libx264 -crf 18`で再エンコード（`-c copy`だとタイムスタンプ不整合が出たため）。
 
@@ -306,13 +335,14 @@ demo/
 ```
 `.gitignore`に`demo/raw`を追加済み。トリミング済みクリップを誤って`raw/`に入れてしまい、gitignoreで一緒に除外されそうになったが整理済み。
 
-**現在のラフカット構成（2分21秒、無音）**:
-オープニング → Trust Circle図（3段階）→ シーン1ラベル+実写（`submit_demo -- 00`）→ シーン2ラベル+実写（`submit_demo -- 11`+notifierのPotentialLeak検知、タブ切り替えが1本の録画に自然に収まっている）→ Family Constitution導入 → ①提案ラベル+実写（`propose_action`）→ ②隣人A承認ラベル+実写（`approve_action idx-0`）→ ③隣人B承認ラベル+実写（`approve_action idx-1`、`ActionAuthorized!`まで）→ NOTE（未収録の注記）→ クロージング
+**現在のラフカット構成（2分26秒、無音）**:
+オープニング → Trust Circle図（3段階）→ シーン1ラベル+実写（`submit_demo -- 00`）→ シーン2ラベル+実写（`submit_demo -- 11`+notifierのPotentialLeak検知、タブ切り替えが1本の録画に自然に収まっている）→ Family Constitution導入 → フロー図（5ステップ一覧）→ ①提案ラベル+実写（`propose_action`、進捗バッジ付き）→ ②隣人A承認ラベル+実写（`approve_action idx-0`、進捗バッジ付き）→ ③隣人B承認ラベル+実写（`approve_action idx-1`、進捗バッジが`ActionAuthorized`に切り替わる）→ NOTE（未収録の注記）→ クロージング
 
 **残タスク**:
 - [ ] **未収録3箇所の撮影**: (1) Claudeとの実際の会話（提案の判断）、(2) 攻撃者の`approve_action`失敗、(3) Claude自身の自己承認失敗、(4) tier0（即時実行）との対比。撮影後、NOTEカードを削除して該当箇所に差し込む
-- [ ] **ナレーション収録**: `demo/narration_script.md`の原稿に沿って、ユーザー自身の声で読み上げ録音（AIナレーションはETHGlobal規約で禁止のため不可）
+- [ ] **ナレーション収録**: `demo/narration_script.md`の原稿に沿って、ユーザー自身の声で読み上げ録音（AIナレーションはETHGlobal規約で禁止のため不可）。原稿は現在の尺（2分26秒、フロー図カード追加分を含む）に対応済み
 - [ ] **Canvaでの最終合成**: 画像/実写クリップの並びは`family_proof_rough_cut.mp4`が完成形に近いので、Canvaで音声トラックを重ねる、または未収録3箇所を追加した最新版で作り直す
+- [ ] **（任意）進捗バッジの3クリップ目以降への展開**: 未収録3箇所（Claude会話・攻撃者失敗・tier0対比）を撮影した際も、同じ進捗バッジの仕組み（`badge.html`のstate切り替え）を流用できる
 
 ### 🆕 ピッチ再定義: Trust Circle を前面に出す（2026-09-21 深夜、完了）
 
