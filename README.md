@@ -231,10 +231,11 @@ Family Constitution（tier別Action Authorization）:
 * **本番 World Chain Sepolia にデプロイ済み**: `FamilyConstitution` = `0xf7f344E9399638b69DF158877F1e77a39A5F3D73`
 * tier0（即時実行）/ tier1（承認1人）/ tier2（承認2人、異なるメンバーで異なるnullifierになることまで確認）を実チェーン上で一気通貫実証済み
   （tx: propose `0xc76a25bfad576afa5605871b650e145f3d5ddd0ea9a2d66c68f44d4a3407ab45` / approve 1人目 `0xa421b7f1b18c082c5f4f1df5da8f123df8f580fd32d0c71a72d7fa77075c4b1e` / approve 2人目 `0xdfee0dd25f7476912714fd5b33395d1854fbf7d8e4291841d6b6c589a03d30e0`）
+* `propose_action` の MCP サーバー化: AI Agent役を Claude 自身が実際のツール呼び出しでオンチェーン送信するところまで担う（`mcp__family-proof__propose_action`としてClaude Codeから直接呼び出し可能。`approve_action`のMCPツール化は未着手、CLIでの手動実行のみ）
 
 ### 🚧 built during the event（9/25–27、予定）
 
-* `propose_action` / `approve_action` を MCP サーバー化し、AI Agent役を Claude 自身が実際のツール呼び出しでオンチェーン送信するところまで担う（現状は人間が `cast send` をコピペ実行）
+* 最終リハーサル・デモ動画の収録・Continuity提出文の仕上げ
 
 ### 🔭 Future work
 
@@ -345,7 +346,7 @@ FamilyProof が目指すのは、AI時代の新しいTrust Circleです。
 
 ## Continuity Track / AI利用方針
 
-本プロジェクトは ETHGlobal Tokyo 2026 の **Continuity Track** に提出する。ZK回路・RLN・on-chain Registry・Family Constitution・通知/統計インフラはイベント開始前（〜9/24）の既存部分、MCPサーバー化（AI Agent役をClaudeが実際にツール呼び出しで操作する部分）はイベント期間中（9/25〜27）に新規実装する部分として明確に区別している。
+本プロジェクトは ETHGlobal Tokyo 2026 の **Continuity Track** に提出する。ZK回路・RLN・on-chain Registry・Family Constitution・通知/統計インフラ・MCPサーバー化（AI Agent役をClaudeが実際にツール呼び出しで操作する部分）はいずれもイベント開始前（〜9/24）の既存部分。イベント期間中（9/25〜27）は最終リハーサル・デモ動画の収録・Continuity提出文の仕上げに充てている。
 
 AI（Claude）はコーチ・設計レビュー・ビルド/テスト実行確認のみを担当し、**Solidity/Rust のコードは一切書いていない**。実装はすべて開発者本人（ソロ開発）が書いている。
 

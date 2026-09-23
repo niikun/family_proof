@@ -226,10 +226,11 @@ Family Constitution (tiered Action Authorization):
 * **Deployed to production World Chain Sepolia**: `FamilyConstitution` = `0xf7f344E9399638b69DF158877F1e77a39A5F3D73`
 * Tier 0 (instant execution) / Tier 1 (1 approval) / Tier 2 (2 approvals, from two different members producing two different nullifiers) demonstrated end-to-end on-chain
   (tx: propose `0xc76a25bfad576afa5605871b650e145f3d5ddd0ea9a2d66c68f44d4a3407ab45` / approval 1 `0xa421b7f1b18c082c5f4f1df5da8f123df8f580fd32d0c71a72d7fa77075c4b1e` / approval 2 `0xdfee0dd25f7476912714fd5b33395d1854fbf7d8e4291841d6b6c589a03d30e0`)
+* `propose_action` wrapped as an MCP server, so Claude itself, playing the AI Agent role, can send on-chain transactions via a real tool call (callable directly from Claude Code as `mcp__family-proof__propose_action`; `approve_action` isn't wrapped as an MCP tool yet — it's still run manually via the CLI)
 
 ### 🚧 Built during the event (Sept 25–27, planned)
 
-* Wrap `propose_action` / `approve_action` as an MCP server so Claude itself, playing the AI Agent role, can send on-chain transactions via real tool calls (currently a human copy-pastes the `cast send` command Claude suggests)
+* Final rehearsal, demo video recording, and finishing the Continuity submission writeup
 
 ### 🔭 Future work
 
@@ -340,7 +341,7 @@ Instead of exposing anyone's identity, it cryptographically verifies
 
 ## Continuity Track / AI Usage Policy
 
-This project is submitted to the **Continuity Track** of ETHGlobal Tokyo 2026. The ZK circuit, RLN, on-chain Registry, Family Constitution, and notification/statistics infrastructure are the pre-existing part, built before the event started (through Sept 24). The MCP server integration (letting Claude itself operate the AI Agent role via real tool calls) is the new part planned to be built during the event (Sept 25–27) — the two are clearly distinguished.
+This project is submitted to the **Continuity Track** of ETHGlobal Tokyo 2026. The ZK circuit, RLN, on-chain Registry, Family Constitution, notification/statistics infrastructure, and the MCP server integration (letting Claude itself operate the AI Agent role via real tool calls) are all pre-existing work, built before the event started (through Sept 24). During the event itself (Sept 25–27), the work is final rehearsal, recording the demo video, and finishing the Continuity submission writeup.
 
 Claude (AI) acted only as a coach — reviewing designs, running builds/tests, and confirming behavior. **All Solidity/Rust code was written by the developer.** The entire implementation is the work of a solo developer.
 

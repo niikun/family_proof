@@ -4,7 +4,7 @@
 
 Judging slot: 7 minutes (4 min demo + 3 min Q&A). Criteria: technicality / originality / practicality / UX / WOW factor.
 
-Premise: only rehearsed, working demonstrations are scripted here. Family Constitution (the tiered Action Authorization system) was already deployed to production World Chain Sepolia and demonstrated on testnet before the event. A fallback is included in case the MCP-server integration attempted during the event doesn't make it in time (see "If MCP doesn't make it in time").
+Premise: only rehearsed, working demonstrations are scripted here. Family Constitution (the tiered Action Authorization system) was already deployed to production World Chain Sepolia and demonstrated on testnet before the event. The MCP-server integration for `propose_action` (Claude itself sending on-chain transactions via a real tool call) was also completed before the event (`approve_action` isn't wrapped as an MCP tool yet — approvals are still run manually via the CLI). A fallback is included in case the live MCP connection is flaky on the day (see "Live-demo fallback").
 
 ---
 
@@ -74,24 +74,18 @@ cast call 0xa9f1A920... "familyRoot()"
 
 ## 3. Family Constitution (centerpiece, 1:25–3:30, ~2 min 5 sec)
 
-Premise: `FamilyConstitution.sol` is already deployed to production World Chain Sepolia (`0xf7f344E9399638b69DF158877F1e77a39A5F3D73`), and the Rust propose/approve CLIs are verified on-chain through Tier 0/1/2 (all completed before the event). The event-day goal is to wrap `propose_action`/`approve_action` as an MCP server so that **Claude itself sends the on-chain transaction via a real tool call, instead of a human running it**. **If MCP doesn't make it in time, the demo falls back to the already-proven "Claude proposes → a human copy-pastes the `cast send` command" flow below** (see "If MCP doesn't make it in time").
+Premise: `FamilyConstitution.sol` is already deployed to production World Chain Sepolia (`0xf7f344E9399638b69DF158877F1e77a39A5F3D73`), and the Rust propose/approve CLIs are verified on-chain through Tier 0/1/2. The MCP-server wrapping of `propose_action` — **Claude itself sending the on-chain transaction via a real tool call, instead of a human running it** — is also complete (all of this before the event). **`approve_action` isn't wrapped as an MCP tool yet**, so the approval steps (2/3/4/5 below) are still run by a human copy-pasting `cargo run --bin approve_action`. **If the live MCP connection is flaky on the day during the propose step, the demo falls back to the already-proven "Claude proposes → a human copy-pastes the `cast send` command" flow below** (see "Live-demo fallback").
 
 Screen layout: three terminal panes side by side. **Pane A = Claude Code (playing the AI Agent role — this is really Claude, not a script)**, Pane B = Neighbor A, Pane C = Neighbor B (B and C hold secrets/salts for two different members of the same tree, reusing the existing demo keys).
 
 > "Here's the real point: what FamilyProof actually proves isn't 'are you family?' — it's 'did a trusted relationship approve this action?' From here, the AI Agent role isn't acted out — it's played by the real Claude."
 
-Demo scenario (per SPEC.md §11.6, with the AI role replaced by an actual live LLM conversation; the lines and flow are the same either way — only how the command actually gets executed differs):
+Demo scenario (per SPEC.md §11.6, with the AI role replaced by an actual live LLM conversation):
 
-1. **Pane A (Claude)**: tell Claude, "I think we need to send ¥3,000,000 for mom's care costs — please propose it." Claude judges the tier from the risk (tier=2):
-   - **If MCP is working**: Claude calls the `propose_action` tool directly and sends the transaction on the spot → `ActionProposed`
-   - **Fallback (no MCP)**: Claude returns the exact command to run (`propose_action`/`approve_action` derive `actionId` automatically from the description string, so nobody needs to precompute or type in a numeric ID by hand):
-     ```bash
-     cargo run --bin propose_action "mom's care costs, 3,000,000 yen" 2
-     ```
-     → run the given command as-is → `ActionProposed`
+1. **Pane A (Claude)**: tell Claude, "I think we need to send ¥3,000,000 for mom's care costs — please propose it." Claude judges the tier from the risk (tier=2), calls the `propose_action` tool directly, and sends the transaction on the spot → `ActionProposed`
    > "This isn't scripted — Claude is judging this and executing it live, right now."
 2. An attacker (who has no secret) tries `approve_action` → cannot produce a valid proof → fails
-3. **Pane A (Claude)**: ask, "Claude, try approving it yourself too." Claude replies that it holds no secret in the Trust Circle's Merkle Tree, so it cannot produce a valid ZK proof and cannot approve (if MCP is working, show Claude actually calling the `approve_action` tool and it reverting; otherwise, show the equivalent `cargo run --bin approve_action "mom's care costs, 3,000,000 yen" <leaf_idx>` reverting)
+3. **Pane A (Claude)**: ask, "Claude, try approving it yourself too." Claude replies that it holds no secret in the Trust Circle's Merkle Tree, so it cannot produce a valid ZK proof and cannot approve — shown by running `cargo run --bin approve_action "mom's care costs, 3,000,000 yen" <leaf_idx>` live and it reverting (`approve_action` isn't wrapped as an MCP tool, so this step is a CLI demonstration)
    > "It isn't a contract-level restriction stopping the AI from approving its own proposal — it's the soundness of the ZK system itself."
 4. **Pane B (Neighbor A)**: approves with a real ZK proof:
    ```bash
@@ -108,9 +102,9 @@ Demo scenario (per SPEC.md §11.6, with the AI role replaced by an actual live L
 
 **Mini fallback if Claude can't be reached (network, etc.)**: if the Pane A exchange fails, say "the live AI conversation isn't connecting today" and move straight to running step 1's command with a pre-picked `actionId`. Steps 2 onward don't depend on the network, so the rest of the demo continues unaffected.
 
-### If MCP doesn't make it in time (fallback)
+### Live-demo fallback
 
-Even if the MCP-server integration doesn't make it in time, Family Constitution itself — the contract, the CLIs, the production Sepolia deployment — was already finished and proven before the event, so this scene still runs exactly as scripted above: Claude reasons about the request and proposes/judges tier in conversation, and a human runs the resulting command. Same lines, same flow — only the execution mechanism changes. There's no risk of the demo itself falling apart.
+The MCP-server integration and Family Constitution itself — the contract, the CLIs, the production Sepolia deployment — were all finished and proven before the event. Even so, if the venue network or the live MCP connection is flaky on the day, this scene can drop straight into the already-proven manual path: Claude reasons about the request and proposes/judges tier in conversation, and a human runs the resulting `cargo run --bin propose_action`/`approve_action` command. Same lines, same flow — only the execution mechanism changes. There's no risk of the demo itself falling apart.
 
 Only if something deeper goes wrong (Sepolia connectivity, a flaky testnet, etc.) fall back further to showing the local `forge test -vv` results (all tests green) while explaining verbally:
 
@@ -145,7 +139,7 @@ A: It's a documented known limitation. The current RLN instance shares a "once p
 A: The AI Agent can only execute Tier 0 (low-risk) actions alone — Tier 1 and above always require a human's valid ZK proof. Since the AI Agent itself holds no leaf in the Merkle Tree, it is structurally incapable of producing a valid proof. That said, the AI Agent having no cryptographic identity or revocation mechanism of its own is a known limitation — a way to cut off a compromised Agent from the Trust Circle is future work.
 
 **Q: Which parts of this project were built before the event, and which during it?**
-A: The ZK circuit, RLN, FamilyRegistry, notification infrastructure, anonymous statistics, and Family Constitution — the trust-approval-protocol extension I showed today — were all built and verified on production World Chain Sepolia before the event started (through Sept 24). What was newly built during the event (Sept 25–27) is the MCP-server integration that lets Claude itself operate the AI Agent role via real tool calls. This is documented explicitly in the README and the Continuity submission writeup.
+A: The ZK circuit, RLN, FamilyRegistry, notification infrastructure, anonymous statistics, Family Constitution — the trust-approval-protocol extension I showed today — and the MCP-server integration that lets Claude itself operate the AI Agent role via real tool calls, were all built and verified on production World Chain Sepolia before the event started (through Sept 24). During the event itself (Sept 25–27), I'm focused on final rehearsal, recording the demo video, and finishing the Continuity submission writeup. This is documented explicitly in the README and the Continuity submission writeup.
 
 **Q: Did you write all the code yourself? How did you use AI?**
 A: I wrote all the Solidity and Rust code myself. Claude acted only as a coach — design review, confirming builds/tests — and never wrote any code. It found and pointed out implementation bugs, but I made every fix myself.

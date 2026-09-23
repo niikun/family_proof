@@ -47,7 +47,7 @@ FamilyProof replaces the spoken password with a ZK-SNARK (Groth16 over BN254, ci
 
 **What's a deliberate, disclosed mock:** the "AI voice-clone defense" demo scene uses a JS mock instead of the real World ID SDK, because the real integration needs a signed-request backend (`RP_SIGNING_KEY`) whose signing algorithm isn't well-documented outside the official SDK — judged too risky to get right blind in the time available. This is disclosed in the README and in the pitch itself, not hidden.
 
-**Built during the event (Sept 25–27):** wrapping `propose_action`/`approve_action` as an MCP server so an AI assistant can actually call them as tools live during the demo — playing the "AI Agent" role for real, including attempting (and failing) to approve its own proposal — instead of a human copy-pasting the suggested `cast send` command.
+**Also real, before the event:** `propose_action` wrapped as an MCP server, so an AI assistant can actually call it as a tool live during the demo — playing the "AI Agent" role for real — instead of a human copy-pasting the suggested `cast send` command. (`approve_action` isn't wrapped as an MCP tool yet; approvals, including the AI Agent's own failed self-approval attempt, are still demonstrated via the CLI.)
 
 **AI-assistance disclosure:** Claude acted only as a coach throughout — reviewing designs, running builds/tests, catching bugs (never fixing them). All Solidity and Rust code was written by the developer, solo, over the course of the project.
 
@@ -55,12 +55,12 @@ FamilyProof replaces the spoken password with a ZK-SNARK (Groth16 over BN254, ci
 
 ## Continuity Track note
 
-- **Pre-existing (before Sept 25):** the ZK circuit, RLN, `FamilyRegistry.sol`/`Groth16Verifier.sol`, notification/statistics infrastructure, and `FamilyConstitution.sol` with its propose/approve CLIs and real Sepolia deployment.
-- **Built during the event (Sept 25–27):** the MCP-server integration letting an AI assistant actually execute the Agent role via tool calls, plus final demo rehearsal, video, and this submission writeup.
+- **Pre-existing (before Sept 25):** the ZK circuit, RLN, `FamilyRegistry.sol`/`Groth16Verifier.sol`, notification/statistics infrastructure, `FamilyConstitution.sol` with its propose/approve CLIs and real Sepolia deployment, and the MCP-server wrapping of `propose_action` letting an AI assistant actually execute the proposal step via a tool call (`approve_action` remains CLI-only).
+- **During the event (Sept 25–27):** final demo rehearsal, video recording, and this submission writeup.
 
 ## How it's made (tech stack)
 
-circom 2.2.3 + Poseidon (circuit) · Rust `ark-circom`/`arkworks` (witness/proof generation, BN254/Groth16) · Solidity/Foundry (`Groth16Verifier.sol`, `FamilyRegistry.sol`, `FamilyConstitution.sol`) · World Chain Sepolia (deployment target) · `alloy` + `reqwest` + `tokio` (Rust event-monitoring/notification backend, Resend API) · plain HTML/vanilla JS (demo UI, no build tooling) · (planned) `rmcp` for the MCP server.
+circom 2.2.3 + Poseidon (circuit) · Rust `ark-circom`/`arkworks` (witness/proof generation, BN254/Groth16) · Solidity/Foundry (`Groth16Verifier.sol`, `FamilyRegistry.sol`, `FamilyConstitution.sol`) · World Chain Sepolia (deployment target) · `alloy` + `reqwest` + `tokio` (Rust event-monitoring/notification backend, Resend API) · plain HTML/vanilla JS (demo UI, no build tooling) · `rmcp` (Rust MCP SDK, wraps `propose_action` as a tool; `approve_action` is not yet MCP-wrapped).
 
 ## Demo video
 
@@ -79,5 +79,4 @@ circom 2.2.3 + Poseidon (circuit) · Rust `ark-circom`/`arkworks` (witness/proof
 ## TODO before final submission
 
 - [ ] Record and link the demo video
-- [ ] If MCP integration ships during the event: update "Built during the event" above from planned to done, add a short note + any new tx evidence
 - [ ] Paste final text into the ETHGlobal submission form (field names/limits may differ slightly from this draft's section breaks — adjust as needed)

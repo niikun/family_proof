@@ -1,11 +1,12 @@
 # HANDOFF — 別PCへの引き継ぎ
 
-最終更新: 2026-09-23（Step 7 ①〜④・README/PITCH/提出文整備に加え、シーン3カットを確定し、デモ動画のラフカット（本物の画面録画ベース、2分26秒・無音、Trust Circle3段階図・フロー図・進捗バッジ付き）を作成。ナレーション原稿も作成済み。**MCP化はStep 1〜4完了、Step 5（MCP経由での動作確認）作業中にバグ6件を発見・修正（キーストアパスワード非対話化・タイポ・umask残留によるビルド権限エラー・ツール関数の戻り値実装漏れ・`main()`誤修正・不要な引数渡し、詳細は下記「🆕 MCP化の進め方」節）。現在のブロッカーはコード側ではなく、Claude Codeが起動中の`mcp_server`子プロセスが古いバイナリのままで再接続待ち**。残りはMCP再接続確認・`approve_action`ツール追加・未収録3箇所の撮影・ナレーション収録・最終合成） / ブランチ: `main` / remote: `git@github.com:niikun/family_proof.git`
+最終更新: 2026-09-23（Step 7 ①〜④・README/PITCH/提出文整備・シーン3カット確定に加え、**MCP化のStep 5（`mcp_server`再接続）が解消し、`propose_action`のMCPツール化が完了・動作確認済み**（`approve_action`のMCPツール化は引き続き未着手、詳細は下記「🆕 MCP化の進め方」節）。これに伴い`README.md`/`README.en.md`/`docs/PITCH.md`/`docs/PITCH.en.md`/`docs/SUBMISSION.en.md`を、MCP（`propose_action`のみ）がイベント前に完了した扱いに更新済み（Continuity Trackの「イベント中に新規実装」欄は最終リハーサル・動画・提出文の仕上げのみに変更、詳細は下記「🆕 README/PITCH/提出文の整備」節）。デモ動画は`family_proof_rough_cut_v3.mp4`まで進行、未収録だったClaude会話・攻撃者失敗・自己承認失敗・tier0対比の一部と見られる新クリップ（`partA_propose.mp4`/`partB_selfrefusal.mp4`/`partC_tier0.mp4`等）も追加済み（未コミット、詳細は下記「🆕 デモ動画の編集方針」節）。残りは`approve_action`のMCPツール化（任意）・未収録箇所の撮影完了確認・ナレーション収録・最終合成） / ブランチ: `main` / remote: `git@github.com:niikun/family_proof.git`
 
 > ✅ **Step 6 コア完了（Verifier/Registry/テスト/calldata変換/World Chain Sepoliaデプロイ済み）**。デプロイ済みアドレスは下記「Step 6」節参照（`FamilyRegistry` は `0xa9f1A920...` が正、`0xD06FcbB5...` は重複デプロイの旧アドレスで放置）。追加拡張A/B/Cも完了（下記「残り期間での追加拡張」節）。
 > **🆕 Step 7（Trust Circle / Family Constitution 拡張）を正式採用し、2026-09-21 夜から着手済み**（設計は [SPEC.md §11](SPEC.md) 完了）。進捗は下記「いまどこ」節参照。Claude はコーチのみ、設計を書いただけでコードは書いていない — 実装は引き続きユーザーが行う。
 > **⚠️ 重要: ETHGlobal Tokyo 2026 の日程・提出ルールが確定済み（下記参照）。この5連休の位置づけが変わったので必読。**
 > **🆕 ピッチの再定義（Trust Circle）を確定し、`README.md`・`docs/PITCH.md`・3枚スライドを作成、`SPEC.md §11.8`（委任権限のZK証明、将来構想）を追記。詳細は下記「🆕 Step 7」節の追加項目、および `README.md`・`docs/PITCH.md` 本体を参照。**
+> **🆕 World ID実SDK統合の2日間練習を開始（2026-09-23）**: 本番中(9/25〜27)にWorld ID実SDK統合へ再挑戦するかどうかの判断材料として、イベント前日までの2日間（9/23〜24）で`learn-worldid/`（本編とは独立の練習用サンドボックス）を使って軽く触っておく方針。詳細は下記「🆕 World ID実SDK再挑戦に向けた2日間練習」節参照。
 
 ## ⚠️ ETHGlobal Tokyo 2026 日程・提出ルール（2026-09-19 確認）
 
@@ -19,7 +20,7 @@
 
 ## いまどこ
 
-ロードマップ（[SPEC.md](SPEC.md) §7）で **Step 0〜4 完了、Step 5 事実上完了、Step 6 完了、Step 7 完了**（①〜④すべて済み。`FamilyConstitution.sol`を本番World Chain Sepoliaにデプロイし、AI提案→2人承認→`ActionAuthorized`を実チェーン上で実証済み）。README/README.en/PITCH/PITCH.en/SUBMISSION.enの整備も完了（2026-09-22夜）。**残るのはMCP化の動作確認（Step 5、MCPサーバー再接続待ち。コード側のバグは全て修正済み）・`approve_action`ツール追加・デモ動画**。詳細は下記「🆕 README/PITCH/提出文の整備」節参照。
+ロードマップ（[SPEC.md](SPEC.md) §7）で **Step 0〜4 完了、Step 5 事実上完了、Step 6 完了、Step 7 完了**（①〜④すべて済み。`FamilyConstitution.sol`を本番World Chain Sepoliaにデプロイし、AI提案→2人承認→`ActionAuthorized`を実チェーン上で実証済み）。README/README.en/PITCH/PITCH.en/SUBMISSION.enの整備も完了（2026-09-22夜、2026-09-23夜にMCP完了を反映して再更新）。**MCP化（`propose_action`のみ）も完了（2026-09-23）**。**残るのは`approve_action`のMCPツール化（任意）・デモ動画の仕上げ（撮影統合・ナレーション収録・最終合成）**。詳細は下記「🆕 README/PITCH/提出文の整備」「🆕 デモ動画の編集方針」節参照。
 
 | Step | 状態 |
 |---|---|
@@ -266,11 +267,27 @@ Step 7 ①〜④完了後、審査員向けドキュメント一式を整備し�
 - [x] **運用判断: `approve_action.rs`は`propose_action.rs`と同じ`agent`キーストアを使い続ける（隣人A・B用に別アカウントは作らない）**。理由: `FamilyConstitution.approveAction`には`onlyAgent`のような制限が無く、認証の実体は`msg.sender`ではなくZK証明（secret+Merkle path）なので、送信アカウントを分ける必要は無い。デモの見栄え上「隣人A/Bが同じアドレスから送信している」ことに気づかれるリスクはあるが、突っ込まれても正しく説明できるため許容
 - [x] **本番デモでは`cargo run --release`を使うことを推奨**として記録。理由: Groth16の`prove`はデバッグビルドだと大幅に遅く、4分の持ち時間を圧迫するため。事前に`cargo build --release`しておき、本番中は`--release`付きで実行する運用
 - [x] **シーン3（World IDモック）はデモから丸ごとカット、確定**（2026-09-23）。ユーザーの「デモが長すぎて分かりづらい、Family Constitutionの方が面白い」という指摘を受け、シーン3を削除しFamily Constitutionに時間を再配分。PITCH.md/PITCH.en.mdの構成・タイミング表を修正済み（World ID音声クローン対策の設計自体はQ&A想定問答に残してあり、無くなってはいない）
-- [ ] **MCP化（2026-09-23 着手・チュートリアル形式でコーチング中。Step 1〜4実装完了、Step 5でMCP経由の動作テスト中にバグ6件発見・修正済み、現在は古いプロセスの再接続待ち）**。下記「🆕 MCP化の進め方」節を参照
+- [x] **MCP化（`propose_action`のみ）完了（2026-09-23）**。Step 1〜5すべて完了、再接続後に`propose_action`がMCP経由で実際に動作することを確認済み。`approve_action`のMCPツール化は任意のstretchとして未着手のまま。下記「🆕 MCP化の進め方」節を参照
+- [x] **README/PITCH/SUBMISSION.en.mdをMCP完了の状態に合わせて更新（2026-09-23、Claudeが実施）**: `propose_action`のMCP化が本番前に終わったことで、当初の「MCPサーバー化はイベント本番中(9/25〜27)に新規実装する部分」というContinuity Trackの区分が崩れたため、`README.md`/`README.en.md`/`docs/PITCH.md`/`docs/PITCH.en.md`/`docs/SUBMISSION.en.md`の5ファイルを更新:
+  - MCPサーバー化を「✅ Implemented（イベント前）」に移動。「🚧 built during the event」欄は「最終リハーサル・デモ動画の収録・Continuity提出文の仕上げ」に変更（本節冒頭の「なぜ本番前ではなくこのタイミングでやっているか」の通り、MCP前倒しの代わりに本番中の時間をWorld ID実SDK再挑戦に回す方針は条件付き・未確定のため、ドキュメントには書いていない。実際にWorld ID再挑戦が本番中に行われたら、その時点で「イベント中に新規実装」欄に追記し直す）
+  - PITCH.md/PITCH.en.mdのFamily Constitutionデモシナリオから「MCP対応済みの場合／未対応の場合」の分岐を撤廃し、`propose_action`はMCP経由を本筋に一本化。旧「MCPが間に合わなかった場合」節は「ライブ実演時のフォールバック」に改名（"間に合わなかった"ではなく"会場で不調だった場合"の安全策という位置づけに変更）
+  - **一度`approve_action`もMCP化済みと誤って書いてしまい、ユーザーの確認（AskUserQuestion）で「`propose_action`のみ完了、`approve_action`は未着手」と判明 → 5ファイルとも該当箇所を修正済み**。PITCH.md/PITCH.en.mdのシーン3（Claude自身の自己承認失敗）は「`approve_action`はMCPツール化していないのでCLIでの実演」と明記
+  - Claude memoryにも同内容を記録済み（`familyproof-project.md`）。[[no-writing-code]]の対象は`.sol`/`.rs`のみなのでこれらの`.md`編集はコーチ範囲外ではない
 
-### 🆕 MCP化の進め方（2026-09-23 着手、Step 1〜4完了・Step 5はバグ修正完了・再接続待ち）
+### 🆕 MCP化の進め方（2026-09-23 着手、`propose_action`のMCP化は完了・`approve_action`は未着手）
 
 **背景・なぜ本番前ではなくこのタイミングでやっているか**: 当初「Step 7完了直後は全部終わってしまうとContinuity Trackの『イベント中に作った部分』が無くなる」という懸念から、MCP化は本番中(9/25〜27)にやる予定だった。その後「今日中にMCPを終わらせられれば、本番中の時間をWorld ID実SDK統合（2026-09-21に一度見送った、より難易度の高い挑戦）に使える」という提案があり、**今日(2026-09-23)のうちにMCP化を進める方針に変更**。ただしWorld ID再挑戦は「MCPが余裕を持って完全に終わった場合のみ」という条件付き（詳細は本セッションの会話ログ、HANDOFFには特に追加記載なし）。
+
+### 🆕 World ID実SDK再挑戦に向けた2日間練習（2026-09-23 着手、Claudeが教材を用意）
+
+MCP化（`propose_action`）が本番前に完了したことで条件が満たされたため、**本番中(9/25〜27)にWorld ID実SDK統合へ再挑戦する可能性が現実的になった**。ただしぶっつけ本番はリスクが高いため、イベント前日までの2日間（**2026-09-23〜24**）で軽く触って感覚を掴んでおく方針を採用。
+
+- **`learn-worldid/`ディレクトリを新設**: FamilyProof本編・Continuity Track提出物とは完全に独立した練習用サンドボックス（`.gitignore`済み、`git add`しない運用）。進め方は本編と同じ「コーチ方式」——[[no-writing-code]]をここにも適用する方針をユーザーが明示的に選択（AskUserQuestionで確認済み。「動くサンプルを用意する」選択肢もあったが、コーチ方式を選択。ただしJavaScript完全初心者なので伴走を厚めに、という条件付き）。Claudeは骨格・課題・参考リンクのみ用意し、実装コードは書いていない
+- **`README.md`**: 2日間ロードマップ・用語集（App ID/Action/Signal/nullifier/Verification Level/RP signing/Sandbox）・**Sandboxアプリのアクセス申請を最優先タスクとして明記**（承認にTestFlight招待/Google Play非公開テストの審査時間がかかるため、コードを書き始める前に申請だけ先に出す運用）
+- **`day1_js_basics/`**: JavaScript完全初心者向けに、IDKit実装で実際に使う構文（`const`/テンプレート文字列、アロー関数、オブジェクトの分割代入、`async`/`await`、`fetch`+JSON、`import`/`export`）だけに絞った6問の練習課題（`exercises.mjs`、TODOコメントのみで解答は書いていない）
+- **`day2_idkit_practice/`**: `express` + 公式`@worldcoin/idkit-server`（RP署名ヘルパー）を使った最小サーバー（`server.js`）と、`voice_challenge.html`と同じ「ビルドツール無し」方針を維持したフロントエンド（`public/index.html`、`esm.sh`経由で`@worldcoin/idkit-core`をブラウザから直接import）。どちらもTODOコメントのみの骨格で実装は含まない。`package.json`・`.env.example`も用意済み
+- **docs.world.org を2026-09-23時点で再調査した新事実**: 2026-09-21時点の判断（IDKit v4はRP署名用の小さなバックエンドが実質必須）は変わっていないことを確認。ただし**`@worldcoin/idkit-server`パッケージの`signRequest()`ヘルパーの存在が新たに判明**——RP署名（Keccak-256ベースのnonce生成＋ECDSA secp256k1署名）を自前実装する必要は無く、関数呼び出し1回で済む。2026-09-21時点でこれを見送った最大の理由（「署名ロジックは公式SDK以外に仕様が無く自前実装はリスクが高い」）は、少なくとも署名生成そのものについては解消されている
+- **本番当日の実装可否はこの2日間の練習の進捗次第、まだ未確定**。練習が順調に進めばIDKitへの理解を前提に本番中(9/25〜27)に実統合へ挑戦し、World ID/Worldcoinパートナー賞（`Best Use of IDKit`/`Best Use of World ID for Agents`、各$7,500、`docs/SUBMISSION.en.md`参照）に正式に挑戦できる可能性がある。進まなければ現状の自前JSモック（`voice_challenge.html`、disclosed mockとして提出）のまま据え置く
 
 **方針（確定済み）**: `propose_action`/`approve_action`を`rmcp`クレート（公式Rust MCP SDK、[modelcontextprotocol/rust-sdk](https://github.com/modelcontextprotocol/rust-sdk)、2026-09-22時点の最新版3.4系）でMCPサーバー化し、Claude Code自身が「AI Agent」役としてツール呼び出しで実際にオンチェーン送信まで行えるようにする。PITCH.md/PITCH.en.mdのシーン4は既に「MCP対応済みの場合／未対応（フォールバック）の場合」の両方が書いてあるので、MCPが完成してもしなくてもデモ台本自体は変更不要。
 
@@ -293,12 +310,12 @@ Step 7 ①〜④完了後、審査員向けドキュメント一式を整備し�
   4. `mcp_server.rs`の`propose_action`ツール関数が`()`（何も返さない）実装のままで、MCP呼び出しの結果が常に空になっていた → `Command::output()`でcastの標準出力をキャプチャし、戻り値の型を`String`に変更。実装パターンはローカルの`~/.cargo/registry/.../rmcp-3.4.0/tests/test_tool_macros.rs`（`async fn hello(&self) -> String`のような実例）で確認して踏襲
   5. 4.の修正時に誤って`main()`の戻り値まで`anyhow::Result<String>`に変更してしまい、`Termination`トレイト未実装でビルド失敗（`main()`と`propose_action`ツール関数は別スコープで、`main()`は元の`anyhow::Result<()>`のままにする必要があった）→ 元に戻して解決
   6. `mcp_server.rs`が`cargo run --bin propose_action`の引数に`--password-file <path>`を余分に渡していたが、`propose_action.rs`は`args.len() == 3`（バイナリ名＋description＋tier）を前提にしており、パスワードパスはCLI引数として受け取らず内部で自前計算する設計だった → 余分な引数を渡すと`assertion failed: args.len() == 3`でpanicすることを実機再現して確認、`mcp_server.rs`側の該当引数を削除して解消
-- [ ] **現在のブロッカー（コード側ではない）**: 上記修正はソース・`target/release/mcp_server`バイナリには反映済み・ビルド確認済みだが、**Claude Codeが起動している`mcp_server`の子プロセスは古いバイナリのまま動き続けている**（`ps`でのプロセス起動時刻とバイナリのビルド時刻を比較して確認済み。ファイルを差し替えても実行中プロセスのメモリ上のコードには影響しない）。MCPサーバーへの再接続（`/mcp`コマンド、それで効かなければセッション再起動）が必要。**次回はこの再接続から再開し、`propose_action`ツールが実際に結果を返すか確認する**
-- [ ] （再接続確認後）`approve_action`用の2つ目のツールメソッドを`mcp_server.rs`に追加する（まだ未着手）。`approve_action.rs`自体は既に`--password-file`対応済み（`propose_action.rs`と同じ設計: パスは内部で自前計算、CLI引数としては受け取らない。`mcp_server.rs`側から余分な引数を渡さないよう注意）
+- [x] **再接続完了（2026-09-23）**: MCPサーバーへの再接続後、`propose_action`ツールが実際に結果を返すことを確認済み（`mcp__family-proof__propose_action`としてClaude Codeから呼び出し可能）。これで「MCP化（`propose_action`のみ）」はStep 1〜5すべて完了
+- [ ] **`approve_action`用の2つ目のツールメソッドを`mcp_server.rs`に追加する（まだ未着手・任意のstretch）**。`approve_action.rs`自体は既に`--password-file`対応済み（`propose_action.rs`と同じ設計: パスは内部で自前計算、CLI引数としては受け取らない。`mcp_server.rs`側から余分な引数を渡さないよう注意）。未着手のため、README/PITCH/SUBMISSION.en.mdでは承認ステップ（`approve_action`）は引き続きCLI実行として記載している（2026-09-23、下記「🆕 README/PITCH/提出文の整備」節のMCP反映エントリ参照）
 
 ### 🆕 デモ動画の編集方針（2026-09-23、進行中）
 
-デモ動画は`demo/`ディレクトリで編集中。現状のラフカット: **`demo/family_proof_rough_cut.mp4`（2分26秒、無音）**。編集用のソース一式（`cards.html`/`badge.html`/Playwrightスクリプト/ffmpegコマンド）はこのセッションのスクラッチ領域にあり、リポジトリには含めていない（再現手順は下記に残す）。
+デモ動画は`demo/`ディレクトリで編集中。**2026-09-23時点で`family_proof_rough_cut_v2.mp4`→`v3.mp4`まで更新が進んでいる**（v1の`family_proof_rough_cut.mp4`は残っているが最新ではない）。編集用のソース一式（`cards.html`/`badge.html`/Playwrightスクリプト/ffmpegコマンド）はこのセッションのスクラッチ領域にあり、リポジトリには含めていない（再現手順は下記に残す）。
 
 **基本方針（確定）**:
 1. **本物の画面録画を無加工で使う。合成・モックのターミナル再現は不採用**。当初Claude側でxterm.js（本物のターミナルエンジン）を使った完全モックのデモ動画を作ったが、見た目をどれだけ本物に近づけても「作り物っぽい」（ユーザー評）という結論になり、**ユーザー自身が実際のWindows Terminal（WSL）で本物のコマンドを実行し、画面録画したものに全面的に切り替えた**。合成モック版は不採用・破棄（作り方自体はxterm.js＋Playwright＋ffmpegの組み合わせとして技術メモに残す価値はあるが今回は使っていない）
@@ -329,29 +346,39 @@ Step 7 ①〜④完了後、審査員向けドキュメント一式を整備し�
 
 **実写クリップのトリミング方針**: `ffmpeg -vf "select='gt(scene,0.01)',showinfo"`でシーン変化のタイムスタンプを検出 → パスワード待ちの無音区間を切り出して除去 → 前後を`concat`demuxerで結合、`-c:v libx264 -crf 18`で再エンコード（`-c copy`だとタイムスタンプ不整合が出たため）。
 
-**ファイル構成**（2026-09-23、整理済み）:
+**ファイル構成（2026-09-23夜時点、`git status`より・未コミット）**: `demo/clips/`に当初の5本に加え、以下が新規追加されている（ファイル名から下記「未収録3箇所」の一部に対応するとみられるが、`family_proof_rough_cut_v3.mp4`への統合状況はユーザー確認待ち）:
 ```
 demo/
-  family_proof_rough_cut.mp4   # 最新のラフカット（git管理する）
-  narration_script.md          # 現在の尺に合わせたナレーション原稿（git管理する）
-  clips/                       # トリミング済みの本編素材5本（git管理する、軽量）
-    scene1_submit_demo_00_trimmed.mp4
+  family_proof_rough_cut.mp4      # v1（旧版）
+  family_proof_rough_cut_v2.mp4   # v2
+  family_proof_rough_cut_v3.mp4   # v3（2026-09-23時点で最新）
+  narration_script.md
+  scene1_shooting_script.md       # 撮影台本（新規、未コミット）
+  clips/
+    scene1_submit_demo_00_trimmed.mp4        # 既存5本
     scene2_submit_demo_11_trimmed.mp4
     scene3_propose_action_trimmed.mp4
     scene3_approve_action_idx0_trimmed.mp4
     scene3_approve_action_idx1_trimmed.mp4
+    scene1_propose_ai_trimmed.mp4            # 新規（未コミット）
+    scene1_propose_ai_trimmed_30fps.mp4       # 新規（未コミット）
+    scene_approve_idx0_trimmed.mp4            # 新規（未コミット）
+    scene_approve_idx1_trimmed.mp4            # 新規（未コミット）
+    partA_propose.mp4                         # 新規（未コミット、①Claude会話に対応？）
+    partB_selfrefusal.mp4                     # 新規（未コミット、③自己承認失敗に対応？）
+    partC_tier0.mp4                           # 新規（未コミット、④tier0対比に対応？）
   raw/                          # 無加工の巨大オリジナル（.gitignore済み、370MB超）
 ```
-`.gitignore`に`demo/raw`を追加済み。トリミング済みクリップを誤って`raw/`に入れてしまい、gitignoreで一緒に除外されそうになったが整理済み。
+`.gitignore`に`demo/raw`を追加済み。
 
-**現在のラフカット構成（2分26秒、無音）**:
+**旧「現在のラフカット構成（v1、2分26秒・無音）」**（参考として残す。v2/v3での構成変更内容は未記録、次回セッションでユーザーに確認・追記要）:
 オープニング → Trust Circle図（3段階）→ シーン1ラベル+実写（`submit_demo -- 00`）→ シーン2ラベル+実写（`submit_demo -- 11`+notifierのPotentialLeak検知、タブ切り替えが1本の録画に自然に収まっている）→ Family Constitution導入 → フロー図（5ステップ一覧）→ ①提案ラベル+実写（`propose_action`、進捗バッジ付き）→ ②隣人A承認ラベル+実写（`approve_action idx-0`、進捗バッジ付き）→ ③隣人B承認ラベル+実写（`approve_action idx-1`、進捗バッジが`ActionAuthorized`に切り替わる）→ NOTE（未収録の注記）→ クロージング
 
 **残タスク**:
-- [ ] **未収録3箇所の撮影**: (1) Claudeとの実際の会話（提案の判断）、(2) 攻撃者の`approve_action`失敗、(3) Claude自身の自己承認失敗、(4) tier0（即時実行）との対比。撮影後、NOTEカードを削除して該当箇所に差し込む
-- [ ] **ナレーション収録**: `demo/narration_script.md`の原稿に沿って、ユーザー自身の声で読み上げ録音（AIナレーションはETHGlobal規約で禁止のため不可）。原稿は現在の尺（2分26秒、フロー図カード追加分を含む）に対応済み
-- [ ] **Canvaでの最終合成**: 画像/実写クリップの並びは`family_proof_rough_cut.mp4`が完成形に近いので、Canvaで音声トラックを重ねる、または未収録3箇所を追加した最新版で作り直す
-- [ ] **（任意）進捗バッジの3クリップ目以降への展開**: 未収録3箇所（Claude会話・攻撃者失敗・tier0対比）を撮影した際も、同じ進捗バッジの仕組み（`badge.html`のstate切り替え）を流用できる
+- [ ] **未収録3箇所の撮影・統合状況の確認**: (1) Claudeとの実際の会話（提案の判断）、(2) 攻撃者の`approve_action`失敗、(3) Claude自身の自己承認失敗、(4) tier0（即時実行）との対比。上記の新規クリップ（`partA_propose.mp4`等）が対応する撮影の成果物とみられるが、**v3への統合・NOTEカード削除が完了しているかは次回セッションでユーザーに確認**
+- [ ] **ナレーション収録**: `demo/narration_script.md`の原稿に沿って、ユーザー自身の声で読み上げ録音（AIナレーションはETHGlobal規約で禁止のため不可）
+- [ ] **Canvaでの最終合成**: 画像/実写クリップの並びが固まったら、Canvaで音声トラックを重ねる
+- [ ] **（任意）進捗バッジの新規クリップへの展開**: 同じ進捗バッジの仕組み（`badge.html`のstate切り替え）を新規クリップにも流用できる
 
 ### 🆕 ピッチ再定義: Trust Circle を前面に出す（2026-09-21 深夜、完了）
 
