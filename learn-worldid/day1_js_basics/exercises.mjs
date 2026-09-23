@@ -8,6 +8,8 @@ console.log("=== TODO 1: const とテンプレート文字列 ===");
 // ヒント: const name = "...";  console.log(`...`);
 
 // TODO 1 ここに書く
+let name = "たろう";
+console.log(`こんにちは、${name}`);
 
 
 console.log("\n=== TODO 2: アロー関数 ===");
@@ -16,6 +18,11 @@ console.log("\n=== TODO 2: アロー関数 ===");
 //       add(2, 3) の結果をコンソールに表示してください。
 
 // TODO 2 ここに書く
+const add = (a, b) => {
+  return a + b; 
+}
+let c = add(2, 3);
+console.log(`the ans = ${c}`);
 
 
 console.log("\n=== TODO 3: オブジェクトの分割代入 ===");
@@ -29,7 +36,8 @@ const worldIdResult = {
 };
 
 // TODO 3 ここに書く（ヒント: const { proof, nullifier_hash } = worldIdResult;）
-
+const {proof, nullifier_hash} = worldIdResult;
+console.log(`${proof}, ${nullifier_hash}`);
 
 console.log("\n=== TODO 4: async/await の基本 ===");
 // 以下の waitOneSecond はすでに実装済みです（1秒待ってから文字列を返す関数）。
@@ -41,10 +49,12 @@ function waitOneSecond(message) {
 }
 
 async function runTodo4() {
+  
   // 指示: waitOneSecond("1秒待ちました") を await して、結果をコンソールに表示してください。
 
   // TODO 4 ここに書く
-
+  let msg = await waitOneSecond("1秒待ちました");
+  console.log(msg);
 }
 await runTodo4();
 
@@ -52,15 +62,22 @@ await runTodo4();
 console.log("\n=== TODO 5: fetch でPOST + JSONを読む ===");
 // 指示: 以下のダミーAPI（httpbin.org、練習用の公開エコーサービス）に
 //       { action: "verify-family-member" } というJSONをPOSTし、
-//       返ってきたレスポンスをJSONとしてパースして、
+//       返ってきた{レスポンスをJSONとしてパースして、
 //       その中の json.json（自分が送ったbodyがechoされて返ってくる）を表示してください。
 //   1. fetch(url, { method: "POST", headers: {...}, body: JSON.stringify({...}) })
 //   2. const data = await response.json();
 async function runTodo5() {
   const url = "https://httpbin.org/post";
-
-  // TODO 5 ここに書く
-
+  const res = await fetch(url,{
+    method: "POST", 
+    headers:{"Accept": "application/json",
+                "Content-Type": "application/json"
+        },
+    body: JSON.stringify({action: "verify-family-member"})
+      });
+  const data = await res.json();
+  console.log(data);
+  return data;
 }
 await runTodo5();
 
