@@ -74,28 +74,38 @@
 
     outputEl.textContent = "2. WorldIDにリクエストを送信しています...(Sandboxアプリでスキャンしてください)";
 
-    
-    const request = await IDKit.request({
-      app_id: APP_ID,
-      action: ACTION,
-      rp_context:rpContext,
-      allow_legacy_proofs: false,
-    }).preset(orbLegacy({ signal: "learn-world-user"}));
-    
-    outputEl.textContent = "2. 下のリンクをスマホのSandboxアプリで開いてください:\n" + request.connectorURI;
+try {
+      const request = await IDKit.request({
+        app_id: APP_ID,
+        action: ACTION,
+        rp_context:rpContext,
+        allow_legacy_proofs: false,
+      }).preset(orbLegacy({ signal: "learn-world-user"}));
+      
+      outputEl.textContent = "2. 下のリンクをスマホのSandboxアプリで開いてください:\n" + request.connectorURI;
 
-    const completion = await request.pollUntilCompletion();
-    const {success, result} = completion;
+      const completion = await request.pollUntilCompletion();
+      const comp_json = JSON.stringify(completion, null, 2);
+      const {success, result} = completion;
+      if (!success) {
+        console.log(comp_json);
+        outputEl.textContent += "\n\nIDKit失敗:\n" + comp_json;      
+        return ;
+      }
 
 
-    outputEl.textContent = JSON.stringify(result, null, 2);
-    const verifyRes = await fetch("/api/verify-proof",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ IDKitResponse: result }),
-    });
-    const verifyData = await verifyRes.json();
-    outputEl.textContent += "\n\n検証結果:\n" + JSON.stringify(verifyData, null, 2);
+      outputEl.textContent = JSON.stringify(result, null, 2);
+      const verifyRes = await fetch("/api/verify-proof",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ IDKitResponse: result }),
+      });
+      const verifyData = await verifyRes.json();
+      outputEl.textContent += "\n\n検証結果:\n" + JSON.stringify(verifyData, null, 2);      
+  } catch(e){
+      outputEl.textContent = "エラー:" + e.message;
+      return ;
+  }
   });
 </script>
 </body>
