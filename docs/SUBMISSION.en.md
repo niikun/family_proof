@@ -41,7 +41,7 @@ FamilyProof replaces the spoken password with a ZK-SNARK (Groth16 over BN254, ci
 
 **What's real, on-chain, right now (World Chain Sepolia):**
 - The full ZK pipeline: circom circuit → Rust (`ark-circom`/`arkworks`) witness/proof generation → Solidity Groth16 verifier, with real proofs verified on-chain.
-- RLN in production: two proofs with the same secret in one epoch → automatic secret recovery via linear interpolation → `PotentialLeak` event → email notification → new secret issued → Merkle root rotated on-chain.
+- RLN, running end-to-end on World Chain Sepolia: two proofs with the same secret in one epoch → automatic secret recovery via linear interpolation → `PotentialLeak` event → email notification → new secret issued → Merkle root rotated on-chain.
 - `FamilyConstitution.sol` deployed to World Chain Sepolia (`0xf7f344E9399638b69DF158877F1e77a39A5F3D73`), with a full propose → attacker-fails → 2 human approvals (from two different members, producing two distinct nullifiers) → `ActionAuthorized` flow demonstrated end-to-end on real transactions.
 - An anonymous, privacy-preserving statistics dashboard aggregating daily detection counts — no addresses, no family roots, no per-event data — published publicly.
 

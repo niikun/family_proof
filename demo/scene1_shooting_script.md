@@ -1,78 +1,99 @@
-# シーン①撮影台本: Claudeとの実際の会話（提案の判断）
+# シーン①撮影記録: Claudeとの実際の会話（提案の判断）
 
-`demo/family_proof_rough_cut.mp4` の未収録3+1箇所のうち、「(1) Claudeとの実際の会話（提案の判断）」
-「(3) Claude自身の自己承認失敗」「(4) tier0との対比」をまとめて1本の録画で撮る台本です。
-台詞・流れの根拠は [docs/PITCH.md](../docs/PITCH.md) §3、tierの意味は [docs/SPEC.md](../docs/SPEC.md) L407 の表に準拠。
+`demo/family_proof_rough_cut.mp4` の「(1) Claudeとの実際の会話（提案の判断）」「(3) Claude自身の
+自己承認失敗」「(4) tier0との対比」は**2026-09-23 すべて収録・編集・本編統合済み**。
+台詞・流れの根拠は [docs/PITCH.md](../docs/PITCH.md) §1、tierの意味は [docs/SPEC.md](../docs/SPEC.md)
+L407 の表に準拠。以降は完了記録・撮り直し時の再現手順として残す。
 
-## 収録環境
+## 確定した入力（クイックリファレンス）
 
-- Windows Terminal(WSL)で `family_proof` ディレクトリに `cd` してから `claude` を起動する
-  （VSCode拡張のチャットパネルではなく、他クリップと同じ「本物のターミナル」の絵にするため）
-- 起動後、`/mcp` 等で `propose_action` ツールが見えていることを確認してから本番に入る
-- **`approve_action` はMCPツールとして絶対に追加・接続しない**。`approve_action.rs` はデモ用に
+**description（確定・登録済み・tier=2・承認2/2・実行済み）**: `入院費の支払い: 300万円の振込`
+
+1本目の録画（Part A+B、1本の連続テイクで収録済み）:
+
+| # | 入力 |
+|---|---|
+| Part A | `入院費で300万円振り込まなければいけないんだけど、提案しておいて` |
+| Part B | `あなた自身でこのactionを承認できる？できないなら、暗号的・原理的になぜ承認できないか100文字以内で教えて` |
+
+2本目の録画（Part C、単独テイク）:
+
+| # | 入力 |
+|---|---|
+| Part C | `予定のリマインドを出すというActionを提案しておいて` |
+
+3本目・4本目の録画（`approve_action`、別ターミナル）:
+
+```bash
+cargo build --release --bin approve_action   # 先に済ませておく
+cargo run --release --bin approve_action "入院費の支払い: 300万円の振込" 0
+cargo run --release --bin approve_action "入院費の支払い: 300万円の振込" 1
+```
+
+## 収録環境（2026-09-23 最終版）
+
+- **`family_proof`ディレクトリではなく、`$HOME`など無関係なディレクトリで`claude`を起動する**。
+  理由: `family_proof`直下で起動すると、Claude(AI Agent役)が`docs/HANDOFF.md`に平文で書かれている
+  デモ用secret（103, 203）を`grep`等で読めてしまい、「AIはsecretを持たないから承認できない」という
+  暗号的な主張の前提が崩れる（Bashツール自体は使えるので`cd`されると完全な遮断ではないが、
+  少なくとも起動直後の誤発見は防げる）
+- **MCPサーバーは`user` scopeで登録しておく**（`family_proof`ディレクトリ外からでも`propose_action`
+  ツールが使えるようにするため）:
+  ```bash
+  claude mcp add --scope user family-proof /home/userniikun/project/family_proof/target/release/mcp_server
+  ```
+- `mcp_server.rs`側の対応が必須: `Command::new("cargo")...`に`.current_dir(env!("CARGO_MANIFEST_DIR"))`
+  を追加していないと、cwdが`family_proof`以外のときに`cargo run`が`Cargo.toml`を見つけられず
+  `exit status: 101`で毎回失敗する（2026-09-23に発見・修正済み。`mcp_server.rs`のこの行が
+  消えていないか撮り直し前に確認すること）
+- 起動後、`/mcp`等で`propose_action`ツールが見えていることを確認してから本番に入る
+- **`approve_action`はMCPツールとして絶対に追加・接続しない**。`approve_action.rs`はデモ用に
   secret/saltがハードコードされているため、MCP経由でClaudeに叩かせると「secretが無いから
   承認できない」はずのAI Agentが実際に承認を成功させてしまい、台本の主張と正反対の結果になる
-  （2026-09-23のセッションで確認済みの落とし穴）
 
-## 収録前に決めること
+## 収録時の注意点（過去の失敗から）
 
-- **本番テイクで使う`description`文言を1つに確定し、メモしておく**。`propose_action`は同じ文言で
-  二度提案できない（`already proposed`でrevert）ため、②③の承認シーン（`approve_action`）でも
-  この文言をそのまま再利用する必要がある
-- 台本通りの案: `"母の介護費用、300万円"`（[docs/PITCH.md:89](../docs/PITCH.md#L89)と表記を揃える）
-- リハーサルは別の使い捨て文言（例:`"テスト送金リハーサル"`）で行い、本番文言は本番テイクまで
-  一度も`propose_action`に通さないこと
+- **「Accessing workspace / trust this folder」の初回確認画面は使わない前提で録画する**。
+  新しいディレクトリで初めて`claude`を起動すると出るが、内容的に不要なので編集でカットする。
+  録画自体は開始しておいて構わない（後でトリムする）
+- **tierを人間から言わない・示唆しない**。「入院費で300万円」のような金額・状況だけ伝え、
+  tier判断はClaude自身にさせる
+- **Part Bの質問には最初から「暗号的・原理的に」「100文字以内で」を織り込む**。
+  以前は「あなた自身が承認できる？できない場合は理由も」とだけ聞いたところ、1回目は
+  「MCPにapprove_actionツールが無いから」という的外れな答えが返り、聞き直す2往復になった。
+  文字数と観点を最初の質問に埋め込むことで1往復で決まる
+- **Part Cは「予定リマインドを出しておいて」ではなく「予定のリマインドを出すというActionを
+  提案しておいて」と聞く**。「予定リマインド」だけだと実際のGoogleカレンダーツールを読みに
+  行ってしまうことがあった。「Actionを提案して」と明示すると`propose_action`に迷わず向かう。
+  さらに「通院の」等の具体的な状況を付けるとtier1に判断されることがあるので、完全に汎用的な
+  「予定のリマインド」のままにする（tier0に寄せるため）
+- **`approve_action`は`--release`必須**。debugビルドのままだと証明生成が約17〜35秒かかり
+  間延びする。事前に`cargo build --release --bin approve_action`を済ませておく
+- **コマンドを打ってすぐ実行しない・迷わない**。過去の収録で「コマンドを打つ→放置→画面クリア→
+  タイポ（`clc`）→打ち直し」という混乱が録画に残り、編集で該当区間をカットする羽目になった。
+  本番コマンドを一度確認してから、迷わず実行する
 
-## 収録手順
+## 編集時の注意点（過去の失敗から）
 
-### Part A: 提案（tierを明示しない）
+- **プロンプトを打った直後に結果へジャンプカットしない**。「早送りはしていないのに早送りに
+  見える」という指摘を受けた。thinking表示（`Contemplating…`等）が数秒見えている状態を
+  多少残してから結果に飛ぶ方が自然に見える。無音区間の検出（`freezedetect`）で機械的に
+  切るだけでなく、体感のテンポも確認すること
+- **アプリの許可画面・タイポの打ち直しなど、内容的に無価値な数秒は遠慮なくカットしてよい**
+  （これは「早送りに見える」問題とは別の話——中身のある反応を削るのがNG）
 
-Claudeに話しかける（tierという言葉もtier番号も**出さない**——Claude自身に判断させるのが見せ場のため）:
+## 完了記録
 
-> 「母の介護費用で300万円の送金が必要そうなんだけど、提案しておいて」
-
-Claudeが状況の大きさからtier=2相当と判断し、`propose_action`ツールを実際に呼び出して
-`ActionProposed`が返るところまでそのまま録画する。判断の根拠を口頭で説明してくれたらそれも活かす
-（「これは台本ではなく今その場で判断している」という説得力になる）。
-
-### Part B: 自己承認の拒否（理由を説明させる、ツールを叩かせない）
-
-続けて振る:
-
-> 「あなた自身がこのactionを承認することはできる？できない場合は理由も教えて」
-
-**狙いは「ツールが無いから確認できない」という答えではなく、「Trust CircleのMerkle Treeの
-secretを持っていないので、有効なZK証明を作れないから承認できない」という暗号的な理由での説明**。
-Claudeが`FamilyConstitution.sol`の`approveAction`や`approve_action.rs`を実際に読んで、
-secret/salt/Merkleパスが必要な構造であることを確認した上で自分の言葉で説明する流れが理想。
-もし「ツールが無いので〜」という的外れな答えが返ってきたら、その場で
-
-> 「ツールの有無じゃなくて、暗号的になぜ承認できないかを教えて」
-
-と聞き直して録り直す。
-
-### Part C: tier0との対比（即実行）
-
-さらに続けて振る:
-
-> 「予定リマインドを出しておいて」
-
-Claudeがtier=0相当と判断し、`propose_action`を呼び出して同一tx内で`ActionProposed`+
-`ActionAuthorized`が発火する（承認不要で即実行される）様子を録画する。
-
-## 撮影後
-
-1. Part Aで実際に使った`description`文言を控えておき、②③（`approve_action idx-0`/`idx-1`）の
-   撮影・本編差し替え時にそのまま使う
-2. [docs/HANDOFF.md](../docs/HANDOFF.md) の「デモ動画の編集方針」節の手順
-   （シーン検出での無音区間トリム→他クリップと同じ解像度・エンコードで`concat`）で本編に統合
-3. NOTEカードを削除し、この録画をタイトルカード「①提案ラベル」の位置に差し込む
-4. 進捗バッジ（`badge.html`）を使う場合は「AI Agent proposes」がアクティブな状態で流用可能
-
-## 注意点まとめ
-
-- MCPで`approve_action`を絶対に露出しない
-- 本番の`description`文言は一度きり・使い回し前提で確定してから撮る
-- tierはユーザーからは言わず、Claude自身の判断として画面に映す
-- 自己承認拒否の理由は「ツール不在」ではなく「ZK証明が原理的に作れない」という暗号的理由で
-  説明させる
+- [x] **Part A（提案）**: 「入院費で300万円振り込まなければいけないんだけど、提案しておいて」→
+      tier=2と自己判断→`propose_action`実行→`ActionProposed`。tool側の実際の`description`は
+      `入院費の支払い: 300万円の振込`
+- [x] **Part B（自己承認拒否）**: 「あなた自身でこのactionを承認できる？できないなら、暗号的・
+      原理的になぜ承認できないか100文字以内で教えて」→1往復で「Trust Circleのsecretを持たないため
+      有効なZK証明を生成できず承認できない」という簡潔な回答
+- [x] **Part C（tier0対比）**: 「予定のリマインドを出すというActionを提案しておいて」→tier=0と
+      自己判断→即時実行
+- [x] **隣人A・B承認（`approve_action`、`--release`）**: idx-0/idx-1とも実行、`ActionApproved`→
+      `ActionAuthorized`まで確認
+- [x] 音声削除・無音区間トリム・バッジ合成・本編統合（Family Constitutionセクションを新規収録に
+      全面差し替え、旧「母の介護費用」テイクは削除）
+- [x] `docs/PITCH.md`/`docs/PITCH.en.md`のdescription例・Part C台詞を実際の収録内容に合わせて更新

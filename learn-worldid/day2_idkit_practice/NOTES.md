@@ -3,10 +3,9 @@
 ## 前提
 
 - Day1のTODO1〜6が終わっていること
-- `learn-worldid/README.md` の「最優先」でSandboxを申請済みであること（未承認でも
-  コードは書き進められます。承認が来たら実機で試す、という順番でOK）
-- Developer Portal（https://developer.world.org/）でアプリを作成済みで、`app_id` を
-  持っていること
+- Developer Portal（https://developer.world.org/）でアプリを作成済みで、`app_id`・
+  `rp_id`・署名鍵を持っていること（完了済み）
+- **Sandboxアプリの実機承認は不要**（2026-09-23、方針変更。下記「なぜこの形になるか」参照）
 
 ## 全体構成（なぜこの形になるか）
 
@@ -15,6 +14,14 @@ FamilyProof本編（`voice_challenge.html`）はサーバー無し・単体HTML�
 （`README.md`の用語集「RP signing」参照）。この制約が、2026-09-21にHANDOFFで
 「実SDK統合は見送り」と判断した直接の理由でした。今回はその制約を実際に体験してみます。
 
+**実機は使いません**（2026-09-23、方針変更）。当初はSandboxアプリ（実機のiOS/Android、
+アプリの承認待ちが発生）でスキャンする想定でしたが、実機World Appの代わりになる
+ブラウザ版シミュレータ（https://simulator.worldcoin.org/）があることが分かったため、
+そちらを使います。`IDKit.request()`に`environment: "staging"`を渡すだけで、
+実機の代わりにこのシミュレータが応答してくれます。RP署名（サーバー側の実装）は
+このstaging環境でも変わらず必要です——「実機が要らない」のであって「サーバーが
+要らない」わけではない点に注意してください。
+
 ```
 [ブラウザ: public/index.html ]
    │ 1. 「証明する」ボタン
@@ -22,8 +29,8 @@ FamilyProof本編（`voice_challenge.html`）はサーバー無し・単体HTML�
 [サーバー: server.js の /api/rp-signature]  ← ここでRP署名を作る（秘密鍵はサーバーだけが持つ）
    │ 2. 署名付きのrp_contextを返す
    ▼
-[ブラウザ: IDKitにrp_contextを渡してリクエスト送信]
-   │ 3. Sandboxアプリでスキャン → proofが返ってくる
+[ブラウザ: IDKitにrp_contextを渡してリクエスト送信（environment: "staging"）]
+   │ 3. simulator.worldcoin.org で応答 → proofが返ってくる（実機不要）
    ▼
 [サーバー: server.js の /api/verify-proof]  ← World公式のv4 verify APIに転送
    │ 4. 検証結果（本人確認OK/NG）
@@ -72,6 +79,5 @@ cp .env.example .env
 
 - 同じ端末で2回証明してみて、`nullifier_hash` が毎回同じ値になることを確認する
   （＝これがFamilyProofの `challenge`/`nullifier` の発想と同じ仕組みだと実感する）
-- Sandboxアプリの承認がまだなら、承認が来るまではここで一旦止めてOKです
 - 終わったら、本番中にどこまでFamilyProofへ本組み込みするか（あるいはQ&A説明用の
   理解だけに留めるか）を一緒に判断しましょう

@@ -9,18 +9,26 @@
   **実際にコードを打つのはあなたです。** JavaScriptは今回が初めてという前提で、
   1行ずつ意味を説明しながら伴走します。詰まったらそのまま聞いてください。
 
-## ⚠️ 最優先で今すぐやること
+## ⚠️ 最優先で今すぐやること（2026-09-23夜 更新: Simulatorを使う方針に変更）
 
-WorldID の Sandbox（旧Simulator、実機Orb無しでテストできる環境）は **アプリの承認に
-時間がかかります**（iOS: TestFlight招待、Android: Google Play非公開テスト、いずれも
-Developer Portal経由の申請→承認待ちが発生）。2日しかないので、**この後の学習を始める前に
-先に申請だけ済ませてください**:
+当初は「Sandboxアプリ（実機のiOS/Android）の承認を先に申請」としていましたが、
+**実機・アプリのインストールが一切不要なブラウザ版シミュレータ**が別にあることが
+判明したため、練習用途ではこちらを使う方針に変更しました:
 
-1. https://developer.world.org/ でDeveloper Portalのアカウントを作る
-2. アプリを1つ作成する（後で `app_id` が発行されます。これはDay2で使います）
-3. Sandboxアクセスを申請する（詳細: https://docs.world.org/world-id/sandbox/sandbox-access）
+- https://simulator.worldcoin.org/ — 実機World Appの代わりになるブラウザツール。
+  リクエスト時に `environment: "staging"` を指定するだけで使える
+- Sandboxアプリの申請（iOS TestFlight / Android Google Play）は**不要**。
+  （2026-09-23、Developer PortalでAndroidタブが選べずiOSしか出ない事象に遭遇したが、
+  この方針変更によりそもそも申請自体が不要になったので解消済み）
+- ただし**RP署名（バックエンドでの`signRequest()`呼び出し）は変わらず必須**。
+  「実機が要らない」だけで、「バックエンドが要らない」わけではない
 
-申請してから、Day1（JS基礎）に進んでください。承認待ちの間に手を動かせます。
+必要なのは以下だけです（Developer Portal自体は既に完了済みのはず）:
+
+1. https://developer.world.org/ でDeveloper Portalのアカウントを作る（済）
+2. アプリを1つ作成し、`app_id`・`rp_id`・署名鍵を取得する（済）
+3. Day2の`server.js`/`public/index.html`のTODOを埋めて、`environment: "staging"`で
+   simulator.worldcoin.orgと繋げてテストする
 
 ## 全体像（用語集）
 
@@ -32,7 +40,8 @@ Developer Portal経由の申請→承認待ちが発生）。2日しかないの
 | **nullifier** | 「App ID + Action」から導出される、その人固有の値。同一人物・同一Actionなら毎回同じ値になる ＝ 二重登録や使い回しを検知できる（`voice_challenge.html`の疑似実装と同じ考え方） |
 | **Verification Level** | Orb（虹彩スキャン済み、最高保証）か Device（スマホの生体認証のみ）かの区別 |
 | **RP signing** | Relying Party（＝あなたのアプリ）がバックエンドの秘密鍵でリクエストに署名する仕組み。2026年時点のIDKitでは**ほぼ必須**（クライアントに秘密鍵を置くと偽造されるため）。これが「Sandboxの前にバックエンドが要る」理由 |
-| **Sandbox** | 本番の身元データに触れず、テスト用のリセット可能なアカウントで統合フローを試せる環境 |
+| **Sandbox** | 本番の身元データに触れず、テスト用のリセット可能なアカウントで統合フローを試せる環境（実機アプリが必要。今回は使わない） |
+| **Simulator** | https://simulator.worldcoin.org/ 。実機World Appの代わりになるブラウザツール。`environment: "staging"`を指定するだけで使え、アプリの承認待ちが不要。今回の練習で実際に使うのはこちら |
 
 WorldIDの世界観がFamilyProof本編とどう繋がるかは `docs/HANDOFF.md` の
 「🆕 第2の差別化ポイント」節と `docs/SPEC.md` §7 Step5 に書いてあります
@@ -41,8 +50,8 @@ Day2のIDKit実装が腑に落ちやすいはずです。
 
 ## 2日間ロードマップ
 
-### Day 1（今日）: JS基礎 + 申請待ち
-- [ ] 上記「最優先」のSandbox申請を出す
+### Day 1（今日）: JS基礎
+- [x] Developer Portalでアカウント作成・アプリ作成（`app_id`/`rp_id`/署名鍵取得、完了済み）
 - [ ] `day1_js_basics/README.md` の小さい練習問題をこなす（`const`/`let`、関数、
       アロー関数、`async`/`await`、`fetch`、JSONの読み書き — IDKit統合で必ず使う分だけに絞ってあります）
 - [ ] （余裕があれば）`voice_challenge.html` を読んで、すでにある疑似WorldID実装が
@@ -52,7 +61,9 @@ Day2のIDKit実装が腑に落ちやすいはずです。
 - [ ] `day2_idkit_practice/NOTES.md` を読んで全体の流れを掴む
 - [ ] `day2_idkit_practice/server.js` のTODOを埋めて、RP署名エンドポイントを自分で書く
 - [ ] `day2_idkit_practice/public/index.html` のTODOを埋めて、IDKitウィジェットを組み込む
-- [ ] Sandboxアプリでスキャンして、実際にproofが返ってくるところまで確認する
+      （`environment: "staging"`を指定するのを忘れずに）
+- [ ] https://simulator.worldcoin.org/ を開いた状態でリクエストを送り、実際にproofが
+      返ってくるところまで確認する（実機・Sandboxアプリは不要）
 - [ ] 終わったら本番当日にどこまでFamilyProofに組み込むか（またはQ&A説明だけに留めるか）を判断する
 
 ## 参考リンク（2026-09-23確認済み）

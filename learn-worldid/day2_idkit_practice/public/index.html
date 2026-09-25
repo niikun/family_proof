@@ -76,14 +76,17 @@
     // -----------------------------------------------------------
 
 
-    outputEl.textContent = "2. WorldIDにリクエストを送信しています...(Sandboxアプリでスキャンしてください)";
+    outputEl.textContent = "2. WorldIDにリクエストを送信しています...(別タブでhttps://simulator.worldcoin.org/を開いて応答してください)";
 
     // -----------------------------------------------------------
     // TODO 2: IDKit.request() でリクエストを作り、pollUntilCompletion() で結果を待つ
+    // 実機・Sandboxアプリは不要。environment: "staging" を指定すると、代わりに
+    // https://simulator.worldcoin.org/ （ブラウザ版シミュレータ）が応答してくれる。
     // ヒント:
     //   const request = await IDKit.request({
     //     app_id: APP_ID,
     //     action: ACTION,
+    //     environment: "staging",  // ← これが無いと実機を探しに行ってしまう
     //     rp_context: rpContext,   // TODO1で取得したもの
     //   }).preset(orbLegacy({ signal: "learn-worldid-user" }));
     //   const completion = await request.pollUntilCompletion();

@@ -223,7 +223,7 @@ Family Constitution (tiered Action Authorization):
 
 * `FamilyConstitution.sol`: `proposeAction` / ZK-backed `approveAction` / tier-based auto-execution / `ActionAuthorized` / double-approval prevention / challenge-mismatch protection / agent-only proposal rights. All unit tests passing
 * `propose_action.rs` / `approve_action.rs` (Action proposal/approval CLIs)
-* **Deployed to production World Chain Sepolia**: `FamilyConstitution` = `0xf7f344E9399638b69DF158877F1e77a39A5F3D73`
+* **Deployed and verified on World Chain Sepolia**: `FamilyConstitution` = `0xf7f344E9399638b69DF158877F1e77a39A5F3D73`
 * Tier 0 (instant execution) / Tier 1 (1 approval) / Tier 2 (2 approvals, from two different members producing two different nullifiers) demonstrated end-to-end on-chain
   (tx: propose `0xc76a25bfad576afa5605871b650e145f3d5ddd0ea9a2d66c68f44d4a3407ab45` / approval 1 `0xa421b7f1b18c082c5f4f1df5da8f123df8f580fd32d0c71a72d7fa77075c4b1e` / approval 2 `0xdfee0dd25f7476912714fd5b33395d1854fbf7d8e4291841d6b6c589a03d30e0`)
 * `propose_action` wrapped as an MCP server, so Claude itself, playing the AI Agent role, can send on-chain transactions via a real tool call (callable directly from Claude Code as `mcp__family-proof__propose_action`; `approve_action` isn't wrapped as an MCP tool yet — it's still run manually via the CLI)
@@ -336,6 +336,7 @@ Instead of exposing anyone's identity, it cryptographically verifies
 * Family Constitution's tier→threshold mapping is a contract constant; self-governance by the Trust Circle is not implemented
 * The demo's World ID integration (AI voice-clone defense) is a proof-of-concept mock, not the real SDK. The production design has been validated (RP-signing + v4 verify API) but not implemented
 * Groth16/BN254 is theoretically breakable by Shor's algorithm (migrating to a post-quantum-secure proof system is out of scope)
+* Family Constitution's approval flow (`FamilyConstitution.approveAction`) currently verifies the Groth16 proof and checks for a duplicate nullifier scoped to that single Action — it does not route through `FamilyRegistry`'s RLN leak-detection state (`PotentialLeak`). A production deployment would need its own RLN instance for Action Authorization, explicitly integrated with the Registry's revocation/leak handling
 
 ---
 

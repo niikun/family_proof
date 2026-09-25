@@ -228,7 +228,7 @@ Family Constitution（tier別Action Authorization）:
 
 * `FamilyConstitution.sol`: `proposeAction` / ZK-backed `approveAction` / tier別自動実行 / `ActionAuthorized` / 二重承認防止 / challenge不一致防御 / AI Agent限定の提案権限。ユニットテスト全緑
 * `propose_action.rs` / `approve_action.rs`（Action提案・承認CLI）
-* **本番 World Chain Sepolia にデプロイ済み**: `FamilyConstitution` = `0xf7f344E9399638b69DF158877F1e77a39A5F3D73`
+* **World Chain Sepolia に実際にデプロイ・実証済み**: `FamilyConstitution` = `0xf7f344E9399638b69DF158877F1e77a39A5F3D73`
 * tier0（即時実行）/ tier1（承認1人）/ tier2（承認2人、異なるメンバーで異なるnullifierになることまで確認）を実チェーン上で一気通貫実証済み
   （tx: propose `0xc76a25bfad576afa5605871b650e145f3d5ddd0ea9a2d66c68f44d4a3407ab45` / approve 1人目 `0xa421b7f1b18c082c5f4f1df5da8f123df8f580fd32d0c71a72d7fa77075c4b1e` / approve 2人目 `0xdfee0dd25f7476912714fd5b33395d1854fbf7d8e4291841d6b6c589a03d30e0`）
 * `propose_action` の MCP サーバー化: AI Agent役を Claude 自身が実際のツール呼び出しでオンチェーン送信するところまで担う（`mcp__family-proof__propose_action`としてClaude Codeから直接呼び出し可能。`approve_action`のMCPツール化は未着手、CLIでの手動実行のみ）
@@ -341,6 +341,7 @@ FamilyProof が目指すのは、AI時代の新しいTrust Circleです。
 * Family Constitution の tier→閾値マッピングはコントラクトの定数で、Trust Circle自身によるガバナンスは未実装
 * デモのWorld ID連携（AI音声クローン対策）は実SDKではなく概念実証のモック。本番実装の設計は確認済み（RP署名 + v4 verify API）だが未実装
 * Groth16/BN254は理論上Shorのアルゴリズムで破られうる（量子耐性のある証明系への移行はスコープ外）
+* Family Constitutionの承認処理（`FamilyConstitution.approveAction`）は現在、`FamilyRegistry`のRLN漏洩検知状態（`PotentialLeak`）を経由せず、Groth16 proofとAction単位のnullifier重複チェックのみで完結している。実運用ではAction Authorization用のRLNインスタンスと、Registry側の失効・漏洩検知を明示的に統合する必要がある
 
 ---
 

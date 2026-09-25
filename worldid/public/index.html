@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>familyproof-voice-challenge</title>
+<style>
+  body {
+    margin: 0;
+    padding: 24px 16px 48px;
+    background: #0f1216;
+    color: #e8eaed;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Hiragino Sans, "Noto Sans JP", sans-serif;
+  }
+  .wrap { max-width: 640px; margin: 0 auto; }
+  h1 { font-size: 20px; }
+  .sub { color: #8a929e; font-size: 13px; line-height: 1.6; }
+  button {
+    margin-top: 16px;
+    padding: 10px 16px;
+    background: #2563eb;
+    border: none;
+    border-radius: 6px;
+    color: white;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .output {
+    margin-top: 16px;
+    padding: 12px;
+    background: #171b21;
+    border: 1px solid #2a2f38;
+    border-radius: 6px;
+    font-size: 12px;
+    font-family: monospace;
+    word-break: break-all;
+    white-space: pre-wrap;
+    min-height: 20px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>familyproof-voice-challenge</h1>
+  <p class="sub">
+    ETHGlobal提出物とは無関係の学習用ページです。Sandboxアプリでスキャンして
+    nullifier_hashが返ってくるところまでを体験します。
+  </p>
+  <button id="proveBtn">World IDで証明する</button>
+  <div class="output" id="output">まだ実行していません</div>
+</div>
+
+<script type="module">
+
+  import { IDKit, orbLegacy } from "https://esm.sh/@worldcoin/idkit-core";
+
+
+  const APP_ID = "app_91d0df3badaff1ca70f7064ed5433114";
+  const ACTION = "familyproof-call-check"; 
+
+  const outputEl = document.getElementById("output");
+
+  document.getElementById("proveBtn").addEventListener("click", async () => {
+    outputEl.textContent = "1. サーバーにRP署名をもらいに行っています...";
+
+ 
+    const url = "/api/rp-signature";
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({action:ACTION})
+    });
+    const rpContext = await res.json();
+
+    outputEl.textContent = "2. WorldIDにリクエストを送信しています...(Sandboxアプリでスキャンしてください)";
+
+    
+    const request = await IDKit.request({
+      app_id: APP_ID,
+      action: ACTION,
+      rp_context:rpContext,
+      allow_legacy_proofs: false,
+    }).preset(orbLegacy({ signal: "learn-world-user"}));
+    
+    outputEl.textContent = "2. 下のリンクをスマホのSandboxアプリで開いてください:\n" + request.connectorURI;
+
+    const completion = await request.pollUntilCompletion();
+    const {success, result} = completion;
+
+
+    outputEl.textContent = JSON.stringify(result, null, 2);
+    const verifyRes = await fetch("/api/verify-proof",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ IDKitResponse: result }),
+    });
+    const verifyData = await verifyRes.json();
+    outputEl.textContent += "\n\n検証結果:\n" + JSON.stringify(verifyData, null, 2);
+  });
+</script>
+</body>
+</html>

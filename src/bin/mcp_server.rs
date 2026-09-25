@@ -32,6 +32,7 @@ impl FamilyProofServer {
                 &params.0.description,
                 &params.0.tier.to_string(),
             ])
+            .current_dir(env!("CARGO_MANIFEST_DIR"))
             .output()
             .expect("failed to propose action as MCP");
         

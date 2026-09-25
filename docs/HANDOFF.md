@@ -1,6 +1,6 @@
 # HANDOFF — 別PCへの引き継ぎ
 
-最終更新: 2026-09-23（Step 7 ①〜④・README/PITCH/提出文整備・シーン3カット確定に加え、**MCP化のStep 5（`mcp_server`再接続）が解消し、`propose_action`のMCPツール化が完了・動作確認済み**（`approve_action`のMCPツール化は引き続き未着手、詳細は下記「🆕 MCP化の進め方」節）。これに伴い`README.md`/`README.en.md`/`docs/PITCH.md`/`docs/PITCH.en.md`/`docs/SUBMISSION.en.md`を、MCP（`propose_action`のみ）がイベント前に完了した扱いに更新済み（Continuity Trackの「イベント中に新規実装」欄は最終リハーサル・動画・提出文の仕上げのみに変更、詳細は下記「🆕 README/PITCH/提出文の整備」節）。デモ動画は`family_proof_rough_cut_v3.mp4`まで進行、未収録だったClaude会話・攻撃者失敗・自己承認失敗・tier0対比の一部と見られる新クリップ（`partA_propose.mp4`/`partB_selfrefusal.mp4`/`partC_tier0.mp4`等）も追加済み（未コミット、詳細は下記「🆕 デモ動画の編集方針」節）。残りは`approve_action`のMCPツール化（任意）・未収録箇所の撮影完了確認・ナレーション収録・最終合成） / ブランチ: `main` / remote: `git@github.com:niikun/family_proof.git`
+最終更新: 2026-09-23（Step 7 ①〜④・README/PITCH/提出文整備・シーン3カット確定に加え、**MCP化のStep 5（`mcp_server`再接続）が解消し、`propose_action`のMCPツール化が完了・動作確認済み**（`approve_action`のMCPツール化は引き続き未着手、詳細は下記「🆕 MCP化の進め方」節）。これに伴い`README.md`/`README.en.md`/`docs/PITCH.md`/`docs/PITCH.en.md`/`docs/SUBMISSION.en.md`を、MCP（`propose_action`のみ）がイベント前に完了した扱いに更新済み（Continuity Trackの「イベント中に新規実装」欄は最終リハーサル・動画・提出文の仕上げのみに変更、詳細は下記「🆕 README/PITCH/提出文の整備」節）。**デモ動画は完成し、`demo/family_proof_rough_cut.mp4`（2分40秒、Family Constitution先出し構成）に統合済み**。Claude会話（提案+自己承認拒否）・`approve_action`の`--release`撮り直し・tier0対比まで収録・トリミング・バッジ合成・本編統合が完了（攻撃者の`approve_action`失敗のみ未収録・優先度低）。編集方法はPlaywright不使用でffmpeg+Python(Pillow)のみに変更（詳細は下記「🆕 デモ動画の編集方針」節）。残りは`approve_action`のMCPツール化（任意）・ナレーション原稿の新構成への更新・収録・Canvaでの最終合成） / ブランチ: `main` / remote: `git@github.com:niikun/family_proof.git`
 
 > ✅ **Step 6 コア完了（Verifier/Registry/テスト/calldata変換/World Chain Sepoliaデプロイ済み）**。デプロイ済みアドレスは下記「Step 6」節参照（`FamilyRegistry` は `0xa9f1A920...` が正、`0xD06FcbB5...` は重複デプロイの旧アドレスで放置）。追加拡張A/B/Cも完了（下記「残り期間での追加拡張」節）。
 > **🆕 Step 7（Trust Circle / Family Constitution 拡張）を正式採用し、2026-09-21 夜から着手済み**（設計は [SPEC.md §11](SPEC.md) 完了）。進捗は下記「いまどこ」節参照。Claude はコーチのみ、設計を書いただけでコードは書いていない — 実装は引き続きユーザーが行う。
@@ -322,72 +322,79 @@ MCP化（`propose_action`）が本番前に完了したことで条件が満た�
 - [ ] Day2: `day2_idkit_practice/server.js`・`public/index.html`のTODOを埋めて動作確認
 - [ ] 練習の進捗を踏まえて、本番中にWorld ID実SDK統合へ挑戦するか最終判断
 
-### 🆕 デモ動画の編集方針（2026-09-23、進行中）
+### 🆕 デモ動画の編集方針（2026-09-23、Family Constitution先出し版で完了）
 
-デモ動画は`demo/`ディレクトリで編集中。**2026-09-23時点で`family_proof_rough_cut_v2.mp4`→`v3.mp4`まで更新が進んでいる**（v1の`family_proof_rough_cut.mp4`は残っているが最新ではない）。編集用のソース一式（`cards.html`/`badge.html`/Playwrightスクリプト/ffmpegコマンド）はこのセッションのスクラッチ領域にあり、リポジトリには含めていない（再現手順は下記に残す）。
+デモ動画は`demo/family_proof_rough_cut.mp4`（**2分40秒、無音、2026-09-23完了**）。
+未収録3+1箇所（Claudeとの実際の会話・自己承認拒否・tier0対比・隣人承認の`--release`撮り直し）の
+収録と、Family Constitution先出しへの並び替えまですべて完了・本編統合済み。
+編集は**Playwright/HTMLを使わず、ffmpeg + Python(Pillow)のみで完結**する方式に変更した
+（後述「技術的な作り方」）。旧方針（xterm.jsモック・Playwrightでのカード生成）は不採用のまま。
 
-**基本方針（確定）**:
-1. **本物の画面録画を無加工で使う。合成・モックのターミナル再現は不採用**。当初Claude側でxterm.js（本物のターミナルエンジン）を使った完全モックのデモ動画を作ったが、見た目をどれだけ本物に近づけても「作り物っぽい」（ユーザー評）という結論になり、**ユーザー自身が実際のWindows Terminal（WSL）で本物のコマンドを実行し、画面録画したものに全面的に切り替えた**。合成モック版は不採用・破棄（作り方自体はxterm.js＋Playwright＋ffmpegの組み合わせとして技術メモに残す価値はあるが今回は使っていない）
-2. **本物の映像そのものには一切加工（色調補正等）を加えない**。説明が必要な部分は、クリップとクリップの間に**黒背景のシンプルなタイトルカード**を挟む形にする（本物の映像の中身を合成物とすり替えない、という一線を守る）
-3. **半透明の進捗バッジは「本物の映像の上に別レイヤーとして重ねる」形なら許容**（2026-09-23、方針を1段階緩和）。方針2の「無加工」はターミナル画面そのものを偽装・改変しないという意味であり、画面の隅に別要素として重ねる情報オーバーレイ（スポーツ中継のスコアボードのようなもの）は別物と整理。詳細は下記「進捗バッジ」参照
-4. **無音区間はジャンプカットで詰める、倍速にはしない**。`Enter keystore password:`で待っている無音区間（20秒前後）はffmpegのシーン検出（`select='gt(scene,0.01)'`）で前後の切り替わりタイムスタンプを検出し、単純にカット＆結合。ETHGlobalの動画ルール「倍速禁止」に抵触しないよう、速度を変える処理は一切していない
-5. **字幕・テロップはルール上問題ない**。ETHGlobalが禁止しているのは「テキストのみ＋音楽」（実演もナレーションも無い動画）であって、本物の実演に字幕を添えるのは通常の編集であり問題ない
-6. **英語を主・日本語を副に統一**（2026-09-23、ユーザー判断）。本番の実演自体は日本語で話す前提なので、画面のテキストは音声ではカバーされない英語話者向けの情報源として機能させる。全カード・Trust Circle図のノードラベルまで含めて、英語の見出し（大きく）＋日本語の補足（小さく）という構成に統一
-7. **配色は緑一色に統一**（2026-09-23、ユーザー判断）。当初は緑（Trust Circle/成功）＋紫（AI Agent）の2色だったが、**本物のターミナル録画自体がすでに緑を使っている**（プロンプト・`status: 1 (success)`等）ため、タイトルカード側も紫をやめて緑一色に統一し、実写パートとの視覚的連続性を確保。AI Agentは色を変える代わりに、破線の枠線・破線の接続線で視覚的に区別している
+**基本方針（確定・変更なし）**:
+1. **本物の画面録画を無加工で使う。合成・モックのターミナル再現は不採用**。ユーザー自身が実際のWindows Terminal（WSL）で本物のコマンドを実行し、画面録画したものだけを使う
+2. **本物の映像そのものには一切加工（色調補正等）を加えない**。説明はクリップ間の**黒背景タイトルカード**で行う
+3. **半透明の進捗バッジは「本物の映像の上に別レイヤーとして重ねる」形なら許容**（画面の隅の情報オーバーレイはターミナル画面の偽装とは別物）
+4. **無音区間はジャンプカットで詰める、倍速にはしない**。`freezedetect`（後述）で機械的に検出しつつ、体感のテンポも必ず目視確認する（下記「トリミングの落とし穴」参照）
+5. **字幕・テロップはルール上問題ない**。ETHGlobalが禁止しているのは「テキストのみ＋音楽」（実演もナレーションも無い動画）
+6. **英語主・日本語副**、**配色は緑一色**（実写ターミナルの緑と統一）
 
-**Trust Circle図（オープニング直後に挿入、3段階の展開アニメーション、ユーザー提案）**:
-  1. You + Family のみ（血縁だけの伝統的な家族像）
-  2. + Trusted Neighbor + Friends/Supporters（Trust Circleが形成される、点線の楕円で囲む）
-  3. + AI Agent（**Trust Circleの点線の輪の外側に配置**、破線の接続線で繋がる「Delegate」として描画）
+**技術的な作り方（2026-09-23改訂、Playwright不使用）**:
+- ffmpeg本体は`pip`ではなく`imageio-ffmpeg`パッケージ経由でsudo不要で調達（スクラッチ領域にvenvを作成: `python3 -m venv venv && venv/bin/pip install imageio-ffmpeg`、実行ファイルは`venv/lib/python3.14/site-packages/imageio_ffmpeg/binaries/ffmpeg-linux-x86_64-*`）
+- **タイトルカード・進捗バッジは HTML/Playwright ではなく Python + Pillow (PIL) で直接PNG生成**。ダークネイビーのグラデーション背景・緑の丸数字・白の太字タイトル・小さい緑のサブタイトル、というスタイルをPillowの`ImageDraw`で再現（フォントは`/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf`。丸数字は`①②③`等のUnicode文字ではなくDejaVu/Liberationにグリフが無いため、円を`draw.ellipse`で描いてから普通の数字`"1"`を重ねる方式にする）
+  - 生成スクリプトは**このセッションのスクラッチ領域のみにあり、リポジトリには含めていない**（`cards.html`/`badge.html`時代と同じ状況）。再現する場合は同じ設計（PIL, 1920x1080, グラデーション背景, 緑`#34d399`系統）で作り直す
+  - 進捗バッジは4状態（AI Agent proposes / Human #1 approves / Human #2 approves / Action Authorized）を個別PNGとして書き出し、アクティブ行には**薄い緑のハイライトボックス**（`(34,139,74,90)`程度のRGBA）を敷く。最終状態（Authorized）のみ濃い緑の実線ハイライト
+- 各カードPNG・バッジPNGは`ffmpeg -loop 1 -i card.png -f lavfi -i anullsrc=... -t <秒> -r 30 ...`で無音動画化してから他クリップとconcatする
+- バッジの実写への合成は`ffmpeg -i clip.mp4 -i badge.png -filter_complex "[0:v][1:v]overlay=W-w-40:H-h-40:enable='between(t,a,b)'"`。複数状態を1クリップ内で切り替える場合は`overlay`を連鎖させ、各段に`enable`の時間条件を与える
+- 実写クリップは`scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2`で解像度統一、最終結合前に全クリップを`-r 30 -c:a aac`＋`anullsrc`の無音トラックで揃えてから`concat`demuxerで結合、`-c:v libx264 -crf 18`で再エンコード（`-c copy`はタイムスタンプ不整合が出るため不可）
 
-  3.の「AIを輪の外側に置く」設計は、単なる見た目の工夫ではなく、**プロジェクトの核心的な設計方針（AIはTrust Circleの対等なメンバーではなく代理人）を図として正確に反映**したもの（ユーザー指摘により実現）。
+**実写クリップのトリミング方法**:
+1. `ffmpeg -i clip.mp4 -vf "freezedetect=n=-60dB:d=1.5" -an -f null -`で、画面が1.5秒以上変化しない区間（`freeze_start`/`freeze_end`）を機械的に検出する
+2. `select='between(t,a1,b1)+between(t,a2,b2)+...',setpts=N/FRAME_RATE/TB`で残したい区間だけを繋ぎ直す
 
-**フロー図カード（Family Constitution導入の直後に挿入、ユーザー提案）**: `AI Agent proposes → Tier 2 → Human #1 approves → Human #2 approves → ✓ Action Authorized`を横並びの5ボックス＋矢印で示す、シンプルな一枚絵。実写クリップに入る前に全体の流れを一目で見せる狙い。
+**トリミングの落とし穴（2026-09-23に複数回踏んだ）**:
+- **`freeze`区間は「何かが起きる前の待ち」と「結果が出た後の静止表示」の両方を意味しうる**。後者を機械的にカットすると、まさに見せたい結論（最終回答・`ActionAuthorized`表示等）を消してしまう。`freezedetect`のログだけで判断せず、**`fps=1,tile=...`で等間隔サムネイルを並べて目視確認**してから区間を決めること
+- **`-ss`を`-i`より前に置く高速シークは不正確**（キーフレーム丸め込みで数秒ズレることがある）。特定時刻の内容を正確に確認したいときは`-i`の後に`-ss`を置く低速・正確シークを使う
+- **カットしすぎるとテンポが「早送りしていないのに早送りに見える」状態になる**。プロンプト入力直後に結果へジャンプするのではなく、thinking表示が数秒見えている状態を残してから飛ぶ方が自然。無音判定だけで機械的に詰めすぎない
+- **内容的に無価値な数秒（アプリの許可画面、コマンドのタイポ・打ち直し）は遠慮なくカットしてよい**。これは上記の「テンポが早送りに見える」問題とは別軸（中身のある反応を削るのがNG、無価値な操作ミスを削るのはOK）
+- **本番でMCPサブプロセスを別ディレクトリから起動する場合、`cargo run`は明示的に`.current_dir(...)`を指定しないと`Cargo.toml`が見つからず`exit status 101`で失敗する**（詳細は下記MCP節・`mcp_server.rs`参照）。撮影前にツールが正常に動くか必ず確認する
 
-**進捗バッジ（Family Constitutionの実写3クリップに合成、2026-09-23追加）**: 画面右下に半透明パネルで現在のステップをハイライト表示する透過オーバーレイ。
-  - `propose`クリップ → 「AI Agent proposes」がアクティブ
-  - `approve idx-0`クリップ → 「Human #1 approves」がアクティブ（完了済みステップには✓）
-  - `approve idx-1`クリップ → 前半は「Human #2 approves」がアクティブ、**実写側に`🎉 ActionAuthorized!`が表示される瞬間（シーン検出で11.5秒地点と特定）に合わせてバッジも「✓ Action Authorized」に切り替わる**（ffmpegの`overlay`フィルタを`enable='between(t,...)'`で時間分割）
-  - 文字サイズは大きめ（本文23px、最終ステップ26px）、アクティブ行は緑のハイライトボックス＋▶マーカーで強調（ユーザーからの3点フィードバックで調整済み: 文字を大きく／現在地を分かりやすく／Authorizedを分かりやすく）
-  - 透過PNGはPlaywrightの`page.screenshot({omitBackground:true})`で生成し、`ffmpeg overlay=W-w-40:H-h-40`で右下に合成
+**Trust Circle図・フロー図カード**: オープニング直後に3段階のTrust Circle展開図、Family Constitution導入直後に5ステップのフロー図を挿入（内容は変更なし、生成方法のみPILベースに統一）。
 
-**技術的な作り方**: HTML/CSS/SVGでカード・バッジをデザイン → Playwright（`chromium.launch`、`--no-sandbox`）でheadless renderしスクリーンショット化 → 各カードを画像→固定尺の無音動画に変換（`anullsrc`で無音トラックを合成、実写クリップと音声トラックの形式を揃えるため）→ 実写クリップ（`ffmpeg -vf scale=1920:1080:force_original_aspect_ratio=decrease,pad=...`で解像度統一）と`concat`で結合。ffmpeg本体は`pip`ではなく`imageio-ffmpeg`パッケージ経由でsudo不要で調達（スクラッチ領域にvenvを作成）。
+**現在の構成（2026-09-23、Family Constitution先出し版、2分40秒）**:
+```
+オープニング → Trust Circle図(3段階) → 「Family Constitution」導入 → フロー図(5ステップ)
+→ ①AI Agent proposes（Claudeとの実際の会話: 提案→自己承認拒否、バッジ付き）
+→ ②Neighbor A approves（`approve_action idx-0`実写、バッジ付き）
+→ ③Neighbor B approves → ActionAuthorized（`approve_action idx-1`実写、バッジが緑に切替）
+→ ④Low risk? AI acts alone（tier0対比の実写、バッジなし）
+→ 橋渡しカード「Trust needs proof. Here's the cryptography.」
+→ シーン1（`submit_demo -- 00`）→ シーン2（`submit_demo -- 11` + notifierのPotentialLeak検知）
+→ VISION締め（「Family isn't an attribute. It's a relationship.」）
+```
+Family ConstitutionをRLNデモより先に出す構成にした理由・PITCH.mdとの対応は
+[docs/PITCH.md §1](PITCH.md) 冒頭の改訂メモを参照。
 
-**実写クリップのトリミング方針**: `ffmpeg -vf "select='gt(scene,0.01)',showinfo"`でシーン変化のタイムスタンプを検出 → パスワード待ちの無音区間を切り出して除去 → 前後を`concat`demuxerで結合、`-c:v libx264 -crf 18`で再エンコード（`-c copy`だとタイムスタンプ不整合が出たため）。
-
-**ファイル構成（2026-09-23夜時点、`git status`より・未コミット）**: `demo/clips/`に当初の5本に加え、以下が新規追加されている（ファイル名から下記「未収録3箇所」の一部に対応するとみられるが、`family_proof_rough_cut_v3.mp4`への統合状況はユーザー確認待ち）:
+**ファイル構成（2026-09-23夜時点）**:
 ```
 demo/
-  family_proof_rough_cut.mp4      # v1（旧版）
-  family_proof_rough_cut_v2.mp4   # v2
-  family_proof_rough_cut_v3.mp4   # v3（2026-09-23時点で最新）
+  family_proof_rough_cut.mp4      # 最新（2分40秒、git管理する）
   narration_script.md
-  scene1_shooting_script.md       # 撮影台本（新規、未コミット）
-  clips/
-    scene1_submit_demo_00_trimmed.mp4        # 既存5本
+  scene1_shooting_script.md       # 撮影記録（完了・撮り直し手順として保持）
+  clips/                          # 本編素材（git管理する）
+    scene1_submit_demo_00_trimmed.mp4
     scene2_submit_demo_11_trimmed.mp4
-    scene3_propose_action_trimmed.mp4
-    scene3_approve_action_idx0_trimmed.mp4
-    scene3_approve_action_idx1_trimmed.mp4
-    scene1_propose_ai_trimmed.mp4            # 新規（未コミット）
-    scene1_propose_ai_trimmed_30fps.mp4       # 新規（未コミット）
-    scene_approve_idx0_trimmed.mp4            # 新規（未コミット）
-    scene_approve_idx1_trimmed.mp4            # 新規（未コミット）
-    partA_propose.mp4                         # 新規（未コミット、①Claude会話に対応？）
-    partB_selfrefusal.mp4                     # 新規（未コミット、③自己承認失敗に対応？）
-    partC_tier0.mp4                           # 新規（未コミット、④tier0対比に対応？）
-  raw/                          # 無加工の巨大オリジナル（.gitignore済み、370MB超）
+    partAB_badged.mp4              # Claude会話（提案+自己承認拒否、バッジ付き）
+    approve_idx0_badged.mp4        # 隣人A承認（--release、バッジ付き）
+    approve_idx1_badged.mp4        # 隣人B承認（--release、バッジ付き→Authorized）
+    partC_trimmed.mp4              # tier0対比（バッジなし）
+  raw/                             # 無加工オリジナル（.gitignore済み、1GB超）
 ```
 `.gitignore`に`demo/raw`を追加済み。
 
-**旧「現在のラフカット構成（v1、2分26秒・無音）」**（参考として残す。v2/v3での構成変更内容は未記録、次回セッションでユーザーに確認・追記要）:
-オープニング → Trust Circle図（3段階）→ シーン1ラベル+実写（`submit_demo -- 00`）→ シーン2ラベル+実写（`submit_demo -- 11`+notifierのPotentialLeak検知、タブ切り替えが1本の録画に自然に収まっている）→ Family Constitution導入 → フロー図（5ステップ一覧）→ ①提案ラベル+実写（`propose_action`、進捗バッジ付き）→ ②隣人A承認ラベル+実写（`approve_action idx-0`、進捗バッジ付き）→ ③隣人B承認ラベル+実写（`approve_action idx-1`、進捗バッジが`ActionAuthorized`に切り替わる）→ NOTE（未収録の注記）→ クロージング
-
 **残タスク**:
-- [ ] **未収録3箇所の撮影・統合状況の確認**: (1) Claudeとの実際の会話（提案の判断）、(2) 攻撃者の`approve_action`失敗、(3) Claude自身の自己承認失敗、(4) tier0（即時実行）との対比。上記の新規クリップ（`partA_propose.mp4`等）が対応する撮影の成果物とみられるが、**v3への統合・NOTEカード削除が完了しているかは次回セッションでユーザーに確認**
-- [ ] **ナレーション収録**: `demo/narration_script.md`の原稿に沿って、ユーザー自身の声で読み上げ録音（AIナレーションはETHGlobal規約で禁止のため不可）
-- [ ] **Canvaでの最終合成**: 画像/実写クリップの並びが固まったら、Canvaで音声トラックを重ねる
-- [ ] **（任意）進捗バッジの新規クリップへの展開**: 同じ進捗バッジの仕組み（`badge.html`のstate切り替え）を新規クリップにも流用できる
+- [ ] **ナレーション収録**: `demo/narration_script.md`の原稿は旧構成（RLN先出し）向けのままなので、新しい並び順（Family Constitution先出し）に合わせて尺・順番を更新してから読み上げ録音する必要がある（AIナレーションはETHGlobal規約で禁止）
+- [ ] **Canvaでの最終合成**: 画像/実写クリップの並びは固まったので、Canvaで音声トラックを重ねる
+- [ ] （任意）攻撃者の`approve_action`失敗シーンは未収録のまま（優先度低、時間が余れば）
 
 ### 🆕 ピッチ再定義: Trust Circle を前面に出す（2026-09-21 深夜、完了）
 

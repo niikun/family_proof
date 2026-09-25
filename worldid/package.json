@@ -1,0 +1,14 @@
+{
+  "name": "learn-worldid-day2",
+  "private": true,
+  "type": "module",
+  "description": "WorldID/IDKit練習用（FamilyProof本編の提出物ではありません）",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "@worldcoin/idkit-server": "latest",
+    "dotenv": "^16.4.5"
+  }
+}
