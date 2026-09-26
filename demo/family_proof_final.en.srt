@@ -1,0 +1,142 @@
+1
+00:00:00,589 --> 00:00:04,526
+Proving a new form of family — not limited by blood.
+
+2
+00:00:04,585 --> 00:00:07,747
+Family has traditionally been defined by blood.
+
+3
+00:00:07,797 --> 00:00:11,930
+But trusted neighbors and friends can be family too.
+
+4
+00:00:11,984 --> 00:00:15,147
+And here, an AI joins as an agent.
+
+5
+00:00:16,074 --> 00:00:18,511
+Let's walk through a concrete example.
+
+6
+00:00:18,651 --> 00:00:30,115
+Say we need to pay ¥3M in hospital fees, and we ask Claude to handle it.
+Claude judges it a high-value transfer and sets Tier 2 — two approvals required.
+
+7
+00:00:31,316 --> 00:00:41,443
+Can Claude approve this on its own? The answer is no.
+An AI holds no secret, so it can't create a ZK proof.
+
+8
+00:00:44,700 --> 00:00:49,400
+Now, Neighbor A approves this proposal.
+
+9
+00:00:53,900 --> 00:00:59,000
+But that's only the first approval.
+The threshold isn't reached, so it doesn't execute yet.
+
+10
+00:01:02,167 --> 00:01:04,643
+Then Neighbor B approves the same proposal —
+
+11
+00:01:04,693 --> 00:01:12,242
+With the second approval the threshold is met,
+and only then is it executed.
+
+12
+00:01:16,687 --> 00:01:19,813
+On the other hand, for a low-risk action —
+
+13
+00:01:19,992 --> 00:01:26,583
+Asked to "send a schedule reminder", Claude judges the impact small and picks Tier 0.
+
+14
+00:01:26,964 --> 00:01:30,228
+No approval needed — the AI can act on its own.
+
+15
+00:01:34,683 --> 00:01:37,893
+So how is this trust actually proven?
+
+16
+00:01:37,992 --> 00:01:41,398
+Proving you're family without revealing the secret.
+
+17
+00:01:41,885 --> 00:01:47,471
+Without revealing the secret at all,
+a ZK proof shows you are a member of the family.
+
+18
+00:01:47,957 --> 00:01:51,331
+On the testnet, verification succeeds.
+
+19
+00:01:55,803 --> 00:01:58,536
+But what if the secret is stolen?
+
+20
+00:01:58,805 --> 00:02:06,264
+With the same secret, a second proof is sent for a different challenge.
+On-chain, this one passes too.
+
+21
+00:02:10,838 --> 00:02:17,587
+But the notifier compares the two proofs
+and mathematically recovers the secret itself.
+
+22
+00:02:17,812 --> 00:02:21,000
+A stolen secret works against the attacker the more it is used.
+
+23
+00:02:26,168 --> 00:02:29,086
+During the event, we built protection against impersonation.
+
+24
+00:02:29,165 --> 00:02:35,788
+A call between Mom and her "daughter". The voice sounds identical —
+but it could be an AI voice clone.
+
+25
+00:02:36,403 --> 00:02:42,293
+Mom picks a passphrase on the spot,
+and the daughter binds it into her World ID proof.
+
+26
+00:02:43,595 --> 00:02:45,724
+The daughter approves it on her phone.
+
+27
+00:02:45,800 --> 00:02:55,300
+An Orb-verified real human. A matching passphrase. A registered family member.
+
+28
+00:02:55,600 --> 00:02:59,100
+With all three, the call is accepted.
+
+29
+00:02:59,648 --> 00:03:03,935
+Next: the passphrase is right, but it's not family.
+
+30
+00:03:03,991 --> 00:03:09,685
+Even if a scammer who overheard the passphrase proves with their own World ID…
+
+31
+00:03:09,925 --> 00:03:13,361
+they are not a registered family member, so it is rejected.
+
+32
+00:03:21,598 --> 00:03:24,171
+Family isn't an attribute — it's a relationship.
+
+33
+00:03:24,221 --> 00:03:32,177
+AI and trusted people working as family, while protecting privacy.
+That's the future we're building.
+

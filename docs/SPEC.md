@@ -228,6 +228,7 @@ arkworksが必要でブラウザ実行（WASM化）は新規スコープが大�
 - **シーン2（RLN使い回し検知）**: 「攻撃者が同じ epoch に 2 回証明を試みる → secret が露出 → 失効される」
   流れも `submit_demo.rs`（challenge違いで2回送信）+ `notifier.rs`（`PotentialLeak`検知・secret復元・
   メール通知）の既存出力をターミナルで実演（新規UI不要、Step 6 で実証済みのフローを流用するだけ）
+- > **2026-09-26 更新（この項目は過去の設計記録）**: 下記の「モック」方針は撤回済み。イベント中（9/25〜26）に World ID を IDKit で本物に統合し（`worldid/`、RP署名 + World App 実機 + World v4 verify API）、イベント前のモックページ（ルートの `voice_challenge.html`）はリポジトリから削除した。現在の構成は `README.md` の「World ID: AI音声クローン対策」節と `docs/HANDOFF.md` の「World ID 実統合」節を参照
 - **シーン3（World ID live-challenge、AI音声クローン対策）詳細設計（2026-09-21 決定、同日中に方針を
   「実SDK統合」→「モック」に最終確定）**: 唯一の新規UI。単体HTMLページ（`stats.html` と同パターン、
   ビルドツールなし・バックエンドなし）1枚に「証明する側」「検証する側」の2パネルを並べる。
@@ -379,7 +380,7 @@ Family Constitution が必須）という権限モデルを採る。オレオレ
 | 用途 | `challenge` の中身 | 既に実装済みか |
 |---|---|---|
 | ① RLN の基本用途（リプレイ防止） | 検証側が発行するランダム nonce | ✅ Step 4 |
-| ② World ID live-challenge（AI音声クローン対策） | `hash(合言葉)`（World ID の `signal` に流用、circom 側は不使用） | 設計済み（HANDOFF参照）。**2026-09-21: デモ（Step 5 シーン3）は実SDKを使わずモック化決定。この用途②自体はcircomの`challenge`スロットに影響しないため、設計・③との関係は変わらない** |
+| ② World ID live-challenge（AI音声クローン対策） | `hash(合言葉)`（World ID の `signal` に流用、circom 側は不使用） | **2026-09-26: イベント中に IDKit で実装済み（`worldid/`、モックは削除）**。以下は過去の記録: 設計済み（HANDOFF参照）。**2026-09-21: デモ（Step 5 シーン3）は実SDKを使わずモック化決定。この用途②自体はcircomの`challenge`スロットに影響しないため、設計・③との関係は変わらない** |
 | ③ **Action Authorization（本節、新規）** | `actionId`（後述、Action ごとに一度だけ off-chain で算出する `Fr` 体の元） | 未実装、本節で設計 |
 
 **⚠️ 型の落とし穴（設計時に潰す）**: 回路の `challenge` public input は BN254 スカラー体の元＝`r`

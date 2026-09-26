@@ -1,5 +1,7 @@
 # HANDOFF — 別PCへの引き継ぎ
 
+> **🆕 2026-09-26（夜）: README の主従を入れ替え。`README.md` = 英語（GitHub で最初に表示される版）、`README.ja.md` = 日本語。旧 `README.en.md` は無くなった**（この HANDOFF の過去の記録に出てくる `README.md` / `README.en.md` は、当時のファイル名のまま）。デモ動画は https://youtu.be/bzp4HG2sUcQ （限定公開、`demo/family_proof_final_en.mp4`）。**`demo/` の整理**: リポジトリに残すのは提出版 `family_proof_final_en.mp4`・字幕 `family_proof_final.en.srt`・原稿2つだけ。字幕なし版・`family_proof_rough_cut*.mp4`・`clips/` は git 管理外の `demo/raw/archive/` に移した（過去に commit 済みのものは git 履歴にも残っている）。
+>
 > **🆕 2026-09-26: イベント中に World ID 実SDK統合（IDKit）を実装。** `worldid/` の `/api/verify-call` が `humanOk` / `phraseOk` / `memberOk` を返し、`voice_challenge.html` もモックから実SDKに置き換え済み。README/README.en/SUBMISSION.en も「イベント中に実装」として更新済み。詳細・残タスクは下記「🆕 World ID 実統合（イベント中、2026-09-25〜26）」節。
 
 最終更新: 2026-09-26（World ID 実統合）。その前の更新: 2026-09-23（Step 7 ①〜④・README/PITCH/提出文整備・シーン3カット確定に加え、**MCP化のStep 5（`mcp_server`再接続）が解消し、`propose_action`のMCPツール化が完了・動作確認済み**（`approve_action`のMCPツール化は引き続き未着手、詳細は下記「🆕 MCP化の進め方」節）。これに伴い`README.md`/`README.en.md`/`docs/PITCH.md`/`docs/PITCH.en.md`/`docs/SUBMISSION.en.md`を、MCP（`propose_action`のみ）がイベント前に完了した扱いに更新済み（Continuity Trackの「イベント中に新規実装」欄は最終リハーサル・動画・提出文の仕上げのみに変更、詳細は下記「🆕 README/PITCH/提出文の整備」節）。**デモ動画は完成し、`demo/family_proof_rough_cut.mp4`（2分40秒、Family Constitution先出し構成）に統合済み**。Claude会話（提案+自己承認拒否）・`approve_action`の`--release`撮り直し・tier0対比まで収録・トリミング・バッジ合成・本編統合が完了（攻撃者の`approve_action`失敗のみ未収録・優先度低）。編集方法はPlaywright不使用でffmpeg+Python(Pillow)のみに変更（詳細は下記「🆕 デモ動画の編集方針」節）。残りは`approve_action`のMCPツール化（任意）・ナレーション原稿の新構成への更新・収録・Canvaでの最終合成） / ブランチ: `main` / remote: `git@github.com:niikun/family_proof.git`
@@ -50,16 +52,15 @@
     - `humanOk`: World v4 verify API（`developer.world.org/api/v4/verify/<RP_ID>`）の `success`
     - `phraseOk`: proof の `signal_hash` と `signalHashOf(phrase)` を比較。`signalHashOf` は keccak256 を 8bit 右シフトしたもの（IDKit 側の signal ハッシュと同じ計算）
     - `memberOk`: proof の `nullifier` が `FAMILY_NULLIFIERS`（カンマ区切りの許可リスト）に含まれるか
-  - `POST /api/verify-proof`: 練習時のもの。verify API の結果をそのまま返す
 - `public/voice_challenge.html`: 左が確認する側（母）、右が証明する側（電話の相手）。①母がその場で合言葉を決めて電話で伝える → ②相手が聞いた合言葉を入力 → ③`proveBtn` で IDKit（`orbLegacy` preset、`signal` = 合言葉）→ World App で承認 → proof を `lastProof` に保存し、要点（identifier・合言葉・短縮 nullifier）だけ表示（JSON 全体は console）→ ④`verifyBtn` で `lastProof` と確認側の合言葉を `/api/verify-call` に送り、3行の ✅/❌ と判定を表示。判定は上から `!humanOk` → `!phraseOk` → それ以外（`memberOk` が false、「合言葉は合っていますが、本人ではありません」）の順
-- `public/index.html`: 練習用ページ（固定 signal）
+- （練習用の `public/index.html` と `POST /api/verify-proof` は、審査員に「練習用・Sandbox」と誤解されないよう 9/26 に削除。`/` にアクセスすると 404 になるので、デモは `/voice_challenge.html` を開く）
 - `.env`（gitignore 済み）: `RP_ID` / `RP_SIGNING_KEY` / `ACTION` / `PASSPHRASE` / `FAMILY_NULLIFIERS`（ほかに `APP_ID` / `API_KEY` もあるが server.js では未使用。`APP_ID` は HTML に直書き）
 
 **設計メモ**
 - 合言葉は World ID の `signal` にだけ結び付け、RLN の `challenge`/`epoch` には流用しない（下記「第2の差別化ポイント」節の制約どおり）
 - nullifier は app + action ごとに決まる値。`FAMILY_NULLIFIERS` には、家族が同じ action で一度認証したときの nullifier を事前に登録しておく
 - ⚠️ `phrase` が空だと `.env` の `PASSPHRASE` にフォールバックする。確認側（母）の①が空欄のまま④を押すと、この値で判定されてしまう。証明側の空欄チェックは入っているが、`verifyBtn` 側の空欄チェックは未実装
-- ルート直下の旧 `voice_challenge.html`（JSモック）は残っている。デモで使うのは `worldid/public/voice_challenge.html` の方
+- ルート直下の旧 `voice_challenge.html`（イベント前の JS モック）は、審査員が本物と取り違えないよう 9/26 に削除した（git の履歴には残っている）。World ID のデモは `worldid/public/voice_challenge.html`
 
 **状況**
 - [x] RP 署名 → IDKit → World App 実機 → v4 verify API で `humanOk` / `phraseOk` / `memberOk` の取得を確認（9/26）
@@ -74,10 +75,11 @@
 - [ ] UI変更（左右入れ替え・①〜④・要約表示）の後に、3パターンを実機でもう一度確認
 - [ ] （任意）`verifyBtn` 側でも確認側の合言葉が空なら止める
 - [ ] （任意）`app.listen` のログを `"..."` から URL（`http://localhost:3000/voice_challenge.html`）に
-- [x] デモ動画に World ID シーンを追加（9/26）: `demo/raw/take_a.mp4`（受理・合言葉違い）/ `take_b.mp4`（なりすまし）/ World App 承認画面のスクリーンショットから `demo/clips/worldid_scene.mp4`（50.5秒）を作成し、RLN（#18）とクロージングの間に挿入した `demo/family_proof_rough_cut_worldid.mp4`（3分30.5秒）を作成。元の `family_proof_rough_cut.mp4` は残してある。なりすましは同じ World ID を `FAMILY_NULLIFIERS` から外して撮影し、カードで開示済み。ナレーション原稿（`demo/narration_script.md` #19〜#24）も追記済み。同日、World ID シーンの実写部分すべてに英語の進捗バッジ（右下、4ステップ＋判定時に ACCEPTED/REJECTED）を重ね、2:34 冒頭の IME 変換候補をカット（`take_a` の切り出し開始を 4.5→5.2秒）。さらに、冒頭の Claude との会話（0:23.4〜0:49.2、入院費300万円の提案と自己承認の拒否）に、英語の一行テロップ4枚（USER の依頼 / Claude の Tier 2 判断 / 自己承認の質問 / 「できない」回答）を左下に重ねた。続けて、tier0 対比（1:26〜1:39、「予定のリマインド」を Tier 0 で提案）に左下の英語テロップ2枚、RLN の使い回し検知（2:04〜2:31、`submit_demo -- 11` と notifier の `recovered secret = 203`）に右下の英語テロップ3枚（同じ秘密で別チャレンジ / notifier の監視 / 2点から秘密を復元→PotentialLeak→メール通知）を追加。元の `family_proof_rough_cut.mp4` 自体には手を加えていない
+- [x] デモ動画に World ID シーンを追加（9/26）: `demo/raw/take_a.mp4`（受理・合言葉違い）/ `take_b.mp4`（なりすまし）/ World App 承認画面のスクリーンショットから `demo/clips/worldid_scene.mp4`（50.5秒）を作成し、RLN（#18）とクロージングの間に挿入した `demo/family_proof_rough_cut_worldid.mp4`（3分30.5秒）を作成。元の `family_proof_rough_cut.mp4` は残してある。なりすましは同じ World ID を `FAMILY_NULLIFIERS` から外して撮影し、カードで開示済み。ナレーション原稿（`demo/narration_script.md` #19〜#24）も追記済み。同日、World ID シーンの実写部分すべてに英語の進捗バッジ（右下、4ステップ＋判定時に ACCEPTED/REJECTED）を重ね、2:34 冒頭の IME 変換候補をカット（`take_a` の切り出し開始を 4.5→5.2秒）。さらに、冒頭の Claude との会話（0:23.4〜0:49.2、入院費300万円の提案と自己承認の拒否）に、英語の一行テロップ4枚（USER の依頼 / Claude の Tier 2 判断 / 自己承認の質問 / 「できない」回答）を左下に重ねた。続けて、tier0 対比（1:26〜1:39、「予定のリマインド」を Tier 0 で提案）に左下の英語テロップ2枚、RLN の使い回し検知（2:04〜2:31、`submit_demo -- 11` と notifier の `recovered secret = 203`）に右下の英語テロップ3枚（同じ秘密で別チャレンジ / notifier の監視 / 2点から秘密を復元→PotentialLeak→メール通知）を追加。その後、ETHGlobal のルール（導入は20秒以内、スライドの箇条書きは4つまで）に合わせて、冒頭を5.1秒短縮（タイトル 8.1→4.0秒、図解③ 5.0→4.0秒。実演の開始は 0:18.1）し、RLN の LEAK DETECTED テロップを4行に。動画は **3分25.4秒**。ナレーション原稿（短縮版 S1〜S15・詳細版とも）の時刻も合わせて更新済み。さらに、World ID シーン冒頭のカードに親子の電話の状況説明（"Mom gets a call…" の英語4行＋日本語2行）を追加して 3.5→8.0秒に延長。動画は **3分30.0秒**。録音済みテイク（take06〜09）は 2:25.9 に 4.5秒の無音を挟めば合う。**ナレーション付きの完成版 `demo/family_proof_final.mp4`（3分32.5秒、1080p）を作成**: 音声は take11（0:00〜3:19.0、クロージング直前まで）＋ take10（3:19.0〜最後、クロージング）を、両方とも無音の位置で 60ms クロスフェードしてつなぎ（いずれも 3分30.0秒版で収録）、loudnorm で -16 LUFS 目標に正規化（実測 -14.8 LUFS）。take10 のクロージングが動画の終わりを 1.6秒超えるため、最後の VISION カードを 2.5秒延長。**英語字幕版 `demo/family_proof_final_en.mp4`** も作成: 字幕の文言は `demo/narration_script.md` 詳細版（#1〜#25）の英訳（実際の発話の書き起こしではない）。表示時刻は完成版音声の無音検出で各文の発話に合わせ、#7・#8・#22 は手で調整。既存の英語テロップと重ならないよう映像を90%（1728×972）に縮め、下の帯（108px）に字幕を表示。YouTube 用の字幕ファイル `demo/family_proof_final.en.srt` も同じ内容。README/SUBMISSION/ナレーション #24 の「なりすまし」の説明も、「AI 単体はそもそも World ID の証明を作れない／拒否例は登録されていない人間（クローン音声を使う詐欺犯）」に修正済み。元の `family_proof_rough_cut.mp4` 自体には手を加えていない
 - [ ] ナレーション収録と最終合成（`family_proof_rough_cut_worldid.mp4` ベース）
 - [x] **ピッチ本番は動画上映方式に変更（9/26、ユーザー判断）**: デモ4分 = ライブ導入15秒 → `family_proof_rough_cut_worldid.mp4`（3:30）上映 → 締め15秒。ライブ実演台本は予備として残し、Q&A で実物を求められたらターミナルと `worldid/` を出す。PITCH.md / PITCH.en.md に反映済み
 - [x] 提出資料の整合（9/26）: PITCH の「イベント中に何を作ったか」「AI利用」の Q&A を World ID と UI 編集の例外に合わせて更新。SUBMISSION.en.md に締切・100字以内の短い説明・動画アップロード/push の TODO を追加し、「未登録」の確認が許可リストから外した模擬であることを明記
+- [x] AI利用の開示をファイル単位に書き直し（9/26）: コード（本人）/ コードの例外（`voice_challenge.html` の UI 編集・`.mcp.json`）/ ドキュメント（Claude が大部分を執筆）/ デモ動画（録画は本人、カード・テロップ生成と ffmpeg 編集は Claude）。README・README.en・SUBMISSION.en・PITCH の Q&A に反映
 - [ ] 提出締切 **9/27 9:00 JST** までにコミットと push
 
 **未解決の限界（README「既知の限界」に記載済み）**: 家族判定は off-chain の許可リストで、on-chain の `FamilyRegistry` とは未連動。証明側・確認側を1ページ・1サーバーで実演している。

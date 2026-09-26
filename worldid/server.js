@@ -32,18 +32,6 @@ app.post("/api/rp-signature", async (req, res) => {
 });
 
 
-app.post("/api/verify-proof", async (req, res) => {
-  const request = req.body.IDKitResponse;
-  const url = `https://developer.world.org/api/v4/verify/${process.env.RP_ID}`;
-  const response = await fetch(url,{
-    method:"POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(request)
-  });
-  const data = await response.json();
-  res.json(data);
-});
-
 app.post("/api/verify-call", async (req, res) => {
   const request = req.body.IDKitResponse;
   const phrase = req.body.phrase?.trim() || process.env.PASSPHRASE;

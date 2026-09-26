@@ -51,18 +51,22 @@ FamilyProof replaces the spoken password with a ZK-SNARK (Groth16 over BN254, ci
 - `FamilyConstitution.sol` deployed to World Chain Sepolia (`0xf7f344E9399638b69DF158877F1e77a39A5F3D73`), with a full propose → attacker-fails → 2 human approvals (from two different members, producing two distinct nullifiers) → `ActionAuthorized` flow demonstrated end-to-end on real transactions.
 - An anonymous, privacy-preserving statistics dashboard aggregating daily detection counts — no addresses, no family roots, no per-event data — published publicly.
 
-**Built during the event — real World ID integration (AI voice-clone defense):** a shared passphrase alone fails against an attacker with an AI-cloned voice. In `worldid/`, the parent picks a passphrase on the spot and says it over the phone; the caller proves with World ID (IDKit, `signal` = the passphrase heard on the phone), and the server checks three things: the proof is valid according to the World v4 verify API (a real, Orb-verified human), the proof's `signal_hash` matches the verifier's passphrase, and the proof's `nullifier` belongs to a registered family member. Right passphrase + wrong person is rejected, and because the passphrase is a fresh per-call challenge baked into the proof, old proofs can't be replayed. Verified end-to-end on a real phone: accept, wrong passphrase, and non-member (simulated by removing the caller's nullifier from the allowlist, and disclosed as such in the video). This replaces the pre-event JS mock (fake `nullifier_hash`). Limitation: the registered-member list is an off-chain allowlist of nullifiers, not yet linked to the on-chain `FamilyRegistry`.
+**Built during the event — real World ID integration (AI voice-clone defense):** a shared passphrase alone fails against an attacker with an AI-cloned voice. In `worldid/`, the parent picks a passphrase on the spot and says it over the phone; the caller proves with World ID (IDKit, `signal` = the passphrase heard on the phone), and the server checks three things: the proof is valid according to the World v4 verify API (a real, Orb-verified human), the proof's `signal_hash` matches the verifier's passphrase, and the proof's `nullifier` belongs to a registered family member. An AI on its own can't produce a World ID proof at all; a human scammer using a voice clone can, but isn't a registered family member — the right passphrase from the wrong person is rejected, and because the passphrase is a fresh per-call challenge baked into the proof, old proofs can't be replayed. Verified end-to-end on a real phone: accept, wrong passphrase, and non-member (simulated by removing the caller's nullifier from the allowlist, and disclosed as such in the video). The pre-event JS placeholder page (fake `nullifier_hash`) has been deleted from the repository — every World ID check in the demo goes through the real World App and World's v4 verify API. Limitation: the registered-member list is an off-chain allowlist of nullifiers, not yet linked to the on-chain `FamilyRegistry`.
 
 **Also real, before the event:** `propose_action` wrapped as an MCP server, so an AI assistant can actually call it as a tool live during the demo — playing the "AI Agent" role for real — instead of a human copy-pasting the suggested `cast send` command. (`approve_action` isn't wrapped as an MCP tool yet; approvals, including the AI Agent's own failed self-approval attempt, are still demonstrated via the CLI.)
 
-**AI-assistance disclosure:** Claude acted only as a coach throughout — reviewing designs, running builds/tests, catching bugs (not fixing them). All Solidity and Rust code was written by the developer, solo, over the course of the project. One exception: during the event, at the developer's request, Claude edited part of the World ID demo UI in `worldid/public/voice_challenge.html` (explanatory text, panel order, step numbering, and the proof-result summary display). The World ID verification logic (`worldid/server.js`, and the page's IDKit call and verification flow) was written by the developer.
+**AI-assistance disclosure (file by file):**
+- **Code — written by the developer, solo:** the circom circuit, Rust (`src/`), Solidity (`contracts/`), and the World ID verification logic (`worldid/server.js`, plus the IDKit call and verification flow in `voice_challenge.html`). Claude acted as a coach — design discussion, code review, pointing out bugs, running builds/tests — and did not write this code; the developer made every fix.
+- **Code exceptions:** during the event, at the developer's request, Claude edited part of the World ID demo UI in `worldid/public/voice_challenge.html` (explanatory text, panel order, step numbering, proof-result summary display) switched `.mcp.json` to a relative path, and deleted the practice page (`worldid/public/index.html`) and its practice-only endpoint (`/api/verify-proof`) as pre-submission cleanup.
+- **Documentation — mostly written/edited by Claude:** `README.md` (English), `README.ja.md` (Japanese), `docs/` (SPEC, PITCH, SUBMISSION, HANDOFF), and `demo/narration_script.md`, drafted from conversations with the developer, who reviewed them and made the decisions.
+- **Demo video — editing assisted by Claude:** all screen recordings were captured by the developer in the real environment. Claude generated the title cards, progress badges, and captions (Python/Pillow) and did the cutting/assembly with ffmpeg. The narration is the developer's own voice (no AI voice).
 
 ---
 
 ## Continuity Track note
 
 - **Pre-existing (before Sept 25):** the ZK circuit, RLN, `FamilyRegistry.sol`/`Groth16Verifier.sol`, notification/statistics infrastructure, `FamilyConstitution.sol` with its propose/approve CLIs and real Sepolia deployment, and the MCP-server wrapping of `propose_action` letting an AI assistant actually execute the proposal step via a tool call (`approve_action` remains CLI-only).
-- **During the event (Sept 25–27):** the real World ID integration in `worldid/` (Express RP-signing/verification server, IDKit in `voice_challenge.html`, `/api/verify-call` returning `humanOk` / `phraseOk` / `memberOk`), replacing the pre-event JS mock; plus final demo rehearsal, video recording, and this submission writeup.
+- **During the event (Sept 25–27):** the real World ID integration in `worldid/` (Express RP-signing/verification server, IDKit in `voice_challenge.html`, `/api/verify-call` returning `humanOk` / `phraseOk` / `memberOk`), replacing (and deleting) the pre-event JS placeholder; plus final demo rehearsal, video recording, and this submission writeup.
 
 ## How it's made (tech stack)
 
@@ -70,7 +74,7 @@ circom 2.2.3 + Poseidon (circuit) · Rust `ark-circom`/`arkworks` (witness/proof
 
 ## Demo video
 
-[link — add once uploaded] (source: `demo/family_proof_rough_cut_worldid.mp4`, 3:30, plus recorded narration)
+https://youtu.be/bzp4HG2sUcQ (3:32, 1080p; narration in Japanese by the developer, with English subtitles. Source: `demo/family_proof_final_en.mp4`)
 
 ## Live contracts (World Chain Sepolia)
 
@@ -84,8 +88,8 @@ circom 2.2.3 + Poseidon (circuit) · Rust `ark-circom`/`arkworks` (witness/proof
 
 ## TODO before final submission
 
-- [ ] Record the narration (`demo/narration_script.md`) and do the final mix on `demo/family_proof_rough_cut_worldid.mp4` (AI narration is not allowed)
-- [ ] Upload the final video and paste the link into "Demo video" above
+- [x] Narration recorded by the developer (own voice, no AI voice) and mixed; English subtitles added → `demo/family_proof_final_en.mp4`
+- [x] Upload the final video and paste the link into "Demo video" above
 - [ ] Commit and push everything (World ID code + docs + video) so the GitHub repo matches this writeup
-- [x] World ID scene added to the demo video (`demo/family_proof_rough_cut_worldid.mp4`, 3:30): accept, and the impostor case (the same World ID removed from the family allowlist, disclosed on screen)
+- [x] World ID scene added to the demo video (`demo/family_proof_final_en.mp4`): accept, and the impostor case (the same World ID removed from the family allowlist, disclosed on screen)
 - [ ] Paste final text into the ETHGlobal submission form (field names/limits may differ slightly from this draft's section breaks — adjust as needed)

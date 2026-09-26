@@ -1,79 +1,80 @@
 # FamilyProof
 
-🌐 [English version](README.en.md)
+🌐 [日本語版](README.ja.md)
 
 **Prove trust, not identity.**
 
-> **家族は、血縁だけではない。**
-> 信頼して、権限を託せる関係も「家族」になり得る。
+🎬 **Demo video**: https://youtu.be/bzp4HG2sUcQ (3:32, Japanese narration with English subtitles)
 
-FamilyProof は、血縁・婚姻・同居を前提としない **Trust Circle** を、ZK とスマートコントラクトで実装するプロトコルです。
+> **Family is not only about blood.**
+> A relationship you trust enough to delegate authority to can be "family" too.
 
-ひとりで暮らしていても、ひとりで生きる必要はない。
+FamilyProof is a protocol that implements a **Trust Circle** — not bound by blood, marriage, or cohabitation — using ZK proofs and smart contracts.
 
-遠くの家族、友人、近隣の人、支援者。
-そして将来は **AI Agent** も、Trust Circle の一員を支える代理人になり得ます。
+Living alone doesn't have to mean facing important decisions alone.
 
-FamilyProof は、
+Family who live far away, friends, neighbors, caregivers.
+And in the future, an **AI Agent** too can act as a delegate supporting a Trust Circle member.
 
-> **「この人は誰か？」ではなく、
-> 「この人は本人が選んだTrust Circleのメンバーであり、このActionを承認する権限を持つか？」**
+FamilyProof verifies, without revealing any secret or personal information:
 
-を、秘密や個人情報を明かさずに検証します。
+> Not **"who is this person?"**, but
+> **"is this person a member of the Trust Circle this individual chose, with the authority to approve this Action?"**
 
-> 正確に言うと、暗号的に証明しているのは「信頼」そのものではなく「本人が選んだ Trust Circle の membership」です。
+> To be precise, what is cryptographically proven is not "trust" itself, but "membership in a Trust Circle the individual chose beforehand." *"Prove trust, not identity"* is the philosophical tagline; the technically accurate claim is closer to *"Prove membership, protect identity."*
 
 ---
 
 ## From Family to Trust Circle
 
-従来の本人確認：
+Traditional identity verification:
 
 ```text
-「この人は家族ですか？」
+"Is this person family?"
 ```
 
-FamilyProof：
+FamilyProof:
 
 ```text
-「本人が選んだTrust Circleが、このActionを承認したか？」
+"Did the Trust Circle this person chose
+ approve this Action?"
 ```
 
-Trust Circle は固定された「家族属性」ではありません。
+A Trust Circle is not a fixed "family attribute."
 
 ```text
-本人
- ├─ 家族
- ├─ 友人
- ├─ 近隣の人
- ├─ 支援者
+You
+ ├─ Family
+ ├─ Friends
+ ├─ Neighbors
+ ├─ Caregivers
  └─ AI Agent
 ```
 
-メンバーは時間とともに入れ替えることができます。
+Membership can change over time.
 
 ---
 
 ## AI is an Agent, not a Human
 
-AI Agent は、Trust Circle の人間と同じ権限を持ちません。
+An AI Agent does not hold the same authority as a human Trust Circle member.
 
-低リスクなActionはAIが単独で実行できますが、リスクが高くなるほどHuman approvalを要求します。
+Low-risk Actions can be executed by the AI alone, but the higher the risk, the more human approvals are required.
 
-| Action         | Tier | Required approval |
-| -------------- | ---: | ----------------: |
-| 予定管理・リマインド     |    0 |                0人 |
-| 少額の支払い         |    1 |          Human 1人 |
-| 高額送金・重要な判断     |    2 |          Human 2人 |
-| Trust Circle変更 |    3 |          Human 3人 |
+| Action                              | Tier | Required approval |
+| ------------------------------------ | ---: | -----------------: |
+| Scheduling / reminders               |    0 |               0 humans |
+| Small payments                       |    1 |          1 human |
+| Large transfers / important decisions |    2 |          2 humans |
+| Trust Circle membership changes      |    3 |          3 humans |
 
-**AIに権限を与えるのではなく、人間がAIに「どこまで任せるか」を暗号的に制御する。**
+**Instead of granting the AI authority, humans cryptographically control how much can be delegated to it.**
 
 ---
 
 ## Why ZK?
 
-Trust Circle のメンバーは、自分の `secret` を公開する必要がありません。
+Trust Circle members never have to reveal their `secret`.
 
 ```text
 secret
@@ -87,31 +88,29 @@ Merkle Root
 Groth16 Proof
 ```
 
-証明者は、
+The prover proves only that:
 
-> 「私はこのTrust Circleのメンバーである」
+> "I am a member of this Trust Circle."
 
-ことだけを証明します。
-
-本名、secret、家族構成などの情報は、必要以上に公開しません。
+Real names, secrets, family composition and other information are never disclosed beyond what's necessary.
 
 ### Cryptographic primitives
 
-* **Merkle Tree** — membership を表現
-* **Poseidon** — ZK回路向けハッシュ
+* **Merkle Tree** — represents membership
+* **Poseidon** — ZK-circuit-friendly hash
 * **Groth16 / BN254** — membership proof
-* **RLN** — secret の使い回し検知と失効
-* **Smart Contract** — Action policy と承認状態を検証
+* **RLN** — detects and revokes reused secrets
+* **Smart Contract** — verifies Action policy and approval state
 
-> **World ID**（Unique Human / Sybil resistance）は、**イベント期間中（9/25〜27）に IDKit を使った本物の統合を実装しました**。AI音声クローン対策として、電話で聞いた合言葉を World ID proof の `signal` に結び付けて検証します（詳細は「World ID: AI音声クローン対策」節）。
+> **World ID** (Unique Human / Sybil resistance) **was integrated for real with IDKit during the event (Sept 25–27)**. As a defense against AI voice cloning, the passphrase heard on the phone is bound to the World ID proof's `signal` and verified server-side (see "World ID: AI Voice-Clone Defense").
 
 ---
 
 ## RLN: Reusing a Stolen Secret Backfires
 
-FamilyProof は、盗まれた `secret` の使い回しも検知します。
+FamilyProof also detects reuse of a stolen `secret`.
 
-同じ `epoch` で、同じsecretを異なるchallengeに対して複数回使用すると、
+If the same secret is used against different challenges within the same `epoch`:
 
 ```text
 (x1, y1)
@@ -124,19 +123,17 @@ secret recovery
 revoke
 ```
 
-となります。
+In other words:
 
-つまり、
+> **The more a stolen secret is used, the worse it gets for the attacker.**
 
-> **盗まれたsecretを使うほど、攻撃者側が不利になる。**
-
-漏洩検知後は新しいsecretを発行し、Merkle Rootを更新できます。
+Once a leak is detected, a new secret can be issued and the Merkle Root updated.
 
 ---
 
 ## Action Authorization
 
-AI Agent などがActionを提案します。
+An AI Agent (or similar) proposes an Action.
 
 ```text
 AI Agent
@@ -145,13 +142,13 @@ AI Agent
     ▼
  Action
     │
-    ├─ Tier 0 → 即時実行
-    ├─ Tier 1 → Human 1人
-    ├─ Tier 2 → Human 2人
-    └─ Tier 3 → Human 3人
+    ├─ Tier 0 → executes immediately
+    ├─ Tier 1 → 1 human
+    ├─ Tier 2 → 2 humans
+    └─ Tier 3 → 3 humans
 ```
 
-Trust Circle のHumanは、`actionId` をchallengeとして含むZK proofを提出します。
+Human Trust Circle members submit a ZK proof that includes `actionId` as the challenge.
 
 ```text
 secret + Merkle path + actionId
@@ -161,51 +158,51 @@ secret + Merkle path + actionId
       membership + approval
 ```
 
-必要な承認数に達すると `ActionAuthorized` が発行され、Actionを実行できます。
+Once enough approvals are collected, `ActionAuthorized` is emitted and the Action can execute.
 
-AI Agent 自身は Trust Circle の Merkle Tree に入っていないため、Human approval 用の有効なproofを生成できません。この一連の流れ（提案→承認2人→`ActionAuthorized`）は World Chain Sepolia の実チェーン上で実証済みです（詳細は「Current Status」参照）。
+Because the AI Agent itself is not in the Trust Circle's Merkle Tree, it cannot generate a valid proof for human approval. This entire flow (propose → 2 approvals → `ActionAuthorized`) has been demonstrated end-to-end on-chain (see "Current Status").
 
 ---
 
-## World ID: AI音声クローン対策（イベント中に実装）
+## World ID: AI Voice-Clone Defense (built during the event)
 
-合言葉だけでは、AIで声をクローンした攻撃者が合言葉を聞き出した時点で突破されます。そこで「合言葉を知っている」ことに加えて、**Orb で確認された実在の人間が、登録済みの家族本人として、いまこの合言葉で証明した**ことを World ID で確認します。
+A passphrase alone falls the moment an attacker with an AI-cloned voice gets someone to say it. So on top of "knows the passphrase", FamilyProof uses World ID to check that **an Orb-verified real human, who is a registered family member, just proved with this passphrase**.
 
 ```text
-確認する側（親）
-  ① その場で合言葉を決めて、電話で相手に伝える
+Verifier (the parent)
+  ① Picks a passphrase on the spot and says it over the phone
 
-証明する側（電話をかけてきた相手）
-  ② 電話で聞いた合言葉を入力
-  ③ /api/rp-signature でRP署名を取得（@worldcoin/idkit-server）
-     → IDKit.request（signal = 合言葉）→ World App で承認 → proof
+Prover (the caller)
+  ② Enters the passphrase heard on the phone
+  ③ Gets an RP signature from /api/rp-signature (@worldcoin/idkit-server)
+     → IDKit.request (signal = passphrase) → approve in World App → proof
 
-確認する側（親）
-  ④ 自分が伝えた合言葉と proof を /api/verify-call へ送る
+Verifier (the parent)
+  ④ Sends the passphrase they said, together with the proof, to /api/verify-call
 
-サーバー（worldid/server.js）
-  ① World v4 verify API で proof を検証         → humanOk
-  ② proof の signal_hash == hash(合言葉)         → phraseOk
-  ③ proof の nullifier が登録済み家族のものか    → memberOk
+Server (worldid/server.js)
+  ① Verify the proof with the World v4 verify API    → humanOk
+  ② proof's signal_hash == hash(passphrase)          → phraseOk
+  ③ proof's nullifier belongs to a registered member → memberOk
 ```
 
-| humanOk | phraseOk | memberOk | 判定 |
+| humanOk | phraseOk | memberOk | Verdict |
 |---|---|---|---|
-| ✅ | ✅ | ✅ | 受理：本人からの正当な確認 |
-| ✅ | ❌ | ✅ | 拒否：合言葉が一致しない |
-| ✅ | ✅ | ❌ | 拒否：合言葉は合っているが、登録済みの家族ではない（AI音声クローン・なりすましの可能性） |
-| ❌ | — | — | 拒否：World ID の検証に失敗 |
+| ✅ | ✅ | ✅ | Accept: a genuine check from the member |
+| ✅ | ❌ | ✅ | Reject: passphrase mismatch |
+| ✅ | ✅ | ❌ | Reject: right passphrase, but not a registered member (e.g. a human scammer using an AI voice clone) |
+| ❌ | — | — | Reject: World ID verification failed (an AI on its own can't prove it is an Orb-verified human at all) |
 
-合言葉は事前に共有する秘密ではなく、**親が通話のたびにその場で決めるチャレンジ**です。AIクローンも通話を聞いているので合言葉は入力できますが、登録済みの家族本人の World ID では証明できません。また合言葉が proof に焼き込まれるため、過去の proof を使い回すこともできません。
+The passphrase is not a pre-shared secret — it is **a challenge the parent picks on the spot for each call**. The attack is stopped at two levels. **An AI on its own** (e.g. an automated voice call) is not an Orb-verified human, so it can't produce a World ID proof at all. **A human scammer using an AI voice clone** can prove with their own World ID and, having heard the call, can type the passphrase — but they are not a registered family member, so they are rejected. The second example in the demo (the impostor test) shows this second case. And because the passphrase is baked into the proof, an old proof can't be replayed.
 
-設計上の制約: 合言葉は World ID の `signal` にだけ結び付け、RLN の `challenge` / `epoch` には流用しません（流用すると、正規メンバーが同じ epoch 内に別の合言葉で2回通話しただけで RLN が発動し、secret が露出するため）。通話中にブロック確定を待てないので、検証は off-chain で行います。
+Design constraint: the passphrase is bound only to World ID's `signal` and is never reused as RLN's `challenge` / `epoch` (otherwise a legitimate member making two calls with different passphrases in one epoch would trigger RLN and expose their secret). Verification is off-chain, since a phone call can't wait for block confirmation.
 
 ---
 
 ## Architecture
 
 ```text
-          World ID（IDKit・イベント中に実装）
+      World ID (IDKit, built during event)
               Unique Human
                     │
         ┌───────────┴───────────┐
@@ -241,7 +238,7 @@ AI Agent 自身は Trust Circle の Merkle Tree に入っていないため、Hu
 | Rust             | `ark-circom` / `arkworks`            |
 | Smart Contract   | Solidity / Foundry                   |
 | Blockchain       | World Chain Sepolia                  |
-| Human uniqueness | World ID（IDKit / `@worldcoin/idkit-server`） |
+| Human uniqueness | World ID (IDKit / `@worldcoin/idkit-server`) |
 | World ID backend | Node.js / Express / `viem`           |
 | Backend / CLI    | Rust / `alloy` / `tokio`             |
 | Demo UI          | HTML / Vanilla JS                    |
@@ -250,37 +247,37 @@ AI Agent 自身は Trust Circle の Merkle Tree に入っていないため、Hu
 
 ## Current Status
 
-### ✅ Implemented & verified on World Chain Sepolia（イベント開始前、〜9/24）
+### ✅ Implemented & verified on World Chain Sepolia (built before the event, through Sept 24)
 
 Core ZK membership + leak detection:
 
 * Merkle membership proof / Poseidon commitment
-* Groth16 proof generation / verification（Rust witness/provingパイプライン）
-* RLN nullifier / 同一epoch二重使用検知 / secret復元・失効 / Merkle Root rotation
+* Groth16 proof generation / verification (Rust witness/proving pipeline)
+* RLN nullifier / same-epoch double-use detection / secret recovery & revocation / Merkle Root rotation
 * `Groth16Verifier.sol` / `FamilyRegistry.sol`
-* 通知・匿名統計インフラ（`notifier.rs`, `stats.html`）
+* Notification & anonymous-statistics infrastructure (`notifier.rs`, `stats.html`)
 
-Family Constitution（tier別Action Authorization）:
+Family Constitution (tiered Action Authorization):
 
-* `FamilyConstitution.sol`: `proposeAction` / ZK-backed `approveAction` / tier別自動実行 / `ActionAuthorized` / 二重承認防止 / challenge不一致防御 / AI Agent限定の提案権限。ユニットテスト全緑
-* `propose_action.rs` / `approve_action.rs`（Action提案・承認CLI）
-* **World Chain Sepolia に実際にデプロイ・実証済み**: `FamilyConstitution` = `0xf7f344E9399638b69DF158877F1e77a39A5F3D73`
-* tier0（即時実行）/ tier1（承認1人）/ tier2（承認2人、異なるメンバーで異なるnullifierになることまで確認）を実チェーン上で一気通貫実証済み
-  （tx: propose `0xc76a25bfad576afa5605871b650e145f3d5ddd0ea9a2d66c68f44d4a3407ab45` / approve 1人目 `0xa421b7f1b18c082c5f4f1df5da8f123df8f580fd32d0c71a72d7fa77075c4b1e` / approve 2人目 `0xdfee0dd25f7476912714fd5b33395d1854fbf7d8e4291841d6b6c589a03d30e0`）
-* `propose_action` の MCP サーバー化: AI Agent役を Claude 自身が実際のツール呼び出しでオンチェーン送信するところまで担う（`mcp__family-proof__propose_action`としてClaude Codeから直接呼び出し可能。`approve_action`のMCPツール化は未着手、CLIでの手動実行のみ）
+* `FamilyConstitution.sol`: `proposeAction` / ZK-backed `approveAction` / tier-based auto-execution / `ActionAuthorized` / double-approval prevention / challenge-mismatch protection / agent-only proposal rights. All unit tests passing
+* `propose_action.rs` / `approve_action.rs` (Action proposal/approval CLIs)
+* **Deployed and verified on World Chain Sepolia**: `FamilyConstitution` = `0xf7f344E9399638b69DF158877F1e77a39A5F3D73`
+* Tier 0 (instant execution) / Tier 1 (1 approval) / Tier 2 (2 approvals, from two different members producing two different nullifiers) demonstrated end-to-end on-chain
+  (tx: propose `0xc76a25bfad576afa5605871b650e145f3d5ddd0ea9a2d66c68f44d4a3407ab45` / approval 1 `0xa421b7f1b18c082c5f4f1df5da8f123df8f580fd32d0c71a72d7fa77075c4b1e` / approval 2 `0xdfee0dd25f7476912714fd5b33395d1854fbf7d8e4291841d6b6c589a03d30e0`)
+* `propose_action` wrapped as an MCP server, so Claude itself, playing the AI Agent role, can send on-chain transactions via a real tool call (callable directly from Claude Code as `mcp__family-proof__propose_action`; `approve_action` isn't wrapped as an MCP tool yet — it's still run manually via the CLI)
 
-### 🚧 built during the event（9/25–27）
+### 🚧 Built during the event (Sept 25–27)
 
-* **World ID 実統合（IDKit）による AI音声クローン対策**: `worldid/`（Express による RP署名・検証サーバー + `voice_challenge.html`）。イベント前の疑似 `nullifier_hash` のモックを廃止し、World App 実機での proof 生成 → World v4 verify API → 合言葉（`signal_hash`）と登録済み家族（`nullifier`）の照合まで動作確認済み
-* 最終リハーサル・デモ動画の収録・Continuity提出文の仕上げ
+* **Real World ID (IDKit) integration for AI voice-clone defense**: `worldid/` (Express RP-signing/verification server + `voice_challenge.html`). The pre-event placeholder page (fake `nullifier_hash`) has been deleted from the repo; verified end-to-end from proof generation in the real World App → World v4 verify API → passphrase (`signal_hash`) and registered-member (`nullifier`) checks
+* Final rehearsal, demo video recording, and finishing the Continuity submission writeup
 
 ### 🔭 Future work
 
-* World ID の「登録済み家族」判定を、on-chain の Trust Circle（`FamilyRegistry` の Merkle root）と連動させる
-* AI による自律的なリスク／tier判定
-* Trust Circle 自身によるtier→閾値の動的ガバナンス
-* AI Agent への暗号的ID付与／ZKによる委任権限の証明（[docs/SPEC.md §11.8](docs/SPEC.md)）
-* AI Agent 署名鍵のMPCによる分散管理（[docs/SPEC.md §11.7](docs/SPEC.md)）
+* Link World ID's "registered member" check to the on-chain Trust Circle (`FamilyRegistry`'s Merkle root)
+* AI-driven autonomous risk/tier judgment
+* Dynamic governance letting the Trust Circle itself set tier→threshold mappings
+* Cryptographic identity for the AI Agent / ZK-provable delegated capability ([docs/SPEC.md §11.8](docs/SPEC.md))
+* MPC-based custody of the AI Agent's signing key ([docs/SPEC.md §11.7](docs/SPEC.md))
 
 ---
 
@@ -291,7 +288,7 @@ circuits/       circom circuits / proving artifacts
 src/            Rust implementation
 src/bin/        CLI tools
 contracts/      Solidity / Foundry
-worldid/        World ID（IDKit）RP署名・検証サーバー + voice_challenge.html
+worldid/        World ID (IDKit) RP-signing/verification server + voice_challenge.html
 docs/
   SPEC.md       detailed specification
   HANDOFF.md    development log
@@ -320,22 +317,22 @@ cargo test
 cargo run
 ```
 
-Action Authorization のデモ（`FamilyConstitution`への提案・承認）:
+Action Authorization demo (propose/approve against `FamilyConstitution`):
 
 ```bash
 cargo run --bin propose_action "<description>" <tier>   # tier: 0-3
 cargo run --bin approve_action "<description>" <leaf_idx>
 ```
 
-### MCP サーバー（Claude に AI Agent 役をさせる）
+### MCP server (let Claude play the AI Agent)
 
-`propose_action` を MCP ツールとして公開し、Claude Code から `mcp__family-proof__propose_action` として呼べるようにします（`approve_action` は MCP 化しておらず、CLI で実行します）。
+Exposes `propose_action` as an MCP tool, callable from Claude Code as `mcp__family-proof__propose_action` (`approve_action` is not MCP-wrapped; run it via the CLI).
 
 ```bash
 cargo build --release --bin mcp_server
 ```
 
-リポジトリ直下の `.mcp.json` に登録します（Claude Code はリポジトリ直下で起動してください）。
+Register it in `.mcp.json` at the repository root (start Claude Code from the repository root):
 
 ```json
 {
@@ -348,26 +345,26 @@ cargo build --release --bin mcp_server
 }
 ```
 
-前提:
+Prerequisites:
 
-* `mcp_server` は内部で `cargo run --release --bin propose_action` を実行し、その中で Foundry の `cast send` を呼びます。`cargo` と `cast` に PATH が通っている必要があります
-* ビルドしたときのリポジトリの場所で `propose_action` を実行します（ビルド時にパスが埋め込まれます）。リポジトリを移動したらビルドし直してください
-* `cast` の keystore に `agent` アカウントと、パスワードファイル `~/.foundry/keystores/agent.pw` が必要です
-* `proposeAction` は `onlyAgent` で1つの EOA に制限されています。デプロイ済みの `FamilyConstitution` に提案できるのは、その EOA の鍵を持つ場合だけです。自分で試す場合は、自分の `agent` アドレスを指定して `FamilyConstitution` をデプロイし、`propose_action.rs` のコントラクトアドレスを差し替えてください
+* `mcp_server` runs `cargo run --release --bin propose_action` internally, which calls Foundry's `cast send`. Both `cargo` and `cast` must be on your PATH
+* It runs `propose_action` in the repository location it was built from (the path is embedded at build time). Rebuild if you move the repository
+* Your `cast` keystore needs an `agent` account and a password file at `~/.foundry/keystores/agent.pw`
+* `proposeAction` is restricted by `onlyAgent` to a single EOA. You can only propose to the deployed `FamilyConstitution` if you hold that EOA's key. To try it yourself, deploy `FamilyConstitution` with your own `agent` address and replace the contract address in `propose_action.rs`
 
-Claude Code を起動して `/mcp` で `family-proof` が connected になっていれば準備完了です。「入院費で300万円振り込む提案をしておいて」のように頼むと、Claude が tier を判断して `propose_action` を呼びます。
+Start Claude Code and check that `family-proof` shows as connected in `/mcp`. Then ask something like "Propose a ¥3M transfer for hospital fees", and Claude will pick a tier and call `propose_action`.
 
-### World ID デモ（`worldid/`）
+### World ID demo (`worldid/`)
 
 ```bash
 cd worldid
 npm install
-# .env に RP_ID / RP_SIGNING_KEY / ACTION / PASSPHRASE / FAMILY_NULLIFIERS（カンマ区切り）を設定
+# set RP_ID / RP_SIGNING_KEY / ACTION / PASSPHRASE / FAMILY_NULLIFIERS (comma-separated) in .env
 npm start
-# http://localhost:3000/voice_challenge.html を開く
+# open http://localhost:3000/voice_challenge.html
 ```
 
-画面の左が確認する側（親）、右が証明する側（電話の相手）です。①左で合言葉を決める → ②右に同じ合言葉を入力 → ③「World ID で証明する」を押し、表示されたリンクをスマホの World App で開いて承認 → ④左の「検証する」で判定が出ます。リンクはリクエストごとに1回限りなので、証明のたびにボタンから新しいリンクを出してください。
+The left panel is the verifier (the parent), the right panel is the prover (the caller). ① Pick a passphrase on the left → ② enter the same passphrase on the right → ③ press "World ID で証明する" and open the displayed link in World App on your phone to approve → ④ press "検証する" on the left to see the verdict. Each link is single-use, so press the button for a fresh link every time you prove.
 
 ### Solidity
 
@@ -389,7 +386,7 @@ forge test -vv
 | FamilyRegistry | `0xa9f1A920A96c42BC4aA37DcB513CA615A3B7557d` |
 | FamilyConstitution | `0xf7f344E9399638b69DF158877F1e77a39A5F3D73` |
 
-匿名統計ダッシュボード（誰がいつ検証・漏洩検知されたかは含まない、日次カウントのみ公開）: `stats.html`（ローカルで直接開くか、[公開版](https://niikun.net/family_proof/)）
+Anonymous statistics dashboard (daily counts only — never who verified or was flagged, or when): `stats.html` (open locally, or the [hosted version](https://niikun.net/family_proof/))
 
 ---
 
@@ -397,40 +394,45 @@ forge test -vv
 
 FamilyProof started as a solution to impersonation scams:
 
-> **「秘密の合言葉を言わずに、家族であることを証明できないか？」**
+> **"Can I prove I'm family without ever saying a secret password?"**
 
-日本のオレオレ詐欺は被害額が高止まりしている社会問題——2025年確定値で認知件数14,489件・被害額1,138.1億円、既遂1件あたり平均523.6万円（警察庁）。過去5年間に特殊詐欺と思われる電話等を受けた人は33.3%、うち実際に被害に遭った人は1.5%（法務省法務総合研究所、2025年3月）。従来対策（固定の合言葉）には根本的な矛盾があり、「本人確認のために秘密を言わせる」行為そのものが盗聴・録音による漏洩リスクを生む。
+Impersonation phone scams ("ore-ore sagi") are a persistent problem in Japan — 14,489 confirmed cases and ¥113.81 billion in losses in 2025 (National Police Agency, final figures), averaging ¥5.236 million per completed case. Over the past five years, 33.3% of people received a call believed to be a scam attempt, and 1.5% of them actually suffered a loss (Japan's Research and Training Institute, Ministry of Justice, March 2025). Traditional countermeasures (a fixed shared password) have a fundamental contradiction: the very act of speaking a secret to verify identity exposes it to eavesdropping or recording — and once leaked, it can never be used again.
 
-そこから問いを広げました。
+From there, the question broadened:
 
-> **「家族とは、本当に血縁だけなのか？」**
+> **"Is family really only about blood, after all?"**
 
-FamilyProof が目指すのは、AI時代の新しいTrust Circleです。
+What FamilyProof aims to build is a new kind of Trust Circle for the age of AI.
 
 **Identity → Membership → Authorization**
 
-誰かの身元を公開するのではなく、
-**「この関係の中で、何を任せることができるのか」**を暗号的に検証します。
+Instead of exposing anyone's identity, it cryptographically verifies
+**what can be delegated within this relationship.**
 
 ---
 
 ## Known Limitations
 
-* RLN の `epoch=1時間 / limit=1` を Action Authorization にも同じインスタンスで流用しているため、同一メンバーが1時間以内に複数のActionを承認すると意図せず自分のsecretを露出しうる（実運用では用途ごとの別インスタンス化が必要）
-* AI Agent 自身は暗号的なIDを持たない。現状は「`proposeAction` を呼べる特定のEOA」というアクセス制御レベルの権限に留まる
-* Family Constitution の tier→閾値マッピングはコントラクトの定数で、Trust Circle自身によるガバナンスは未実装
-* World ID の「登録済み家族」判定は、サーバーの環境変数 `FAMILY_NULLIFIERS`（事前に取得した nullifier の許可リスト）による off-chain チェック。on-chain の `FamilyRegistry` とはまだ連動していない
-* World ID デモは、証明する側と確認する側を1つのページ・1つのサーバーで実演している。確認用の合言葉もブラウザからサーバーへ送っており、実運用では親の端末側で検証する構成が必要
-* Groth16/BN254は理論上Shorのアルゴリズムで破られうる（量子耐性のある証明系への移行はスコープ外）
-* Family Constitutionの承認処理（`FamilyConstitution.approveAction`）は現在、`FamilyRegistry`のRLN漏洩検知状態（`PotentialLeak`）を経由せず、Groth16 proofとAction単位のnullifier重複チェックのみで完結している。実運用ではAction Authorization用のRLNインスタンスと、Registry側の失効・漏洩検知を明示的に統合する必要がある
+* RLN's `epoch = 1 hour / limit = 1` is reused, as the same instance, for Action Authorization. If the same member approves multiple Actions within one hour, they may unintentionally expose their own secret (production use would require a separate RLN instance per use case)
+* The AI Agent has no cryptographic identity of its own. Today it is only an access-control-level permission — "a specific EOA allowed to call `proposeAction`"
+* Family Constitution's tier→threshold mapping is a contract constant; self-governance by the Trust Circle is not implemented
+* World ID's "registered member" check is an off-chain allowlist of pre-captured nullifiers in the server's `FAMILY_NULLIFIERS` env var. It is not yet linked to the on-chain `FamilyRegistry`
+* The World ID demo runs both the prover and verifier roles on one page and one server, and the verifier's reference passphrase is sent from the browser to the server. A production deployment would verify on the parent's own device
+* Groth16/BN254 is theoretically breakable by Shor's algorithm (migrating to a post-quantum-secure proof system is out of scope)
+* Family Constitution's approval flow (`FamilyConstitution.approveAction`) currently verifies the Groth16 proof and checks for a duplicate nullifier scoped to that single Action — it does not route through `FamilyRegistry`'s RLN leak-detection state (`PotentialLeak`). A production deployment would need its own RLN instance for Action Authorization, explicitly integrated with the Registry's revocation/leak handling
 
 ---
 
-## Continuity Track / AI利用方針
+## Continuity Track / AI Usage Policy
 
-本プロジェクトは ETHGlobal Tokyo 2026 の **Continuity Track** に提出する。ZK回路・RLN・on-chain Registry・Family Constitution・通知/統計インフラ・MCPサーバー化（AI Agent役をClaudeが実際にツール呼び出しで操作する部分）はいずれもイベント開始前（〜9/24）の既存部分。イベント期間中（9/25〜27）は、**World ID の IDKit 実統合（`worldid/`）** と、最終リハーサル・デモ動画の収録・Continuity提出文の仕上げに充てている。
+This project is submitted to the **Continuity Track** of ETHGlobal Tokyo 2026. The ZK circuit, RLN, on-chain Registry, Family Constitution, notification/statistics infrastructure, and the MCP server integration (letting Claude itself operate the AI Agent role via real tool calls) are all pre-existing work, built before the event started (through Sept 24). During the event itself (Sept 25–27), the work is **the real World ID integration with IDKit (`worldid/`)**, plus final rehearsal, recording the demo video, and finishing the Continuity submission writeup.
 
-AI（Claude）はコーチ・設計レビュー・ビルド/テスト実行確認のみを担当し、**Solidity/Rust のコードは一切書いていない**。実装は開発者本人（ソロ開発）が書いている。唯一の例外として、イベント中に `worldid/public/voice_challenge.html` のデモUIの一部（説明文・パネルの並び順・手順番号・証明結果の要約表示）を、開発者の依頼で Claude が編集した。World ID の判定ロジック（`worldid/server.js` と、ページ内の IDKit 呼び出し・検証処理）は開発者本人が実装している。
+How AI (Claude) was used, file by file:
+
+* **Code (written by the developer)**: the circom circuit, Rust (`src/`), Solidity (`contracts/`), and the World ID verification logic (`worldid/server.js`, and the IDKit call and verification flow in `voice_challenge.html`) were all written by the developer, solo. Claude acted as a coach — design discussion, code review, pointing out bugs, running builds/tests — but did not write this code. Bug fixes were made by the developer
+* **Code exceptions**: during the event, at the developer's request, Claude edited part of the demo UI in `worldid/public/voice_challenge.html` (explanatory text, panel order, step numbering, and the proof-result summary display), changed the server path in `.mcp.json` to a relative path, and, as pre-submission cleanup, deleted the practice page (`worldid/public/index.html`) and the practice-only endpoint it used (`/api/verify-proof`)
+* **Documentation (mostly written/edited by Claude)**: `README.md` / `README.ja.md` / `docs/` (`SPEC.md`, `PITCH.md`, `PITCH.en.md`, `SUBMISSION.en.md`, `HANDOFF.md`) / `demo/narration_script.md` were mostly written by Claude from conversations with the developer; the developer reviewed them and made the decisions
+* **Demo video (editing assisted by Claude)**: all screen recordings were captured by the developer in the real environment. Claude generated the title cards, progress badges, and captions (Python/Pillow) and did the cutting and assembly with ffmpeg. The narration is the developer's own voice; no AI voice is used
 
 ---
 
