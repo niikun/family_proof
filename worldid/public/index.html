@@ -95,7 +95,7 @@ try {
 
 
       outputEl.textContent = JSON.stringify(result, null, 2);
-      const verifyRes = await fetch("/api/verify-proof",{
+      const verifyRes = await fetch("/api/verify-call",{
         method:"POST",
         headers:{"Content-Type":"application/json"},
         body: JSON.stringify({ IDKitResponse: result }),

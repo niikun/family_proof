@@ -42,9 +42,26 @@ app.post("/api/verify-proof", async (req, res) => {
   res.json(data);
 });
 
+app.post("/api/verify-call", async (req, res) => {
+  const request = req.body.IDKitResponse;
+  const url = `https://developer.world.org/api/v4/verify/${process.env.RP_ID}`;
+  const response = await fetch(url,{
+    method:"POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(request)
+  });
+  const data = await response.json();
+  const humanOk = data.success === true;
+  const reqSignalPhrase = request?.responses?.[0]?.signal_hash;
+  const phraseOk = reqSignalPhrase ===  signalHashOf(process.env.PASSPHRASE);
+
+
+  res.json({humanOk, phraseOk});
+});
+
 const signalHashOf = (signal) => {
-  let bytes = stringToBytes(signal);
-  let hash = BigInt(keccak256(bytes)) >> 8n;
-  let hex = toHex(hash, {size: 32});
+  const bytes = stringToBytes(signal);
+  const hash = BigInt(keccak256(bytes)) >> 8n;
+  const hex = toHex(hash, {size: 32});
   return hex;
 }
