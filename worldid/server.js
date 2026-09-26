@@ -6,12 +6,15 @@ import { keccak256, stringToBytes, toHex } from "viem";
 
 dotenv.config();
 
+const familyNullifiers = new Set(process.env.FAMILY_NULLIFIERS.split(","));
+
 const app = express();
 app.use(express.json());
 app.use(express.static("public"));
 
 
 app.listen(3000,() =>{
+  
   console.log("...");
 });
 
@@ -54,9 +57,11 @@ app.post("/api/verify-call", async (req, res) => {
   const humanOk = data.success === true;
   const reqSignalPhrase = request?.responses?.[0]?.signal_hash;
   const phraseOk = reqSignalPhrase ===  signalHashOf(process.env.PASSPHRASE);
+  const reqNullifier = request?.responses?.[0].nullifier;
+  const memberOk = familyNullifiers.has(reqNullifier);
 
 
-  res.json({humanOk, phraseOk});
+  res.json({humanOk, phraseOk, memberOk});
 });
 
 const signalHashOf = (signal) => {
