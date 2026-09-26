@@ -100,7 +100,7 @@ Real names, secrets, family composition and other information are never disclose
 * **RLN** — detects and revokes reused secrets
 * **Smart Contract** — verifies Action policy and approval state
 
-> **World ID** (Unique Human / Sybil resistance) has been designed and validated as a production integration, but the demo substitutes a self-contained JS mock (not implemented — see "Known Limitations").
+> **World ID** (Unique Human / Sybil resistance) **was integrated for real with IDKit during the event (Sept 25–27)**. As a defense against AI voice cloning, the passphrase heard on the phone is bound to the World ID proof's `signal` and verified server-side (see "World ID: AI Voice-Clone Defense").
 
 ---
 
@@ -162,10 +162,45 @@ Because the AI Agent itself is not in the Trust Circle's Merkle Tree, it cannot 
 
 ---
 
+## World ID: AI Voice-Clone Defense (built during the event)
+
+A passphrase alone falls the moment an attacker with an AI-cloned voice gets someone to say it. So on top of "knows the passphrase", FamilyProof uses World ID to check that **an Orb-verified real human, who is a registered family member, just proved with this passphrase**.
+
+```text
+Verifier (the parent)
+  ① Picks a passphrase on the spot and says it over the phone
+
+Prover (the caller)
+  ② Enters the passphrase heard on the phone
+  ③ Gets an RP signature from /api/rp-signature (@worldcoin/idkit-server)
+     → IDKit.request (signal = passphrase) → approve in World App → proof
+
+Verifier (the parent)
+  ④ Sends the passphrase they said, together with the proof, to /api/verify-call
+
+Server (worldid/server.js)
+  ① Verify the proof with the World v4 verify API    → humanOk
+  ② proof's signal_hash == hash(passphrase)          → phraseOk
+  ③ proof's nullifier belongs to a registered member → memberOk
+```
+
+| humanOk | phraseOk | memberOk | Verdict |
+|---|---|---|---|
+| ✅ | ✅ | ✅ | Accept: a genuine check from the member |
+| ✅ | ❌ | ✅ | Reject: passphrase mismatch |
+| ✅ | ✅ | ❌ | Reject: right passphrase, but not a registered member (possible AI voice clone / impersonation) |
+| ❌ | — | — | Reject: World ID verification failed |
+
+The passphrase is not a pre-shared secret — it is **a challenge the parent picks on the spot for each call**. An AI clone listening on the call can type it in, but cannot prove with the registered family member's World ID. And because the passphrase is baked into the proof, an old proof can't be replayed.
+
+Design constraint: the passphrase is bound only to World ID's `signal` and is never reused as RLN's `challenge` / `epoch` (otherwise a legitimate member making two calls with different passphrases in one epoch would trigger RLN and expose their secret). Verification is off-chain, since a phone call can't wait for block confirmation.
+
+---
+
 ## Architecture
 
 ```text
-      World ID (designed, demo is a mock)
+      World ID (IDKit, built during event)
               Unique Human
                     │
         ┌───────────┴───────────┐
@@ -201,7 +236,8 @@ Because the AI Agent itself is not in the Trust Circle's Merkle Tree, it cannot 
 | Rust             | `ark-circom` / `arkworks`            |
 | Smart Contract   | Solidity / Foundry                   |
 | Blockchain       | World Chain Sepolia                  |
-| Human uniqueness | World ID (designed, demo is a mock)  |
+| Human uniqueness | World ID (IDKit / `@worldcoin/idkit-server`) |
+| World ID backend | Node.js / Express / `viem`           |
 | Backend / CLI    | Rust / `alloy` / `tokio`             |
 | Demo UI          | HTML / Vanilla JS                    |
 
@@ -228,13 +264,14 @@ Family Constitution (tiered Action Authorization):
   (tx: propose `0xc76a25bfad576afa5605871b650e145f3d5ddd0ea9a2d66c68f44d4a3407ab45` / approval 1 `0xa421b7f1b18c082c5f4f1df5da8f123df8f580fd32d0c71a72d7fa77075c4b1e` / approval 2 `0xdfee0dd25f7476912714fd5b33395d1854fbf7d8e4291841d6b6c589a03d30e0`)
 * `propose_action` wrapped as an MCP server, so Claude itself, playing the AI Agent role, can send on-chain transactions via a real tool call (callable directly from Claude Code as `mcp__family-proof__propose_action`; `approve_action` isn't wrapped as an MCP tool yet — it's still run manually via the CLI)
 
-### 🚧 Built during the event (Sept 25–27, planned)
+### 🚧 Built during the event (Sept 25–27)
 
+* **Real World ID (IDKit) integration for AI voice-clone defense**: `worldid/` (Express RP-signing/verification server + `voice_challenge.html`). Replaces the pre-event mock's fake `nullifier_hash`; verified end-to-end from proof generation in the real World App → World v4 verify API → passphrase (`signal_hash`) and registered-member (`nullifier`) checks
 * Final rehearsal, demo video recording, and finishing the Continuity submission writeup
 
 ### 🔭 Future work
 
-* Real World ID SDK integration (IDKit + RP-signing backend)
+* Link World ID's "registered member" check to the on-chain Trust Circle (`FamilyRegistry`'s Merkle root)
 * AI-driven autonomous risk/tier judgment
 * Dynamic governance letting the Trust Circle itself set tier→threshold mappings
 * Cryptographic identity for the AI Agent / ZK-provable delegated capability ([docs/SPEC.md §11.8](docs/SPEC.md))
@@ -249,6 +286,7 @@ circuits/       circom circuits / proving artifacts
 src/            Rust implementation
 src/bin/        CLI tools
 contracts/      Solidity / Foundry
+worldid/        World ID (IDKit) RP-signing/verification server + voice_challenge.html
 docs/
   SPEC.md       detailed specification
   HANDOFF.md    development log
@@ -283,6 +321,18 @@ Action Authorization demo (propose/approve against `FamilyConstitution`):
 cargo run --bin propose_action "<description>" <tier>   # tier: 0-3
 cargo run --bin approve_action "<description>" <leaf_idx>
 ```
+
+### World ID demo (`worldid/`)
+
+```bash
+cd worldid
+npm install
+# set RP_ID / RP_SIGNING_KEY / ACTION / PASSPHRASE / FAMILY_NULLIFIERS (comma-separated) in .env
+npm start
+# open http://localhost:3000/voice_challenge.html
+```
+
+The left panel is the verifier (the parent), the right panel is the prover (the caller). ① Pick a passphrase on the left → ② enter the same passphrase on the right → ③ press "World ID で証明する" and open the displayed link in World App on your phone to approve → ④ press "検証する" on the left to see the verdict. Each link is single-use, so press the button for a fresh link every time you prove.
 
 ### Solidity
 
@@ -334,7 +384,8 @@ Instead of exposing anyone's identity, it cryptographically verifies
 * RLN's `epoch = 1 hour / limit = 1` is reused, as the same instance, for Action Authorization. If the same member approves multiple Actions within one hour, they may unintentionally expose their own secret (production use would require a separate RLN instance per use case)
 * The AI Agent has no cryptographic identity of its own. Today it is only an access-control-level permission — "a specific EOA allowed to call `proposeAction`"
 * Family Constitution's tier→threshold mapping is a contract constant; self-governance by the Trust Circle is not implemented
-* The demo's World ID integration (AI voice-clone defense) is a proof-of-concept mock, not the real SDK. The production design has been validated (RP-signing + v4 verify API) but not implemented
+* World ID's "registered member" check is an off-chain allowlist of pre-captured nullifiers in the server's `FAMILY_NULLIFIERS` env var. It is not yet linked to the on-chain `FamilyRegistry`
+* The World ID demo runs both the prover and verifier roles on one page and one server, and the verifier's reference passphrase is sent from the browser to the server. A production deployment would verify on the parent's own device
 * Groth16/BN254 is theoretically breakable by Shor's algorithm (migrating to a post-quantum-secure proof system is out of scope)
 * Family Constitution's approval flow (`FamilyConstitution.approveAction`) currently verifies the Groth16 proof and checks for a duplicate nullifier scoped to that single Action — it does not route through `FamilyRegistry`'s RLN leak-detection state (`PotentialLeak`). A production deployment would need its own RLN instance for Action Authorization, explicitly integrated with the Registry's revocation/leak handling
 
@@ -342,9 +393,9 @@ Instead of exposing anyone's identity, it cryptographically verifies
 
 ## Continuity Track / AI Usage Policy
 
-This project is submitted to the **Continuity Track** of ETHGlobal Tokyo 2026. The ZK circuit, RLN, on-chain Registry, Family Constitution, notification/statistics infrastructure, and the MCP server integration (letting Claude itself operate the AI Agent role via real tool calls) are all pre-existing work, built before the event started (through Sept 24). During the event itself (Sept 25–27), the work is final rehearsal, recording the demo video, and finishing the Continuity submission writeup.
+This project is submitted to the **Continuity Track** of ETHGlobal Tokyo 2026. The ZK circuit, RLN, on-chain Registry, Family Constitution, notification/statistics infrastructure, and the MCP server integration (letting Claude itself operate the AI Agent role via real tool calls) are all pre-existing work, built before the event started (through Sept 24). During the event itself (Sept 25–27), the work is **the real World ID integration with IDKit (`worldid/`)**, plus final rehearsal, recording the demo video, and finishing the Continuity submission writeup.
 
-Claude (AI) acted only as a coach — reviewing designs, running builds/tests, and confirming behavior. **All Solidity/Rust code was written by the developer.** The entire implementation is the work of a solo developer.
+Claude (AI) acted only as a coach — reviewing designs, running builds/tests, and confirming behavior. **All Solidity/Rust code was written by the developer.** The implementation is the work of a solo developer, with one exception: during the event, at the developer's request, Claude edited part of the demo UI in `worldid/public/voice_challenge.html` (explanatory text, panel order, step numbering, and the proof-result summary display). The World ID verification logic (`worldid/server.js`, and the page's IDKit call and verification flow) was written by the developer.
 
 ---
 

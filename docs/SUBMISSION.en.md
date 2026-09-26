@@ -2,11 +2,17 @@
 
 Copy the relevant sections into the ETHGlobal submission form. This file is a working draft, not part of the demoed product.
 
+**Deadline: Sept 27, 9:00 JST (no late submissions).**
+
 ---
 
 ## Project title
 
 FamilyProof — Prove Trust, Not Identity
+
+## Short description (≤100 chars, if the form asks for one)
+
+ZK proof of trust + World ID: stop AI voice-clone scams and keep AI agents under human approval.
 
 ## One-line tagline
 
@@ -25,7 +31,7 @@ Continuity Track (see "Continuity Track note" below for the required pre-event/d
 - **World: Best Use of IDKit**
 - **World: Best Use of World ID for Agents**
 
-Both are a long shot: FamilyProof's World ID integration is a self-contained JS mock, not the real IDKit SDK (see "Known limitations" — this is disclosed up front in the README and demo, not something judges will discover on their own). Selecting these costs nothing (same partner, same slot) and the rest of the stack — real ZK circuit, real on-chain deployment, real AI-agent-authorization flow — is fully genuine. Worth applying; not worth overclaiming.
+FamilyProof now uses the real IDKit SDK, built during the event: an RP-signing backend (`@worldcoin/idkit-server`), proofs generated in the real World App, and server-side verification through the World v4 verify API. "Best Use of IDKit" is the natural fit. "World ID for Agents" is more of a stretch: World ID guards the human side (voice-clone defense), while AI-Agent approvals go through the ZK Trust Circle, not World ID. Selecting both costs nothing (same partner, same slot).
 
 ---
 
@@ -45,26 +51,26 @@ FamilyProof replaces the spoken password with a ZK-SNARK (Groth16 over BN254, ci
 - `FamilyConstitution.sol` deployed to World Chain Sepolia (`0xf7f344E9399638b69DF158877F1e77a39A5F3D73`), with a full propose → attacker-fails → 2 human approvals (from two different members, producing two distinct nullifiers) → `ActionAuthorized` flow demonstrated end-to-end on real transactions.
 - An anonymous, privacy-preserving statistics dashboard aggregating daily detection counts — no addresses, no family roots, no per-event data — published publicly.
 
-**What's a deliberate, disclosed mock:** the "AI voice-clone defense" demo scene uses a JS mock instead of the real World ID SDK, because the real integration needs a signed-request backend (`RP_SIGNING_KEY`) whose signing algorithm isn't well-documented outside the official SDK — judged too risky to get right blind in the time available. This is disclosed in the README and in the pitch itself, not hidden.
+**Built during the event — real World ID integration (AI voice-clone defense):** a shared passphrase alone fails against an attacker with an AI-cloned voice. In `worldid/`, the parent picks a passphrase on the spot and says it over the phone; the caller proves with World ID (IDKit, `signal` = the passphrase heard on the phone), and the server checks three things: the proof is valid according to the World v4 verify API (a real, Orb-verified human), the proof's `signal_hash` matches the verifier's passphrase, and the proof's `nullifier` belongs to a registered family member. Right passphrase + wrong person is rejected, and because the passphrase is a fresh per-call challenge baked into the proof, old proofs can't be replayed. Verified end-to-end on a real phone: accept, wrong passphrase, and non-member (simulated by removing the caller's nullifier from the allowlist, and disclosed as such in the video). This replaces the pre-event JS mock (fake `nullifier_hash`). Limitation: the registered-member list is an off-chain allowlist of nullifiers, not yet linked to the on-chain `FamilyRegistry`.
 
 **Also real, before the event:** `propose_action` wrapped as an MCP server, so an AI assistant can actually call it as a tool live during the demo — playing the "AI Agent" role for real — instead of a human copy-pasting the suggested `cast send` command. (`approve_action` isn't wrapped as an MCP tool yet; approvals, including the AI Agent's own failed self-approval attempt, are still demonstrated via the CLI.)
 
-**AI-assistance disclosure:** Claude acted only as a coach throughout — reviewing designs, running builds/tests, catching bugs (never fixing them). All Solidity and Rust code was written by the developer, solo, over the course of the project.
+**AI-assistance disclosure:** Claude acted only as a coach throughout — reviewing designs, running builds/tests, catching bugs (not fixing them). All Solidity and Rust code was written by the developer, solo, over the course of the project. One exception: during the event, at the developer's request, Claude edited part of the World ID demo UI in `worldid/public/voice_challenge.html` (explanatory text, panel order, step numbering, and the proof-result summary display). The World ID verification logic (`worldid/server.js`, and the page's IDKit call and verification flow) was written by the developer.
 
 ---
 
 ## Continuity Track note
 
 - **Pre-existing (before Sept 25):** the ZK circuit, RLN, `FamilyRegistry.sol`/`Groth16Verifier.sol`, notification/statistics infrastructure, `FamilyConstitution.sol` with its propose/approve CLIs and real Sepolia deployment, and the MCP-server wrapping of `propose_action` letting an AI assistant actually execute the proposal step via a tool call (`approve_action` remains CLI-only).
-- **During the event (Sept 25–27):** final demo rehearsal, video recording, and this submission writeup.
+- **During the event (Sept 25–27):** the real World ID integration in `worldid/` (Express RP-signing/verification server, IDKit in `voice_challenge.html`, `/api/verify-call` returning `humanOk` / `phraseOk` / `memberOk`), replacing the pre-event JS mock; plus final demo rehearsal, video recording, and this submission writeup.
 
 ## How it's made (tech stack)
 
-circom 2.2.3 + Poseidon (circuit) · Rust `ark-circom`/`arkworks` (witness/proof generation, BN254/Groth16) · Solidity/Foundry (`Groth16Verifier.sol`, `FamilyRegistry.sol`, `FamilyConstitution.sol`) · World Chain Sepolia (deployment target) · `alloy` + `reqwest` + `tokio` (Rust event-monitoring/notification backend, Resend API) · plain HTML/vanilla JS (demo UI, no build tooling) · `rmcp` (Rust MCP SDK, wraps `propose_action` as a tool; `approve_action` is not yet MCP-wrapped).
+circom 2.2.3 + Poseidon (circuit) · Rust `ark-circom`/`arkworks` (witness/proof generation, BN254/Groth16) · Solidity/Foundry (`Groth16Verifier.sol`, `FamilyRegistry.sol`, `FamilyConstitution.sol`) · World Chain Sepolia (deployment target) · `alloy` + `reqwest` + `tokio` (Rust event-monitoring/notification backend, Resend API) · plain HTML/vanilla JS (demo UI, no build tooling) · `rmcp` (Rust MCP SDK, wraps `propose_action` as a tool; `approve_action` is not yet MCP-wrapped) · World ID: `@worldcoin/idkit-core` (browser, via esm.sh) + Node.js/Express + `@worldcoin/idkit-server` (RP signing) + `viem` (signal hashing) + World v4 verify API.
 
 ## Demo video
 
-[link — add once recorded]
+[link — add once uploaded] (source: `demo/family_proof_rough_cut_worldid.mp4`, 3:30, plus recorded narration)
 
 ## Live contracts (World Chain Sepolia)
 
@@ -78,5 +84,8 @@ circom 2.2.3 + Poseidon (circuit) · Rust `ark-circom`/`arkworks` (witness/proof
 
 ## TODO before final submission
 
-- [ ] Record and link the demo video
+- [ ] Record the narration (`demo/narration_script.md`) and do the final mix on `demo/family_proof_rough_cut_worldid.mp4` (AI narration is not allowed)
+- [ ] Upload the final video and paste the link into "Demo video" above
+- [ ] Commit and push everything (World ID code + docs + video) so the GitHub repo matches this writeup
+- [x] World ID scene added to the demo video (`demo/family_proof_rough_cut_worldid.mp4`, 3:30): accept, and the impostor case (the same World ID removed from the family allowlist, disclosed on screen)
 - [ ] Paste final text into the ETHGlobal submission form (field names/limits may differ slightly from this draft's section breaks — adjust as needed)

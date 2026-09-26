@@ -1,5 +1,4 @@
-
-import express, { json } from "express";
+import express from "express";
 import dotenv from "dotenv";
 import { signRequest } from "@worldcoin/idkit-server";
 import { keccak256, stringToBytes, toHex } from "viem";
@@ -15,7 +14,7 @@ app.use(express.static("public"));
 
 app.listen(3000,() =>{
   
-  console.log("...");
+  console.log("http://localhost:3000/voice_challenge.html");
 });
 
 
@@ -47,6 +46,7 @@ app.post("/api/verify-proof", async (req, res) => {
 
 app.post("/api/verify-call", async (req, res) => {
   const request = req.body.IDKitResponse;
+  const phrase = req.body.phrase?.trim() || process.env.PASSPHRASE;
   const url = `https://developer.world.org/api/v4/verify/${process.env.RP_ID}`;
   const response = await fetch(url,{
     method:"POST",
@@ -56,11 +56,9 @@ app.post("/api/verify-call", async (req, res) => {
   const data = await response.json();
   const humanOk = data.success === true;
   const reqSignalPhrase = request?.responses?.[0]?.signal_hash;
-  const phraseOk = reqSignalPhrase ===  signalHashOf(process.env.PASSPHRASE);
-  const reqNullifier = request?.responses?.[0].nullifier;
+  const phraseOk = reqSignalPhrase ===  signalHashOf(phrase);
+  const reqNullifier = request?.responses?.[0]?.nullifier;
   const memberOk = familyNullifiers.has(reqNullifier);
-
-
   res.json({humanOk, phraseOk, memberOk});
 });
 

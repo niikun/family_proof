@@ -1,8 +1,8 @@
 {
-  "name": "learn-worldid-day2",
+  "name": "family_proof",
   "private": true,
   "type": "module",
-  "description": "WorldID/IDKit練習用（FamilyProof本編の提出物ではありません）",
+  "description": "WorldID提出用",
   "scripts": {
     "start": "node server.js"
   },

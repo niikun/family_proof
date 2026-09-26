@@ -1,6 +1,8 @@
 # HANDOFF — 別PCへの引き継ぎ
 
-最終更新: 2026-09-23（Step 7 ①〜④・README/PITCH/提出文整備・シーン3カット確定に加え、**MCP化のStep 5（`mcp_server`再接続）が解消し、`propose_action`のMCPツール化が完了・動作確認済み**（`approve_action`のMCPツール化は引き続き未着手、詳細は下記「🆕 MCP化の進め方」節）。これに伴い`README.md`/`README.en.md`/`docs/PITCH.md`/`docs/PITCH.en.md`/`docs/SUBMISSION.en.md`を、MCP（`propose_action`のみ）がイベント前に完了した扱いに更新済み（Continuity Trackの「イベント中に新規実装」欄は最終リハーサル・動画・提出文の仕上げのみに変更、詳細は下記「🆕 README/PITCH/提出文の整備」節）。**デモ動画は完成し、`demo/family_proof_rough_cut.mp4`（2分40秒、Family Constitution先出し構成）に統合済み**。Claude会話（提案+自己承認拒否）・`approve_action`の`--release`撮り直し・tier0対比まで収録・トリミング・バッジ合成・本編統合が完了（攻撃者の`approve_action`失敗のみ未収録・優先度低）。編集方法はPlaywright不使用でffmpeg+Python(Pillow)のみに変更（詳細は下記「🆕 デモ動画の編集方針」節）。残りは`approve_action`のMCPツール化（任意）・ナレーション原稿の新構成への更新・収録・Canvaでの最終合成） / ブランチ: `main` / remote: `git@github.com:niikun/family_proof.git`
+> **🆕 2026-09-26: イベント中に World ID 実SDK統合（IDKit）を実装。** `worldid/` の `/api/verify-call` が `humanOk` / `phraseOk` / `memberOk` を返し、`voice_challenge.html` もモックから実SDKに置き換え済み。README/README.en/SUBMISSION.en も「イベント中に実装」として更新済み。詳細・残タスクは下記「🆕 World ID 実統合（イベント中、2026-09-25〜26）」節。
+
+最終更新: 2026-09-26（World ID 実統合）。その前の更新: 2026-09-23（Step 7 ①〜④・README/PITCH/提出文整備・シーン3カット確定に加え、**MCP化のStep 5（`mcp_server`再接続）が解消し、`propose_action`のMCPツール化が完了・動作確認済み**（`approve_action`のMCPツール化は引き続き未着手、詳細は下記「🆕 MCP化の進め方」節）。これに伴い`README.md`/`README.en.md`/`docs/PITCH.md`/`docs/PITCH.en.md`/`docs/SUBMISSION.en.md`を、MCP（`propose_action`のみ）がイベント前に完了した扱いに更新済み（Continuity Trackの「イベント中に新規実装」欄は最終リハーサル・動画・提出文の仕上げのみに変更、詳細は下記「🆕 README/PITCH/提出文の整備」節）。**デモ動画は完成し、`demo/family_proof_rough_cut.mp4`（2分40秒、Family Constitution先出し構成）に統合済み**。Claude会話（提案+自己承認拒否）・`approve_action`の`--release`撮り直し・tier0対比まで収録・トリミング・バッジ合成・本編統合が完了（攻撃者の`approve_action`失敗のみ未収録・優先度低）。編集方法はPlaywright不使用でffmpeg+Python(Pillow)のみに変更（詳細は下記「🆕 デモ動画の編集方針」節）。残りは`approve_action`のMCPツール化（任意）・ナレーション原稿の新構成への更新・収録・Canvaでの最終合成） / ブランチ: `main` / remote: `git@github.com:niikun/family_proof.git`
 
 > ✅ **Step 6 コア完了（Verifier/Registry/テスト/calldata変換/World Chain Sepoliaデプロイ済み）**。デプロイ済みアドレスは下記「Step 6」節参照（`FamilyRegistry` は `0xa9f1A920...` が正、`0xD06FcbB5...` は重複デプロイの旧アドレスで放置）。追加拡張A/B/Cも完了（下記「残り期間での追加拡張」節）。
 > **🆕 Step 7（Trust Circle / Family Constitution 拡張）を正式採用し、2026-09-21 夜から着手済み**（設計は [SPEC.md §11](SPEC.md) 完了）。進捗は下記「いまどこ」節参照。Claude はコーチのみ、設計を書いただけでコードは書いていない — 実装は引き続きユーザーが行う。
@@ -36,6 +38,47 @@
 **スコープ方針（2026-09-21 夜 再更新・Step7前倒し）**: Must = Step 4 RLN（済） / Step 6 コア（済） / Step 5（済） → **今からStep 7 Trust Circle/Family Constitutionの実装に着手**、縮退ラインは[SPEC.md §7 Step 7](SPEC.md)参照 → 間に合わなければ続きはイベント本番（9/25〜27）に持ち越し。Cut候補 = ENS 名解決・levels=20拡張。
 
 **サイドトラック（本編Step 0〜7とは別枠、提出物ではない）**: World ID実SDK統合の2日間練習が2026-09-23に着手済み。現状は教材（`learn-worldid/`）の準備のみ完了、実際の練習（Sandbox申請・JS基礎・IDKit実装）はまだこれから。詳細は下記「🆕 World ID実SDK再挑戦に向けた2日間練習」節。
+
+## 🆕 World ID 実統合（イベント中、2026-09-25〜26）
+
+9/21 に「シーン3はモック」と決めた World ID を、練習（`learn-worldid/`）の成果を使ってイベント中に本物の IDKit 統合に置き換えた。**Continuity Track の「イベント中に新規実装」部分**として README/SUBMISSION に記載済み。
+
+**構成（`worldid/`。`server.js` の `/api/verify-call` までは `7aa41f6` でコミット済み。`voice_challenge.html` の実SDK化・`package.json`・ドキュメント更新は 9/26 時点で未コミット）**
+- `server.js`（Express、`npm start` で port 3000）
+  - `POST /api/rp-signature`: `@worldcoin/idkit-server` の `signRequest` で RP 署名を作り、`rp_context` を返す
+  - `POST /api/verify-call`: `IDKitResponse` と確認側の `phrase` を受け取り、3つのフラグを返す
+    - `humanOk`: World v4 verify API（`developer.world.org/api/v4/verify/<RP_ID>`）の `success`
+    - `phraseOk`: proof の `signal_hash` と `signalHashOf(phrase)` を比較。`signalHashOf` は keccak256 を 8bit 右シフトしたもの（IDKit 側の signal ハッシュと同じ計算）
+    - `memberOk`: proof の `nullifier` が `FAMILY_NULLIFIERS`（カンマ区切りの許可リスト）に含まれるか
+  - `POST /api/verify-proof`: 練習時のもの。verify API の結果をそのまま返す
+- `public/voice_challenge.html`: 左が確認する側（母）、右が証明する側（電話の相手）。①母がその場で合言葉を決めて電話で伝える → ②相手が聞いた合言葉を入力 → ③`proveBtn` で IDKit（`orbLegacy` preset、`signal` = 合言葉）→ World App で承認 → proof を `lastProof` に保存し、要点（identifier・合言葉・短縮 nullifier）だけ表示（JSON 全体は console）→ ④`verifyBtn` で `lastProof` と確認側の合言葉を `/api/verify-call` に送り、3行の ✅/❌ と判定を表示。判定は上から `!humanOk` → `!phraseOk` → それ以外（`memberOk` が false、「合言葉は合っていますが、本人ではありません」）の順
+- `public/index.html`: 練習用ページ（固定 signal）
+- `.env`（gitignore 済み）: `RP_ID` / `RP_SIGNING_KEY` / `ACTION` / `PASSPHRASE` / `FAMILY_NULLIFIERS`（ほかに `APP_ID` / `API_KEY` もあるが server.js では未使用。`APP_ID` は HTML に直書き）
+
+**設計メモ**
+- 合言葉は World ID の `signal` にだけ結び付け、RLN の `challenge`/`epoch` には流用しない（下記「第2の差別化ポイント」節の制約どおり）
+- nullifier は app + action ごとに決まる値。`FAMILY_NULLIFIERS` には、家族が同じ action で一度認証したときの nullifier を事前に登録しておく
+- ⚠️ `phrase` が空だと `.env` の `PASSPHRASE` にフォールバックする。確認側（母）の①が空欄のまま④を押すと、この値で判定されてしまう。証明側の空欄チェックは入っているが、`verifyBtn` 側の空欄チェックは未実装
+- ルート直下の旧 `voice_challenge.html`（JSモック）は残っている。デモで使うのは `worldid/public/voice_challenge.html` の方
+
+**状況**
+- [x] RP 署名 → IDKit → World App 実機 → v4 verify API で `humanOk` / `phraseOk` / `memberOk` の取得を確認（9/26）
+- [x] `voice_challenge.html` の実SDK化（疑似 `nullifier_hash` のモックを廃止）
+- [x] README / README.en / SUBMISSION.en を「イベント中に実装」として更新（9/26）
+- [x] README / README.en / SUBMISSION.en の World ID 節の流れを、今の画面（①親がその場で合言葉を決める → ②③相手が証明 → ④親が検証）に合わせて修正。「合言葉は毎回その場で決めるチャレンジなので、過去の proof を使い回せない」旨と、`worldid/` デモの操作手順を追記（9/26）
+- [x] PITCH.md / PITCH.en.md の Q&A「World ID は統合されているのか」を、モック前提の回答から実統合の回答に書き換え（9/26）
+- [x] AI利用の開示を更新（README / README.en / SUBMISSION.en、9/26）: 例外として、`voice_challenge.html` のデモUIの一部（説明文・パネルの並び順・手順番号①〜④・証明結果の要約表示）を開発者の依頼で Claude が編集した。判定ロジック（`server.js` と、ページ内の IDKit 呼び出し・検証処理）は開発者本人が実装
+- [x] 3パターンを実機で確認（9/26）: メンバー＋正しい合言葉→受理 / メンバー＋違う合言葉→拒否 / 未登録＋正しい合言葉→拒否（未登録は `FAMILY_NULLIFIERS` の末尾を1文字変えて確認。確認後に元の値へ戻し済み）
+- [x] `voice_challenge.html` の小さな修正（9/26）: 証明側で合言葉が空なら `return` / 最後の `else` を「合言葉は合っていますが、本人ではありません」に / `catch` で `verdictEl` を赤表示
+- [x] サーバーの動作確認（9/26）: ページ表示・`/api/rp-signature`・空リクエストへの `/api/verify-call`（3つとも false を返し、落ちない）
+- [ ] UI変更（左右入れ替え・①〜④・要約表示）の後に、3パターンを実機でもう一度確認
+- [ ] （任意）`verifyBtn` 側でも確認側の合言葉が空なら止める
+- [ ] （任意）`app.listen` のログを `"..."` から URL（`http://localhost:3000/voice_challenge.html`）に
+- [x] デモ動画に World ID シーンを追加（9/26）: `demo/raw/take_a.mp4`（受理・合言葉違い）/ `take_b.mp4`（なりすまし）/ World App 承認画面のスクリーンショットから `demo/clips/worldid_scene.mp4`（50.5秒）を作成し、RLN（#18）とクロージングの間に挿入した `demo/family_proof_rough_cut_worldid.mp4`（3分30.5秒）を作成。元の `family_proof_rough_cut.mp4` は残してある。なりすましは同じ World ID を `FAMILY_NULLIFIERS` から外して撮影し、カードで開示済み。ナレーション原稿（`demo/narration_script.md` #19〜#24）も追記済み。同日、World ID シーンの実写部分すべてに英語の進捗バッジ（右下、4ステップ＋判定時に ACCEPTED/REJECTED）を重ね、2:34 冒頭の IME 変換候補をカット（`take_a` の切り出し開始を 4.5→5.2秒）。さらに、冒頭の Claude との会話（0:23.4〜0:49.2、入院費300万円の提案と自己承認の拒否）に、英語の一行テロップ4枚（USER の依頼 / Claude の Tier 2 判断 / 自己承認の質問 / 「できない」回答）を左下に重ねた。続けて、tier0 対比（1:26〜1:39、「予定のリマインド」を Tier 0 で提案）に左下の英語テロップ2枚、RLN の使い回し検知（2:04〜2:31、`submit_demo -- 11` と notifier の `recovered secret = 203`）に右下の英語テロップ3枚（同じ秘密で別チャレンジ / notifier の監視 / 2点から秘密を復元→PotentialLeak→メール通知）を追加。元の `family_proof_rough_cut.mp4` 自体には手を加えていない
+- [ ] ナレーション収録と最終合成（`family_proof_rough_cut_worldid.mp4` ベース）
+- [ ] 提出締切 **9/27 9:00 JST** までにコミットと push
+
+**未解決の限界（README「既知の限界」に記載済み）**: 家族判定は off-chain の許可リストで、on-chain の `FamilyRegistry` とは未連動。証明側・確認側を1ページ・1サーバーで実演している。
 
 ## 🆕 Step 5: デモUI（2026-09-21 UI方針決定、シーン3はモックに最終決定）
 
@@ -320,7 +363,7 @@ MCP化（`propose_action`）が本番前に完了したことで条件が満た�
 - [ ] Sandboxアプリのアクセス申請（Developer Portal、承認待ちが発生するので最優先）
 - [ ] Day1: `day1_js_basics/exercises.mjs`のTODO1〜6
 - [ ] Day2: `day2_idkit_practice/server.js`・`public/index.html`のTODOを埋めて動作確認
-- [ ] 練習の進捗を踏まえて、本番中にWorld ID実SDK統合へ挑戦するか最終判断
+- [x] 練習の進捗を踏まえて、本番中にWorld ID実SDK統合へ挑戦するか最終判断 → **挑戦し、実装済み**（上部「🆕 World ID 実統合（イベント中）」節）
 
 ### 🆕 デモ動画の編集方針（2026-09-23、Family Constitution先出し版で完了）
 

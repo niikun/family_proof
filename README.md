@@ -103,7 +103,7 @@ Groth16 Proof
 * **RLN** — secret の使い回し検知と失効
 * **Smart Contract** — Action policy と承認状態を検証
 
-> **World ID**（Unique Human / Sybil resistance）は本番実装として設計・検証済みですが、今回のデモでは自前 JS モックで代替しています（未実装、詳細は「既知の限界」参照）。
+> **World ID**（Unique Human / Sybil resistance）は、**イベント期間中（9/25〜27）に IDKit を使った本物の統合を実装しました**。AI音声クローン対策として、電話で聞いた合言葉を World ID proof の `signal` に結び付けて検証します（詳細は「World ID: AI音声クローン対策」節）。
 
 ---
 
@@ -167,10 +167,45 @@ AI Agent 自身は Trust Circle の Merkle Tree に入っていないため、Hu
 
 ---
 
+## World ID: AI音声クローン対策（イベント中に実装）
+
+合言葉だけでは、AIで声をクローンした攻撃者が合言葉を聞き出した時点で突破されます。そこで「合言葉を知っている」ことに加えて、**Orb で確認された実在の人間が、登録済みの家族本人として、いまこの合言葉で証明した**ことを World ID で確認します。
+
+```text
+確認する側（親）
+  ① その場で合言葉を決めて、電話で相手に伝える
+
+証明する側（電話をかけてきた相手）
+  ② 電話で聞いた合言葉を入力
+  ③ /api/rp-signature でRP署名を取得（@worldcoin/idkit-server）
+     → IDKit.request（signal = 合言葉）→ World App で承認 → proof
+
+確認する側（親）
+  ④ 自分が伝えた合言葉と proof を /api/verify-call へ送る
+
+サーバー（worldid/server.js）
+  ① World v4 verify API で proof を検証         → humanOk
+  ② proof の signal_hash == hash(合言葉)         → phraseOk
+  ③ proof の nullifier が登録済み家族のものか    → memberOk
+```
+
+| humanOk | phraseOk | memberOk | 判定 |
+|---|---|---|---|
+| ✅ | ✅ | ✅ | 受理：本人からの正当な確認 |
+| ✅ | ❌ | ✅ | 拒否：合言葉が一致しない |
+| ✅ | ✅ | ❌ | 拒否：合言葉は合っているが、登録済みの家族ではない（AI音声クローン・なりすましの可能性） |
+| ❌ | — | — | 拒否：World ID の検証に失敗 |
+
+合言葉は事前に共有する秘密ではなく、**親が通話のたびにその場で決めるチャレンジ**です。AIクローンも通話を聞いているので合言葉は入力できますが、登録済みの家族本人の World ID では証明できません。また合言葉が proof に焼き込まれるため、過去の proof を使い回すこともできません。
+
+設計上の制約: 合言葉は World ID の `signal` にだけ結び付け、RLN の `challenge` / `epoch` には流用しません（流用すると、正規メンバーが同じ epoch 内に別の合言葉で2回通話しただけで RLN が発動し、secret が露出するため）。通話中にブロック確定を待てないので、検証は off-chain で行います。
+
+---
+
 ## Architecture
 
 ```text
-          World ID（設計済み・デモはモック）
+          World ID（IDKit・イベント中に実装）
               Unique Human
                     │
         ┌───────────┴───────────┐
@@ -206,7 +241,8 @@ AI Agent 自身は Trust Circle の Merkle Tree に入っていないため、Hu
 | Rust             | `ark-circom` / `arkworks`            |
 | Smart Contract   | Solidity / Foundry                   |
 | Blockchain       | World Chain Sepolia                  |
-| Human uniqueness | World ID（設計済み・デモはモック）    |
+| Human uniqueness | World ID（IDKit / `@worldcoin/idkit-server`） |
+| World ID backend | Node.js / Express / `viem`           |
 | Backend / CLI    | Rust / `alloy` / `tokio`             |
 | Demo UI          | HTML / Vanilla JS                    |
 
@@ -233,13 +269,14 @@ Family Constitution（tier別Action Authorization）:
   （tx: propose `0xc76a25bfad576afa5605871b650e145f3d5ddd0ea9a2d66c68f44d4a3407ab45` / approve 1人目 `0xa421b7f1b18c082c5f4f1df5da8f123df8f580fd32d0c71a72d7fa77075c4b1e` / approve 2人目 `0xdfee0dd25f7476912714fd5b33395d1854fbf7d8e4291841d6b6c589a03d30e0`）
 * `propose_action` の MCP サーバー化: AI Agent役を Claude 自身が実際のツール呼び出しでオンチェーン送信するところまで担う（`mcp__family-proof__propose_action`としてClaude Codeから直接呼び出し可能。`approve_action`のMCPツール化は未着手、CLIでの手動実行のみ）
 
-### 🚧 built during the event（9/25–27、予定）
+### 🚧 built during the event（9/25–27）
 
+* **World ID 実統合（IDKit）による AI音声クローン対策**: `worldid/`（Express による RP署名・検証サーバー + `voice_challenge.html`）。イベント前の疑似 `nullifier_hash` のモックを廃止し、World App 実機での proof 生成 → World v4 verify API → 合言葉（`signal_hash`）と登録済み家族（`nullifier`）の照合まで動作確認済み
 * 最終リハーサル・デモ動画の収録・Continuity提出文の仕上げ
 
 ### 🔭 Future work
 
-* World ID SDK 実統合（IDKit + RP署名バックエンド）
+* World ID の「登録済み家族」判定を、on-chain の Trust Circle（`FamilyRegistry` の Merkle root）と連動させる
 * AI による自律的なリスク／tier判定
 * Trust Circle 自身によるtier→閾値の動的ガバナンス
 * AI Agent への暗号的ID付与／ZKによる委任権限の証明（[docs/SPEC.md §11.8](docs/SPEC.md)）
@@ -254,6 +291,7 @@ circuits/       circom circuits / proving artifacts
 src/            Rust implementation
 src/bin/        CLI tools
 contracts/      Solidity / Foundry
+worldid/        World ID（IDKit）RP署名・検証サーバー + voice_challenge.html
 docs/
   SPEC.md       detailed specification
   HANDOFF.md    development log
@@ -288,6 +326,18 @@ Action Authorization のデモ（`FamilyConstitution`への提案・承認）:
 cargo run --bin propose_action "<description>" <tier>   # tier: 0-3
 cargo run --bin approve_action "<description>" <leaf_idx>
 ```
+
+### World ID デモ（`worldid/`）
+
+```bash
+cd worldid
+npm install
+# .env に RP_ID / RP_SIGNING_KEY / ACTION / PASSPHRASE / FAMILY_NULLIFIERS（カンマ区切り）を設定
+npm start
+# http://localhost:3000/voice_challenge.html を開く
+```
+
+画面の左が確認する側（親）、右が証明する側（電話の相手）です。①左で合言葉を決める → ②右に同じ合言葉を入力 → ③「World ID で証明する」を押し、表示されたリンクをスマホの World App で開いて承認 → ④左の「検証する」で判定が出ます。リンクはリクエストごとに1回限りなので、証明のたびにボタンから新しいリンクを出してください。
 
 ### Solidity
 
@@ -339,7 +389,8 @@ FamilyProof が目指すのは、AI時代の新しいTrust Circleです。
 * RLN の `epoch=1時間 / limit=1` を Action Authorization にも同じインスタンスで流用しているため、同一メンバーが1時間以内に複数のActionを承認すると意図せず自分のsecretを露出しうる（実運用では用途ごとの別インスタンス化が必要）
 * AI Agent 自身は暗号的なIDを持たない。現状は「`proposeAction` を呼べる特定のEOA」というアクセス制御レベルの権限に留まる
 * Family Constitution の tier→閾値マッピングはコントラクトの定数で、Trust Circle自身によるガバナンスは未実装
-* デモのWorld ID連携（AI音声クローン対策）は実SDKではなく概念実証のモック。本番実装の設計は確認済み（RP署名 + v4 verify API）だが未実装
+* World ID の「登録済み家族」判定は、サーバーの環境変数 `FAMILY_NULLIFIERS`（事前に取得した nullifier の許可リスト）による off-chain チェック。on-chain の `FamilyRegistry` とはまだ連動していない
+* World ID デモは、証明する側と確認する側を1つのページ・1つのサーバーで実演している。確認用の合言葉もブラウザからサーバーへ送っており、実運用では親の端末側で検証する構成が必要
 * Groth16/BN254は理論上Shorのアルゴリズムで破られうる（量子耐性のある証明系への移行はスコープ外）
 * Family Constitutionの承認処理（`FamilyConstitution.approveAction`）は現在、`FamilyRegistry`のRLN漏洩検知状態（`PotentialLeak`）を経由せず、Groth16 proofとAction単位のnullifier重複チェックのみで完結している。実運用ではAction Authorization用のRLNインスタンスと、Registry側の失効・漏洩検知を明示的に統合する必要がある
 
@@ -347,9 +398,9 @@ FamilyProof が目指すのは、AI時代の新しいTrust Circleです。
 
 ## Continuity Track / AI利用方針
 
-本プロジェクトは ETHGlobal Tokyo 2026 の **Continuity Track** に提出する。ZK回路・RLN・on-chain Registry・Family Constitution・通知/統計インフラ・MCPサーバー化（AI Agent役をClaudeが実際にツール呼び出しで操作する部分）はいずれもイベント開始前（〜9/24）の既存部分。イベント期間中（9/25〜27）は最終リハーサル・デモ動画の収録・Continuity提出文の仕上げに充てている。
+本プロジェクトは ETHGlobal Tokyo 2026 の **Continuity Track** に提出する。ZK回路・RLN・on-chain Registry・Family Constitution・通知/統計インフラ・MCPサーバー化（AI Agent役をClaudeが実際にツール呼び出しで操作する部分）はいずれもイベント開始前（〜9/24）の既存部分。イベント期間中（9/25〜27）は、**World ID の IDKit 実統合（`worldid/`）** と、最終リハーサル・デモ動画の収録・Continuity提出文の仕上げに充てている。
 
-AI（Claude）はコーチ・設計レビュー・ビルド/テスト実行確認のみを担当し、**Solidity/Rust のコードは一切書いていない**。実装はすべて開発者本人（ソロ開発）が書いている。
+AI（Claude）はコーチ・設計レビュー・ビルド/テスト実行確認のみを担当し、**Solidity/Rust のコードは一切書いていない**。実装は開発者本人（ソロ開発）が書いている。唯一の例外として、イベント中に `worldid/public/voice_challenge.html` のデモUIの一部（説明文・パネルの並び順・手順番号・証明結果の要約表示）を、開発者の依頼で Claude が編集した。World ID の判定ロジック（`worldid/server.js` と、ページ内の IDKit 呼び出し・検証処理）は開発者本人が実装している。
 
 ---
 

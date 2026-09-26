@@ -89,57 +89,43 @@
 <div class="wrap">
   <h1>FamilyProof: 合言葉だけでは通らない</h1>
   <p class="sub">
-    AI音声クローンが正しい合言葉を言えたとしても、「本人であること」の証明にはならないことを示すデモです。
-    左が証明する側（電話の相手）、右が検証する側（受け取る家族）です。
-    ※このページはWorld IDの概念を再現したモック実装です（nullifier_hashは疑似値）。
+    シナリオ：母のもとに「娘」を名乗る電話がかかってくる。声はそっくりだが、AI音声クローンかもしれない。<br>
+    母はその場で合言葉を決めて電話で伝え、相手はその合言葉を焼き込んだ World ID の証明を送る。
+    AIクローンは合言葉を聞き取れても、娘本人の World ID では証明できない ―― 合言葉だけでは通らない。<br>
+    ※ 本物の World ID（Orb 認証）で検証しています
   </p>
 
   <div class="panels">
     <div class="panel">
-      <h2>証明する側</h2>
-      <label for="persona">誰として証明しますか？</label>
-      <select id="persona">
-        <option value="member">正規メンバー（娘）</option>
-        <option value="attacker">攻撃者（AIクローン音声）</option>
-      </select>
-      <label for="proverPhrase">電話で聞いた合言葉</label>
-      <input type="text" id="proverPhrase" placeholder="例: とらのもん">
-      <button id="proveBtn">証明する</button>
-      <div class="output" id="proveOutput">まだ証明していません</div>
-    </div>
-
-    <div class="panel">
-      <h2>検証する側</h2>
-      <label for="verifierPhrase">自分が実際に言った合言葉</label>
+      <h2>検証する側（母）</h2>
+      <label for="verifierPhrase">① その場で合言葉を決めて、電話で伝える</label>
       <input type="text" id="verifierPhrase" value="とらのもん">
-      <label>登録済みの正規メンバーnullifier_hash</label>
+      <label>登録済みの家族（World ID nullifier）</label>
       <div class="output" id="registeredHash"></div>
       <label>on-chain FamilyRegistry root（ライブ取得）</label>
       <div class="output" id="onchainRoot">読み込み中...</div>
-      <button id="verifyBtn">検証する</button>
+      <button id="verifyBtn">④ 検証する</button>
       <div class="verdict" id="verdict" style="display:none;"></div>
+    </div>
+
+    <div class="panel">
+      <h2>証明する側（電話の相手）</h2>
+      <label for="proverPhrase">② 電話で聞いた合言葉を入力</label>
+      <input type="text" id="proverPhrase" placeholder="例: とらのもん">
+      <button id="proveBtn">③ World ID で証明する（スマホで承認）</button>
+      <div class="output" id="proveOutput">まだ証明していません</div>
     </div>
   </div>
 </div>
 
-<script>
-// 疑似nullifier_hash: 「同じ人物なら毎回同じ値になる」という World ID の性質だけを再現する簡易ハッシュ
-function pseudoHash(str) {
-  let h = 2166136261;
-  for (let i = 0; i < str.length; i++) {
-    h ^= str.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  const hex = (h >>> 0).toString(16).padStart(8, '0');
-  return '0x' + hex + hex;
-}
+<script type="module">
+  import { IDKit, orbLegacy } from "https://esm.sh/@worldcoin/idkit-core";
 
-const PERSONAS = {
-  member: { label: '正規メンバー（娘）', hash: pseudoHash('trust-circle-member:musume') },
-  attacker: { label: '攻撃者', hash: pseudoHash('trust-circle-member:attacker') },
-};
+  const APP_ID = "app_91d0df3badaff1ca70f7064ed5433114";
+  const ACTION = "familyproof-call-check"; 
 
-document.getElementById('registeredHash').textContent = PERSONAS.member.hash;
+
+document.getElementById('registeredHash').textContent = "サーバーに登録済み";
 async function loadOnchainRoot() {
   const el = document.getElementById('onchainRoot');
   try {
@@ -167,16 +153,61 @@ loadOnchainRoot();
 
 let lastProof = null;
 
-document.getElementById('proveBtn').addEventListener('click', () => {
-  const persona = document.getElementById('persona').value;
-  const phrase = document.getElementById('proverPhrase').value;
-  const hash = PERSONAS[persona].hash;
-  lastProof = { signal: phrase, nullifierHash: hash };
-  document.getElementById('proveOutput').textContent =
-    `signal: "${phrase}"\nnullifier_hash: ${hash}\n(${PERSONAS[persona].label} として証明)`;
-});
+document.getElementById("proveBtn").addEventListener("click", async () => {
+    const outputEl = document.getElementById("proveOutput");
+    const phrase = document.getElementById("proverPhrase").value.trim();
+    if (!phrase) {
+      outputEl.textContent = "合言葉を入力してください。"
+      return ;
+    }
+    outputEl.textContent = "サーバーに署名をもらっています...";
 
-document.getElementById('verifyBtn').addEventListener('click', () => {
+ 
+    const url = "/api/rp-signature";
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({action:ACTION})
+    });
+    const rpContext = await res.json();
+
+    outputEl.textContent = "World ID のリクエストを作成しています...";
+
+try {
+      const request = await IDKit.request({
+        app_id: APP_ID,
+        action: ACTION,
+        rp_context:rpContext,
+        allow_legacy_proofs: false,
+      }).preset(orbLegacy({ signal: phrase}));
+      
+      outputEl.textContent = "下のリンクをスマホの World App で開いて承認してください:\n" + request.connectorURI;
+
+      const completion = await request.pollUntilCompletion();
+      const comp_json = JSON.stringify(completion, null, 2);
+      const {success, result} = completion;
+      if (!success) {
+        console.log(comp_json);
+        outputEl.textContent += "\n\nIDKit失敗:\n" + comp_json;      
+        return ;
+      }
+
+      console.log(JSON.stringify(result, null, 2));
+      const proof = result.responses[0];
+      outputEl.textContent =
+        `✅ World ID（${proof.identifier}）で証明しました\n` +
+        `合言葉: "${phrase}"\n` +
+        `nullifier: ${proof.nullifier.slice(0, 10)}…${proof.nullifier.slice(-4)}\n\n` +
+        `→ 左の「④ 検証する」を押してください`;
+      lastProof = result;
+
+  } catch(e){
+      outputEl.textContent = "エラー:" + e.message;
+      return ;
+  }
+  });
+
+document.getElementById('verifyBtn').addEventListener('click', async () => {
   const verdictEl = document.getElementById('verdict');
   verdictEl.style.display = 'block';
 
@@ -186,27 +217,39 @@ document.getElementById('verifyBtn').addEventListener('click', () => {
     return;
   }
 
-  const refPhrase = document.getElementById('verifierPhrase').value.trim().toLowerCase();
-  const signal = lastProof.signal.trim().toLowerCase();
-  const signalMatch = refPhrase === signal;
-  const hashMatch = lastProof.nullifierHash === PERSONAS.member.hash;
+  const refPhrase = document.getElementById('verifierPhrase').value.trim();
+  try{
+    const url = "/api/verify-call";
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({IDKitResponse: lastProof, phrase: refPhrase})
+    });
+    const {humanOk, phraseOk, memberOk} = await res.json();
+    const checksHtml =
+      '<div class="checks">' +
+      `<div class="${humanOk? 'ok' : 'ng'}">${humanOk ? '✅' : '❌'}  実在の人間（World ID / Orb）</div>` +
+      `<div class="${phraseOk? 'ok' : 'ng'}">${phraseOk ? '✅' : '❌'}  合言葉が一致</div>` +
+      `<div class="${memberOk? 'ok' : 'ng'}">${memberOk ? '✅' : '❌'}  登録済みの家族</div>` +
+      '</div>';
 
-  const checksHtml =
-    '<div class="checks">' +
-    `<div class="${signalMatch ? 'ok' : 'ng'}">${signalMatch ? '✅' : '❌'} 合言葉が一致</div>` +
-    `<div class="${hashMatch ? 'ok' : 'ng'}">${hashMatch ? '✅' : '❌'} 登録済みメンバーのnullifier_hashと一致</div>` +
-    '</div>';
-
-  if (signalMatch && hashMatch) {
-    verdictEl.className = 'verdict accept';
-    verdictEl.innerHTML = '✅ 受理：本人からの正当な確認です' + checksHtml;
-  } else if (signalMatch && !hashMatch) {
+    if (humanOk && phraseOk && memberOk) {
+      verdictEl.className = 'verdict accept';
+      verdictEl.innerHTML = '✅ 受理：本人からの正当な確認です' + checksHtml;
+    } else if (!humanOk) {
+      verdictEl.className = 'verdict reject';
+      verdictEl.innerHTML = '❌ 拒否：World ID の検証に失敗しました' + checksHtml;
+    } else if (!phraseOk) {
+      verdictEl.className = 'verdict reject';
+      verdictEl.innerHTML = '❌ 拒否：合言葉が一致しません' + checksHtml;
+    } else {
+      verdictEl.className = 'verdict reject';
+      verdictEl.innerHTML = '❌ 拒否：合言葉は合っていますが、本人ではありません' + checksHtml;
+    }
+  } catch(e) {
     verdictEl.className = 'verdict reject';
-    verdictEl.innerHTML = '❌ 拒否：合言葉は合っていますが、本人ではありません（AI音声クローンの可能性）' + checksHtml;
-  } else {
-    verdictEl.className = 'verdict reject';
-    verdictEl.innerHTML = '❌ 拒否：合言葉が一致しません' + checksHtml;
-  }
+    verdictEl.textContent = `エラー： ${e}`;
+  } 
 });
 </script>
 </body>
