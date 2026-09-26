@@ -8,7 +8,32 @@ Premise: only rehearsed, working demonstrations are scripted here. Family Consti
 
 ---
 
-## Overall structure (target timing)
+## On-stage structure (revised 2026-09-26: play the demo video)
+
+**The 4-minute demo plays the demo video (`demo/family_proof_rough_cut_worldid.mp4`, 3:30, narrated) instead of operating things live.** Claude's live role, the approvals, RLN, and World ID are all recorded, so nothing depends on venue Wi-Fi, the MCP connection, or operating World App on stage. The live-demo scripts in "0. Hook" through "4. Close" below are kept as a backup (see "Backup: live-demo script").
+
+| Part | Time | Content |
+|---|---|---|
+| Intro (spoken live) | 0:00–0:15 | One line on the contradiction in family-passphrase scam defense → "Let me show you how it actually works, on video." |
+| Demo video | 0:15–3:45 | Trust Circle diagrams → Claude proposes, and can't approve itself → two neighbors approve → `ActionAuthorized` → tier-0 contrast → ZK proof → RLN recovers the secret → **World ID (built during the event): accept, and impostor rejected** → vision |
+| Close (spoken live) | 3:45–4:00 | "Prove trust, not identity." → into Q&A |
+
+Intro line (~15 sec):
+
+> "The standard defense against phone-impersonation scams is a family passphrase. But saying a secret out loud to prove who you are is exactly how it gets stolen. FamilyProof proves trust without revealing the secret. Let me show you how it actually works, on video."
+
+**Notes for playback**
+- If the narration isn't recorded in time, play the silent video and read `demo/narration_script.md` live (its timings already match the video)
+- Keep the video file local and confirm it plays with no network
+- **In case a judge asks to see it for real during Q&A, keep the terminals (`approve_action` / `submit_demo` / notifier) and `worldid/` (`npm start` running, World App ready) one click away**, and use the matching part of the backup script below
+
+Anticipated Q&A is in the "Q&A prep" section at the end.
+
+---
+
+## Backup: live-demo script (if the video can't be played, or to show the real thing during Q&A)
+
+### Overall structure (live version, target timing)
 
 **Revised 2026-09-23: reordered to lead with Family Constitution** (to match the reordered demo video. Rationale: Family Constitution is the project's central claim since the Trust Circle reframing, and leading with the strongest, most concrete moment — an AI Agent actually acting — makes for a stronger opening than leading with the underlying ZK/RLN mechanics. The ZK/RLN detail now follows as "here's the cryptography that makes this trustworthy.")
 
@@ -21,8 +46,6 @@ Premise: only rehearsed, working demonstrations are scripted here. Family Consti
 | 2. Scene 1: family-impersonation check | 2:30–2:50 | Verification succeeds without ever revealing the secret (the cryptography behind Family Constitution) |
 | 3. Scene 2: RLN reuse detection | 2:50–3:30 | A stolen secret used twice gets recovered and revoked |
 | 4. Close (vision + tagline) | 3:30–4:00 | Trust Circle / a society of people living alone |
-
-Anticipated Q&A is in the "Q&A prep" section at the end.
 
 ---
 

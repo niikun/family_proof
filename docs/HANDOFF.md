@@ -76,6 +76,8 @@
 - [ ] （任意）`app.listen` のログを `"..."` から URL（`http://localhost:3000/voice_challenge.html`）に
 - [x] デモ動画に World ID シーンを追加（9/26）: `demo/raw/take_a.mp4`（受理・合言葉違い）/ `take_b.mp4`（なりすまし）/ World App 承認画面のスクリーンショットから `demo/clips/worldid_scene.mp4`（50.5秒）を作成し、RLN（#18）とクロージングの間に挿入した `demo/family_proof_rough_cut_worldid.mp4`（3分30.5秒）を作成。元の `family_proof_rough_cut.mp4` は残してある。なりすましは同じ World ID を `FAMILY_NULLIFIERS` から外して撮影し、カードで開示済み。ナレーション原稿（`demo/narration_script.md` #19〜#24）も追記済み。同日、World ID シーンの実写部分すべてに英語の進捗バッジ（右下、4ステップ＋判定時に ACCEPTED/REJECTED）を重ね、2:34 冒頭の IME 変換候補をカット（`take_a` の切り出し開始を 4.5→5.2秒）。さらに、冒頭の Claude との会話（0:23.4〜0:49.2、入院費300万円の提案と自己承認の拒否）に、英語の一行テロップ4枚（USER の依頼 / Claude の Tier 2 判断 / 自己承認の質問 / 「できない」回答）を左下に重ねた。続けて、tier0 対比（1:26〜1:39、「予定のリマインド」を Tier 0 で提案）に左下の英語テロップ2枚、RLN の使い回し検知（2:04〜2:31、`submit_demo -- 11` と notifier の `recovered secret = 203`）に右下の英語テロップ3枚（同じ秘密で別チャレンジ / notifier の監視 / 2点から秘密を復元→PotentialLeak→メール通知）を追加。元の `family_proof_rough_cut.mp4` 自体には手を加えていない
 - [ ] ナレーション収録と最終合成（`family_proof_rough_cut_worldid.mp4` ベース）
+- [x] **ピッチ本番は動画上映方式に変更（9/26、ユーザー判断）**: デモ4分 = ライブ導入15秒 → `family_proof_rough_cut_worldid.mp4`（3:30）上映 → 締め15秒。ライブ実演台本は予備として残し、Q&A で実物を求められたらターミナルと `worldid/` を出す。PITCH.md / PITCH.en.md に反映済み
+- [x] 提出資料の整合（9/26）: PITCH の「イベント中に何を作ったか」「AI利用」の Q&A を World ID と UI 編集の例外に合わせて更新。SUBMISSION.en.md に締切・100字以内の短い説明・動画アップロード/push の TODO を追加し、「未登録」の確認が許可リストから外した模擬であることを明記
 - [ ] 提出締切 **9/27 9:00 JST** までにコミットと push
 
 **未解決の限界（README「既知の限界」に記載済み）**: 家族判定は off-chain の許可リストで、on-chain の `FamilyRegistry` とは未連動。証明側・確認側を1ページ・1サーバーで実演している。

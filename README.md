@@ -327,6 +327,36 @@ cargo run --bin propose_action "<description>" <tier>   # tier: 0-3
 cargo run --bin approve_action "<description>" <leaf_idx>
 ```
 
+### MCP サーバー（Claude に AI Agent 役をさせる）
+
+`propose_action` を MCP ツールとして公開し、Claude Code から `mcp__family-proof__propose_action` として呼べるようにします（`approve_action` は MCP 化しておらず、CLI で実行します）。
+
+```bash
+cargo build --release --bin mcp_server
+```
+
+リポジトリ直下の `.mcp.json` に登録します（Claude Code はリポジトリ直下で起動してください）。
+
+```json
+{
+  "mcpServers": {
+    "family-proof": {
+      "type": "stdio",
+      "command": "./target/release/mcp_server"
+    }
+  }
+}
+```
+
+前提:
+
+* `mcp_server` は内部で `cargo run --release --bin propose_action` を実行し、その中で Foundry の `cast send` を呼びます。`cargo` と `cast` に PATH が通っている必要があります
+* ビルドしたときのリポジトリの場所で `propose_action` を実行します（ビルド時にパスが埋め込まれます）。リポジトリを移動したらビルドし直してください
+* `cast` の keystore に `agent` アカウントと、パスワードファイル `~/.foundry/keystores/agent.pw` が必要です
+* `proposeAction` は `onlyAgent` で1つの EOA に制限されています。デプロイ済みの `FamilyConstitution` に提案できるのは、その EOA の鍵を持つ場合だけです。自分で試す場合は、自分の `agent` アドレスを指定して `FamilyConstitution` をデプロイし、`propose_action.rs` のコントラクトアドレスを差し替えてください
+
+Claude Code を起動して `/mcp` で `family-proof` が connected になっていれば準備完了です。「入院費で300万円振り込む提案をしておいて」のように頼むと、Claude が tier を判断して `propose_action` を呼びます。
+
 ### World ID デモ（`worldid/`）
 
 ```bash

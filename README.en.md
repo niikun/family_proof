@@ -322,6 +322,36 @@ cargo run --bin propose_action "<description>" <tier>   # tier: 0-3
 cargo run --bin approve_action "<description>" <leaf_idx>
 ```
 
+### MCP server (let Claude play the AI Agent)
+
+Exposes `propose_action` as an MCP tool, callable from Claude Code as `mcp__family-proof__propose_action` (`approve_action` is not MCP-wrapped; run it via the CLI).
+
+```bash
+cargo build --release --bin mcp_server
+```
+
+Register it in `.mcp.json` at the repository root (start Claude Code from the repository root):
+
+```json
+{
+  "mcpServers": {
+    "family-proof": {
+      "type": "stdio",
+      "command": "./target/release/mcp_server"
+    }
+  }
+}
+```
+
+Prerequisites:
+
+* `mcp_server` runs `cargo run --release --bin propose_action` internally, which calls Foundry's `cast send`. Both `cargo` and `cast` must be on your PATH
+* It runs `propose_action` in the repository location it was built from (the path is embedded at build time). Rebuild if you move the repository
+* Your `cast` keystore needs an `agent` account and a password file at `~/.foundry/keystores/agent.pw`
+* `proposeAction` is restricted by `onlyAgent` to a single EOA. You can only propose to the deployed `FamilyConstitution` if you hold that EOA's key. To try it yourself, deploy `FamilyConstitution` with your own `agent` address and replace the contract address in `propose_action.rs`
+
+Start Claude Code and check that `family-proof` shows as connected in `/mcp`. Then ask something like "Propose a ¥3M transfer for hospital fees", and Claude will pick a tier and call `propose_action`.
+
 ### World ID demo (`worldid/`)
 
 ```bash
